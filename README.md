@@ -10,7 +10,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-- Node.js 10.0+ 
+- Node.js 10.0+
 - A running instance of [Saleor](https://github.com/mirumee/saleor/).
 
 ### Installing
@@ -39,9 +39,11 @@ There are two environment variables available for configuration:
 
   - `API_URI` (required) - URI of a running instance of Saleor GraphQL API.
      If you are running Saleor locally with the default settings, set `API_URI` to: `http://localhost:8000/`.
+     `export API_URI=http://localhost:8000/graphql/`
 
   - `APP_MOUNT_URI` - URI at which the Dashboard app will be mounted.
      E.g. if you set `APP_MOUNT_URI` to `/dashboard/`, your app will be mounted at `http://localhost:9000/dashboard/`.
+     `export APP_MOUNT_URI=/dashboard/`
 
 
 ### Development
