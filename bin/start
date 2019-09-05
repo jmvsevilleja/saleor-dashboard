@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+export API_URI=http://localhost:8000/graphql/
+export APP_MOUNT_URI=/dashboard/
+npm install
+npm start
