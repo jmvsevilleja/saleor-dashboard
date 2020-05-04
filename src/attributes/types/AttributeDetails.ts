@@ -14,7 +14,6 @@ export interface AttributeDetails_attribute_values {
   name: string | null;
   slug: string | null;
   type: AttributeValueType | null;
-  value: string | null;
 }
 
 export interface AttributeDetails_attribute {
@@ -25,6 +24,7 @@ export interface AttributeDetails_attribute {
   visibleInStorefront: boolean;
   filterableInDashboard: boolean;
   filterableInStorefront: boolean;
+  availableInGrid: boolean;
   inputType: AttributeInputTypeEnum | null;
   storefrontSearchPosition: number;
   valueRequired: boolean;

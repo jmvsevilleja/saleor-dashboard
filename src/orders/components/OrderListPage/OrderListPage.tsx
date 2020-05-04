@@ -1,65 +1,84 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-import AddIcon from "@material-ui/icons/Add";
+
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Container from "@saleor/components/Container";
 import PageHeader from "@saleor/components/PageHeader";
-import i18n from "@saleor/i18n";
-import { FilterPageProps, ListActions, PageListProps } from "@saleor/types";
+import { sectionNames } from "@saleor/intl";
+import { FilterPageProps, PageListProps, SortPage } from "@saleor/types";
+import { OrderListUrlSortField } from "@saleor/orders/urls";
+import FilterBar from "@saleor/components/FilterBar";
 import { OrderList_orders_edges_node } from "../../types/OrderList";
-import { OrderListUrlFilters } from "../../urls";
 import OrderList from "../OrderList";
-import OrderListFilter from "../OrderListFilter";
+import {
+  createFilterStructure,
+  OrderListFilterOpts,
+  OrderFilterKeys
+} from "./filters";
 
 export interface OrderListPageProps
   extends PageListProps,
-    ListActions,
-    FilterPageProps<OrderListUrlFilters> {
+    FilterPageProps<OrderFilterKeys, OrderListFilterOpts>,
+    SortPage<OrderListUrlSortField> {
   orders: OrderList_orders_edges_node[];
 }
 
 const OrderListPage: React.FC<OrderListPageProps> = ({
   currencySymbol,
   currentTab,
-  filtersList,
-  filterTabs,
   initialSearch,
+  filterOpts,
+  tabs,
   onAdd,
   onAll,
   onSearchChange,
-  onFilterAdd,
-  onFilterSave,
+  onFilterChange,
   onTabChange,
-  onFilterDelete,
+  onTabDelete,
+  onTabSave,
   ...listProps
-}) => (
-  <Container>
-    <PageHeader title={i18n.t("Orders")}>
-      <Button color="primary" variant="contained" onClick={onAdd}>
-        {i18n.t("Create order", { context: "button" })} <AddIcon />
-      </Button>
-    </PageHeader>
-    <Card>
-      <OrderListFilter
-        allTabLabel={i18n.t("All Orders")}
-        currencySymbol={currencySymbol}
-        currentTab={currentTab}
-        filterLabel={i18n.t("Select all orders where:")}
-        filterTabs={filterTabs}
-        filtersList={filtersList}
-        initialSearch={initialSearch}
-        searchPlaceholder={i18n.t("Search Orders...")}
-        onAll={onAll}
-        onSearchChange={onSearchChange}
-        onFilterAdd={onFilterAdd}
-        onFilterSave={onFilterSave}
-        onTabChange={onTabChange}
-        onFilterDelete={onFilterDelete}
-      />
-      <OrderList {...listProps} />
-    </Card>
-  </Container>
-);
+}) => {
+  const intl = useIntl();
+
+  const filterStructure = createFilterStructure(intl, filterOpts);
+
+  return (
+    <Container>
+      <PageHeader title={intl.formatMessage(sectionNames.orders)}>
+        <Button color="primary" variant="contained" onClick={onAdd}>
+          <FormattedMessage
+            defaultMessage="Create order"
+            description="button"
+          />
+        </Button>
+      </PageHeader>
+      <Card>
+        <FilterBar
+          currencySymbol={currencySymbol}
+          currentTab={currentTab}
+          initialSearch={initialSearch}
+          onAll={onAll}
+          onFilterChange={onFilterChange}
+          onSearchChange={onSearchChange}
+          onTabChange={onTabChange}
+          onTabDelete={onTabDelete}
+          onTabSave={onTabSave}
+          tabs={tabs}
+          allTabLabel={intl.formatMessage({
+            defaultMessage: "All Orders",
+            description: "tab name"
+          })}
+          filterStructure={filterStructure}
+          searchPlaceholder={intl.formatMessage({
+            defaultMessage: "Search Orders..."
+          })}
+        />
+        <OrderList {...listProps} />
+      </Card>
+    </Container>
+  );
+};
 OrderListPage.displayName = "OrderListPage";
 export default OrderListPage;

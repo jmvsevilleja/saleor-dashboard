@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -9,24 +10,30 @@ import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import { Tab, TabContainer } from "@saleor/components/Tab";
-import i18n from "../../../i18n";
-import { maybe } from "../../../misc";
-import { ListProps, TabListActions, UserError } from "../../../types";
-import { SaleType } from "../../../types/globalTypes";
+import { sectionNames } from "@saleor/intl";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import { maybe, splitDateTime } from "../../../misc";
+import { ListProps, TabListActions } from "../../../types";
+import { SaleType as SaleTypeEnum } from "../../../types/globalTypes";
 import { SaleDetails_sale } from "../../types/SaleDetails";
 import DiscountCategories from "../DiscountCategories";
 import DiscountCollections from "../DiscountCollections";
+import DiscountDates from "../DiscountDates";
 import DiscountProducts from "../DiscountProducts";
 import SaleInfo from "../SaleInfo";
-import SalePricing from "../SalePricing";
 import SaleSummary from "../SaleSummary";
+import SaleType from "../SaleType";
+import SaleValue from "../SaleValue";
 
 export interface FormData {
+  endDate: string;
+  endTime: string;
+  hasEndDate: boolean;
   name: string;
   startDate: string;
-  endDate: string;
+  startTime: string;
+  type: SaleTypeEnum;
   value: string;
-  type: SaleType;
 }
 
 export enum SaleDetailsPageTab {
@@ -49,7 +56,7 @@ export interface SaleDetailsPageProps
     > {
   activeTab: SaleDetailsPageTab;
   defaultCurrency: string;
-  errors: UserError[];
+  errors: DiscountErrorFragment[];
   sale: SaleDetails_sale;
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
@@ -71,7 +78,7 @@ const CategoriesTab = Tab(SaleDetailsPageTab.categories);
 const CollectionsTab = Tab(SaleDetailsPageTab.collections);
 const ProductsTab = Tab(SaleDetailsPageTab.products);
 
-const SaleDetailsPage: React.StatelessComponent<SaleDetailsPageProps> = ({
+const SaleDetailsPage: React.FC<SaleDetailsPageProps> = ({
   activeTab,
   defaultCurrency,
   disabled,
@@ -102,33 +109,42 @@ const SaleDetailsPage: React.StatelessComponent<SaleDetailsPageProps> = ({
   toggle,
   toggleAll
 }) => {
+  const intl = useIntl();
+
   const initialForm: FormData = {
-    endDate: maybe(() => (sale.endDate ? sale.endDate : ""), ""),
+    endDate: splitDateTime(maybe(() => sale.endDate, "")).date,
+    endTime: splitDateTime(maybe(() => sale.endDate, "")).time,
+    hasEndDate: maybe(() => !!sale.endDate),
     name: maybe(() => sale.name, ""),
-    startDate: maybe(() => sale.startDate, ""),
-    type: maybe(() => sale.type, SaleType.FIXED),
+    startDate: splitDateTime(maybe(() => sale.startDate, "")).date,
+    startTime: splitDateTime(maybe(() => sale.startDate, "")).time,
+    type: maybe(() => sale.type, SaleTypeEnum.FIXED),
     value: maybe(() => sale.value.toString(), "")
   };
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Sales")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.sales)}
+          </AppHeader>
           <PageHeader title={maybe(() => sale.name)} />
           <Grid>
             <div>
               <SaleInfo
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
-              <SalePricing
+              <SaleType data={data} disabled={disabled} onChange={change} />
+              <CardSpacer />
+              <SaleValue
+                currencySymbol={defaultCurrency}
                 data={data}
-                defaultCurrency={defaultCurrency}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -137,34 +153,55 @@ const SaleDetailsPage: React.StatelessComponent<SaleDetailsPageProps> = ({
                   isActive={activeTab === SaleDetailsPageTab.categories}
                   changeTab={onTabClick}
                 >
-                  {i18n.t("Categories ({{ number }})", {
-                    number: maybe(
-                      () => sale.categories.totalCount.toString(),
-                      "…"
-                    )
-                  })}
+                  {intl.formatMessage(
+                    {
+                      defaultMessage: "Categories ({quantity})",
+                      description: "number of categories",
+                      id: "saleDetailsPageCategoriesQuantity"
+                    },
+                    {
+                      quantity: maybe(
+                        () => sale.categories.totalCount.toString(),
+                        "…"
+                      )
+                    }
+                  )}
                 </CategoriesTab>
                 <CollectionsTab
                   isActive={activeTab === SaleDetailsPageTab.collections}
                   changeTab={onTabClick}
                 >
-                  {i18n.t("Collections ({{ number }})", {
-                    number: maybe(
-                      () => sale.collections.totalCount.toString(),
-                      "…"
-                    )
-                  })}
+                  {intl.formatMessage(
+                    {
+                      defaultMessage: "Collections ({quantity})",
+                      description: "number of collections",
+                      id: "saleDetailsPageCollectionsQuantity"
+                    },
+                    {
+                      quantity: maybe(
+                        () => sale.collections.totalCount.toString(),
+                        "…"
+                      )
+                    }
+                  )}
                 </CollectionsTab>
                 <ProductsTab
                   isActive={activeTab === SaleDetailsPageTab.products}
                   changeTab={onTabClick}
                 >
-                  {i18n.t("Products ({{ number }})", {
-                    number: maybe(
-                      () => sale.products.totalCount.toString(),
-                      "…"
-                    )
-                  })}
+                  {intl.formatMessage(
+                    {
+                      defaultMessage: "Products ({quantity})",
+                      description: "number of products",
+                      id: "saleDetailsPageProductsQuantity"
+                    },
+                    {
+                      quantity: maybe(
+                        () => sale.products.totalCount.toString(),
+                        "…"
+                      )
+                    }
+                  )}
                 </ProductsTab>
               </TabContainer>
               <CardSpacer />
@@ -217,6 +254,14 @@ const SaleDetailsPage: React.StatelessComponent<SaleDetailsPageProps> = ({
                   toolbar={productListToolbar}
                 />
               )}
+              <CardSpacer />
+              <DiscountDates
+                data={data}
+                disabled={disabled}
+                defaultCurrency={defaultCurrency}
+                errors={errors}
+                onChange={change}
+              />
             </div>
             <div>
               <SaleSummary defaultCurrency={defaultCurrency} sale={sale} />

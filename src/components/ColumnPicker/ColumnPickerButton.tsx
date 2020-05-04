@@ -1,12 +1,10 @@
 import Button from "@material-ui/core/Button";
-import { Theme } from "@material-ui/core/styles";
 import { fade } from "@material-ui/core/styles/colorManipulator";
+import makeStyles from "@material-ui/core/styles/makeStyles";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
-import makeStyles from "@material-ui/styles/makeStyles";
 import classNames from "classnames";
 import React from "react";
-
-import i18n from "@saleor/i18n";
+import { FormattedMessage } from "react-intl";
 
 interface ColumnPickerButtonProps {
   active: boolean;
@@ -15,16 +13,16 @@ interface ColumnPickerButtonProps {
 }
 
 const useStyles = makeStyles(
-  (theme: Theme) => ({
+  theme => ({
     icon: {
-      marginLeft: theme.spacing.unit * 2,
+      marginLeft: theme.spacing(2),
       transition: theme.transitions.duration.short + "ms"
     },
     root: {
       "& span": {
         color: theme.palette.primary.main
       },
-      paddingRight: theme.spacing.unit
+      paddingRight: theme.spacing(1)
     },
     rootActive: {
       background: fade(theme.palette.primary.main, 0.1)
@@ -51,9 +49,10 @@ const ColumnPickerButton: React.FC<ColumnPickerButtonProps> = props => {
       onClick={onClick}
       variant="outlined"
     >
-      {i18n.t("Columns", {
-        context: "select visible columns button"
-      })}
+      <FormattedMessage
+        defaultMessage="Columns"
+        description="select visible columns button"
+      />
       <ArrowDropDownIcon
         color="primary"
         className={classNames(classes.icon, {

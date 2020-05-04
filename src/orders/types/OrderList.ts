@@ -2,7 +2,7 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { OrderStatusFilter, OrderFilterInput, PaymentChargeStatusEnum, OrderStatus } from "./../../types/globalTypes";
+import { OrderFilterInput, OrderSortingInput, PaymentChargeStatusEnum, OrderStatus } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL query operation: OrderList
@@ -81,6 +81,6 @@ export interface OrderListVariables {
   after?: string | null;
   last?: number | null;
   before?: string | null;
-  status?: OrderStatusFilter | null;
   filter?: OrderFilterInput | null;
+  sort?: OrderSortingInput | null;
 }

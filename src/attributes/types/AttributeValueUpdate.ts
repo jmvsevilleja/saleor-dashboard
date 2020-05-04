@@ -2,17 +2,11 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { AttributeValueCreateInput, AttributeInputTypeEnum, AttributeValueType } from "./../../types/globalTypes";
+import { AttributeValueCreateInput, AttributeInputTypeEnum, AttributeValueType, ProductErrorCode } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL mutation operation: AttributeValueUpdate
 // ====================================================
-
-export interface AttributeValueUpdate_attributeValueUpdate_errors {
-  __typename: "Error";
-  field: string | null;
-  message: string | null;
-}
 
 export interface AttributeValueUpdate_attributeValueUpdate_attribute_values {
   __typename: "AttributeValue";
@@ -20,7 +14,6 @@ export interface AttributeValueUpdate_attributeValueUpdate_attribute_values {
   name: string | null;
   slug: string | null;
   type: AttributeValueType | null;
-  value: string | null;
 }
 
 export interface AttributeValueUpdate_attributeValueUpdate_attribute {
@@ -31,16 +24,23 @@ export interface AttributeValueUpdate_attributeValueUpdate_attribute {
   visibleInStorefront: boolean;
   filterableInDashboard: boolean;
   filterableInStorefront: boolean;
+  availableInGrid: boolean;
   inputType: AttributeInputTypeEnum | null;
   storefrontSearchPosition: number;
   valueRequired: boolean;
   values: (AttributeValueUpdate_attributeValueUpdate_attribute_values | null)[] | null;
 }
 
+export interface AttributeValueUpdate_attributeValueUpdate_errors {
+  __typename: "ProductError";
+  code: ProductErrorCode;
+  field: string | null;
+}
+
 export interface AttributeValueUpdate_attributeValueUpdate {
   __typename: "AttributeValueUpdate";
-  errors: AttributeValueUpdate_attributeValueUpdate_errors[] | null;
   attribute: AttributeValueUpdate_attributeValueUpdate_attribute | null;
+  errors: AttributeValueUpdate_attributeValueUpdate_errors[];
 }
 
 export interface AttributeValueUpdate {

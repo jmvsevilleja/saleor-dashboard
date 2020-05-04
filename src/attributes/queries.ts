@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
 
+import makeQuery from "@saleor/hooks/makeQuery";
 import { pageInfoFragment, TypedQuery } from "../queries";
 import {
   AttributeDetails,
@@ -22,6 +23,7 @@ export const attributeDetailsFragment = gql`
   ${attributeFragment}
   fragment AttributeDetailsFragment on Attribute {
     ...AttributeFragment
+    availableInGrid
     inputType
     storefrontSearchPosition
     valueRequired
@@ -30,7 +32,6 @@ export const attributeDetailsFragment = gql`
       name
       slug
       type
-      value
     }
   }
 `;
@@ -52,26 +53,29 @@ const attributeList = gql`
   ${attributeFragment}
   ${pageInfoFragment}
   query AttributeList(
-    $query: String
-    $inCategory: ID
-    $inCollection: ID
+    $filter: AttributeFilterInput
     $before: String
     $after: String
     $first: Int
     $last: Int
+    $sort: AttributeSortingInput
   ) {
     attributes(
-      query: $query
-      inCategory: $inCategory
-      inCollection: $inCollection
+      filter: $filter
       before: $before
       after: $after
       first: $first
       last: $last
+      sortBy: $sort
     ) {
       edges {
         node {
           ...AttributeFragment
+          values {
+            id
+            name
+            slug
+          }
         }
       }
       pageInfo {
@@ -80,7 +84,7 @@ const attributeList = gql`
     }
   }
 `;
-export const AttributeListQuery = TypedQuery<
+export const useAttributeListQuery = makeQuery<
   AttributeList,
   AttributeListVariables
 >(attributeList);

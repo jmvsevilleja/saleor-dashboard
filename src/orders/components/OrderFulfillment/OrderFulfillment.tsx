@@ -1,35 +1,31 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardActions from "@material-ui/core/CardActions";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
+import classNames from "classnames";
 
 import CardMenu from "@saleor/components/CardMenu";
 import CardTitle from "@saleor/components/CardTitle";
 import Money from "@saleor/components/Money";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import StatusLabel from "@saleor/components/StatusLabel";
 import TableCellAvatar, {
   AVATAR_MARGIN
 } from "@saleor/components/TableCellAvatar";
-import i18n from "../../../i18n";
-import { maybe, renderCollection } from "../../../misc";
+import { maybe, renderCollection, getStringOrPlaceholder } from "../../../misc";
 import { FulfillmentStatus } from "../../../types/globalTypes";
 import { OrderDetails_order_fulfillments } from "../../types/OrderDetails";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     clickableRow: {
       cursor: "pointer"
     },
@@ -51,10 +47,18 @@ const styles = (theme: Theme) =>
       textAlign: "right",
       width: 120
     },
-
+    infoLabel: {
+      display: "inline-block"
+    },
+    infoLabelWithMargin: {
+      marginBottom: theme.spacing()
+    },
+    infoRow: {
+      padding: theme.spacing(2, 3)
+    },
     orderNumber: {
       display: "inline",
-      marginLeft: theme.spacing.unit
+      marginLeft: theme.spacing(1)
     },
     statusBar: {
       paddingTop: 0
@@ -62,156 +66,220 @@ const styles = (theme: Theme) =>
     table: {
       tableLayout: "fixed"
     }
-  });
+  }),
+  { name: "OrderFulfillment" }
+);
 
-interface OrderFulfillmentProps extends WithStyles<typeof styles> {
+interface OrderFulfillmentProps {
   fulfillment: OrderDetails_order_fulfillments;
   orderNumber: string;
   onOrderFulfillmentCancel: () => void;
   onTrackingCodeAdd: () => void;
 }
 
-const numberOfColumns = 3;
+const numberOfColumns = 4;
 
-const OrderFulfillment = withStyles(styles, { name: "OrderFulfillment" })(
-  ({
-    classes,
+const OrderFulfillment: React.FC<OrderFulfillmentProps> = props => {
+  const {
     fulfillment,
     orderNumber,
     onOrderFulfillmentCancel,
     onTrackingCodeAdd
-  }: OrderFulfillmentProps) => {
-    const lines = maybe(() => fulfillment.lines);
-    const status = maybe(() => fulfillment.status);
-    return (
-      <Card>
-        <CardTitle
-          title={
-            !!lines ? (
-              <StatusLabel
-                label={
-                  <>
-                    {status === FulfillmentStatus.FULFILLED
-                      ? i18n.t("Fulfilled ({{ quantity }})", {
-                          quantity: lines
-                            .map(line => line.quantity)
-                            .reduce((prev, curr) => prev + curr, 0)
-                        })
-                      : i18n.t("Cancelled ({{ quantity }})", {
-                          quantity: lines
-                            .map(line => line.quantity)
-                            .reduce((prev, curr) => prev + curr, 0)
-                        })}
-                    <Typography className={classes.orderNumber} variant="body2">
-                      {maybe(
-                        () => `#${orderNumber}-${fulfillment.fulfillmentOrder}`
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  const lines = maybe(() => fulfillment.lines);
+  const status = maybe(() => fulfillment.status);
+  const quantity = lines
+    ? lines.map(line => line.quantity).reduce((prev, curr) => prev + curr, 0)
+    : "...";
+
+  return (
+    <Card>
+      <CardTitle
+        title={
+          !!lines ? (
+            <StatusLabel
+              label={
+                <>
+                  {status === FulfillmentStatus.FULFILLED
+                    ? intl.formatMessage(
+                        {
+                          defaultMessage: "Fulfilled ({quantity})",
+                          description: "section header"
+                        },
+                        {
+                          quantity
+                        }
+                      )
+                    : intl.formatMessage(
+                        {
+                          defaultMessage: "Cancelled ({quantity})",
+                          description: "cancelled fulfillment, section header"
+                        },
+                        {
+                          quantity
+                        }
                       )}
-                    </Typography>
-                  </>
+                  <Typography className={classes.orderNumber} variant="body1">
+                    {maybe(
+                      () => `#${orderNumber}-${fulfillment.fulfillmentOrder}`
+                    )}
+                  </Typography>
+                </>
+              }
+              status={
+                status === FulfillmentStatus.FULFILLED ? "success" : "error"
+              }
+            />
+          ) : (
+            <Skeleton />
+          )
+        }
+        toolbar={
+          maybe(() => fulfillment.status) === FulfillmentStatus.FULFILLED && (
+            <CardMenu
+              menuItems={[
+                {
+                  label: intl.formatMessage({
+                    defaultMessage: "Cancel Fulfillment",
+                    description: "button"
+                  }),
+                  onSelect: onOrderFulfillmentCancel
                 }
-                status={
-                  status === FulfillmentStatus.FULFILLED ? "success" : "error"
-                }
+              ]}
+            />
+          )
+        }
+      />
+      <ResponsiveTable className={classes.table}>
+        <TableHead>
+          <TableRow>
+            <TableCell className={classes.colName}>
+              <span className={classes.colNameLabel}>
+                <FormattedMessage
+                  defaultMessage="Product"
+                  description="product name"
+                />
+              </span>
+            </TableCell>
+            <TableCell className={classes.colQuantity}>
+              <FormattedMessage
+                defaultMessage="Quantity"
+                description="ordered product quantity"
               />
-            ) : (
-              <Skeleton />
-            )
-          }
-          toolbar={
-            maybe(() => fulfillment.status) === FulfillmentStatus.FULFILLED && (
-              <CardMenu
-                menuItems={[
-                  {
-                    label: i18n.t("Cancel shipment", {
-                      context: "button"
-                    }),
-                    onSelect: onOrderFulfillmentCancel
-                  }
-                ]}
+            </TableCell>
+            <TableCell className={classes.colPrice}>
+              <FormattedMessage
+                defaultMessage="Price"
+                description="product price"
               />
-            )
-          }
-        />
-        <Table className={classes.table}>
-          <TableHead>
-            <TableRow>
-              <TableCell className={classes.colName}>
-                <span className={classes.colNameLabel}>
-                  {i18n.t("Product")}
-                </span>
-              </TableCell>
+            </TableCell>
+            <TableCell className={classes.colTotal}>
+              <FormattedMessage
+                defaultMessage="Total"
+                description="order line total price"
+              />
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {renderCollection(lines, line => (
+            <TableRow
+              className={!!line ? classes.clickableRow : undefined}
+              hover={!!line}
+              key={maybe(() => line.id)}
+            >
+              <TableCellAvatar
+                className={classes.colName}
+                thumbnail={maybe(() => line.orderLine.thumbnail.url)}
+              >
+                {maybe(() => line.orderLine.productName) || <Skeleton />}
+              </TableCellAvatar>
               <TableCell className={classes.colQuantity}>
-                {i18n.t("Quantity")}
+                {maybe(() => line.quantity) || <Skeleton />}
               </TableCell>
               <TableCell className={classes.colPrice}>
-                {i18n.t("Price")}
+                {maybe(() => line.orderLine.unitPrice.gross) ? (
+                  <Money money={line.orderLine.unitPrice.gross} />
+                ) : (
+                  <Skeleton />
+                )}
               </TableCell>
               <TableCell className={classes.colTotal}>
-                {i18n.t("Total")}
+                {maybe(
+                  () => line.quantity * line.orderLine.unitPrice.gross.amount
+                ) ? (
+                  <Money
+                    money={{
+                      amount:
+                        line.quantity * line.orderLine.unitPrice.gross.amount,
+                      currency: line.orderLine.unitPrice.gross.currency
+                    }}
+                  />
+                ) : (
+                  <Skeleton />
+                )}
               </TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
-            {renderCollection(lines, line => (
-              <TableRow
-                className={!!line ? classes.clickableRow : undefined}
-                hover={!!line}
-                key={maybe(() => line.id)}
-              >
-                <TableCellAvatar
-                  className={classes.colName}
-                  thumbnail={maybe(() => line.orderLine.thumbnail.url)}
-                >
-                  {maybe(() => line.orderLine.productName) || <Skeleton />}
-                </TableCellAvatar>
-                <TableCell className={classes.colQuantity}>
-                  {maybe(() => line.quantity) || <Skeleton />}
-                </TableCell>
-                <TableCell className={classes.colPrice}>
-                  {maybe(() => line.orderLine.unitPrice.gross) ? (
-                    <Money money={line.orderLine.unitPrice.gross} />
-                  ) : (
-                    <Skeleton />
-                  )}
-                </TableCell>
-                <TableCell className={classes.colTotal}>
-                  {maybe(
-                    () => line.quantity * line.orderLine.unitPrice.gross.amount
-                  ) ? (
-                    <Money
-                      money={{
-                        amount:
-                          line.quantity * line.orderLine.unitPrice.gross.amount,
-                        currency: line.orderLine.unitPrice.gross.currency
-                      }}
-                    />
-                  ) : (
-                    <Skeleton />
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {maybe(() => fulfillment.trackingNumber) && (
-              <TableRow>
-                <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("Tracking Number: {{ trackingNumber }}", {
-                    trackingNumber: fulfillment.trackingNumber
-                  })}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        {status === FulfillmentStatus.FULFILLED && !fulfillment.trackingNumber && (
-          <CardActions>
-            <Button color="primary" onClick={onTrackingCodeAdd}>
-              {i18n.t("Add tracking")}
-            </Button>
-          </CardActions>
-        )}
-      </Card>
-    );
-  }
-);
+          ))}
+          <TableRow>
+            <TableCell className={classes.infoRow} colSpan={numberOfColumns}>
+              <Typography color="textSecondary" variant="body2">
+                <FormattedMessage
+                  defaultMessage="Fulfilled from: {warehouseName}"
+                  description="fulfillment group"
+                  values={{
+                    warehouseName: (
+                      <Typography
+                        className={classNames(classes.infoLabel, {
+                          [classes.infoLabelWithMargin]: !!fulfillment?.trackingNumber
+                        })}
+                        color="textPrimary"
+                        variant="body2"
+                      >
+                        {getStringOrPlaceholder(fulfillment?.warehouse?.name)}
+                      </Typography>
+                    )
+                  }}
+                />
+              </Typography>
+              <Typography color="textSecondary" variant="body2">
+                {fulfillment?.trackingNumber && (
+                  <FormattedMessage
+                    defaultMessage="Tracking Number: {trackingNumber}"
+                    values={{
+                      trackingNumber: (
+                        <Typography
+                          className={classes.infoLabel}
+                          color="textPrimary"
+                          variant="body2"
+                        >
+                          {fulfillment.trackingNumber}
+                        </Typography>
+                      )
+                    }}
+                  />
+                )}
+              </Typography>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </ResponsiveTable>
+      {status === FulfillmentStatus.FULFILLED && !fulfillment.trackingNumber && (
+        <CardActions>
+          <Button color="primary" onClick={onTrackingCodeAdd}>
+            <FormattedMessage
+              defaultMessage="Add tracking"
+              description="fulfillment group tracking number"
+            />
+          </Button>
+        </CardActions>
+      )}
+    </Card>
+  );
+};
 OrderFulfillment.displayName = "OrderFulfillment";
 export default OrderFulfillment;

@@ -1,12 +1,14 @@
 import Button from "@material-ui/core/Button";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ActionDialog from "@saleor/components/ActionDialog";
 import AssignCategoriesDialog from "@saleor/components/AssignCategoryDialog";
 import AssignCollectionDialog from "@saleor/components/AssignCollectionDialog";
 import AssignProductDialog from "@saleor/components/AssignProductDialog";
 import { WindowTitle } from "@saleor/components/WindowTitle";
+import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "@saleor/config";
 import useBulkActions from "@saleor/hooks/useBulkActions";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
@@ -14,14 +16,14 @@ import usePaginator, {
   createPaginationState
 } from "@saleor/hooks/usePaginator";
 import useShop from "@saleor/hooks/useShop";
+import { commonMessages, sectionNames } from "@saleor/intl";
+import useCategorySearch from "@saleor/searches/useCategorySearch";
+import useCollectionSearch from "@saleor/searches/useCollectionSearch";
+import useProductSearch from "@saleor/searches/useProductSearch";
+import createDialogActionHandlers from "@saleor/utils/handlers/dialogActionHandlers";
 import { categoryUrl } from "../../categories/urls";
 import { collectionUrl } from "../../collections/urls";
-import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "../../config";
-import SearchCategories from "../../containers/SearchCategories";
-import SearchCollections from "../../containers/SearchCollections";
-import SearchProducts from "../../containers/SearchProducts";
-import i18n from "../../i18n";
-import { decimal, getMutationState, joinDateTime, maybe } from "../../misc";
+import { decimal, joinDateTime, maybe } from "../../misc";
 import { productUrl } from "../../products/urls";
 import {
   DiscountValueTypeEnum,
@@ -46,8 +48,8 @@ import { VoucherUpdate } from "../types/VoucherUpdate";
 import {
   voucherListUrl,
   voucherUrl,
-  VoucherUrlDialog,
-  VoucherUrlQueryParams
+  VoucherUrlQueryParams,
+  VoucherUrlDialog
 } from "../urls";
 
 interface VoucherDetailsProps {
@@ -55,7 +57,7 @@ interface VoucherDetailsProps {
   params: VoucherUrlQueryParams;
 }
 
-export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
+export const VoucherDetails: React.FC<VoucherDetailsProps> = ({
   id,
   params
 }) => {
@@ -66,6 +68,25 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
   const { isSelected, listElements, reset, toggle, toggleAll } = useBulkActions(
     params.ids
   );
+  const intl = useIntl();
+  const {
+    search: searchCategories,
+    result: searchCategoriesOpts
+  } = useCategorySearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
+  const {
+    search: searchCollections,
+    result: searchCollectionsOpts
+  } = useCollectionSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
+  const {
+    search: searchProducts,
+    result: searchProductsOpts
+  } = useProductSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
 
   const paginationState = createPaginationState(PAGINATE_BY, params);
   const changeTab = (tab: VoucherDetailsPageTab) => {
@@ -80,8 +101,8 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
   const handleVoucherDelete = (data: VoucherDelete) => {
     if (data.voucherDelete.errors.length === 0) {
       notify({
-        text: i18n.t("Removed voucher", {
-          context: "notification"
+        text: intl.formatMessage({
+          defaultMessage: "Deleted voucher"
         })
       });
       navigate(voucherListUrl(), true);
@@ -92,30 +113,15 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
     if (data.voucherUpdate.errors.length === 0) {
       closeModal();
       notify({
-        text: i18n.t("Updated voucher", {
-          context: "notification"
-        })
+        text: intl.formatMessage(commonMessages.savedChanges)
       });
     }
   };
 
-  const closeModal = () =>
-    navigate(
-      voucherUrl(id, {
-        ...params,
-        action: undefined
-      }),
-      true
-    );
-
-  const openModal = (action: VoucherUrlDialog, ids?: string[]) =>
-    navigate(
-      voucherUrl(id, {
-        ...params,
-        action,
-        ids
-      })
-    );
+  const [openModal, closeModal] = createDialogActionHandlers<
+    VoucherUrlDialog,
+    VoucherUrlQueryParams
+  >(navigate, params => voucherUrl(id, params), params);
 
   const handleCatalogueAdd = (data: VoucherCataloguesAdd) => {
     if (data.voucherCataloguesAdd.errors.length === 0) {
@@ -129,6 +135,8 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
       reset();
     }
   };
+
+  const canOpenBulkActionDialog = maybe(() => params.ids.length > 0);
 
   return (
     <TypedVoucherCataloguesRemove onCompleted={handleCatalogueRemove}>
@@ -151,38 +159,6 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                               VoucherDetailsPageTab.collections
                             ? maybe(() => data.voucher.collections.pageInfo)
                             : maybe(() => data.voucher.products.pageInfo);
-                        const formTransitionState = getMutationState(
-                          voucherUpdateOpts.called,
-                          voucherUpdateOpts.loading,
-                          maybe(
-                            () => voucherUpdateOpts.data.voucherUpdate.errors
-                          )
-                        );
-                        const assignTransitionState = getMutationState(
-                          voucherCataloguesAddOpts.called,
-                          voucherCataloguesAddOpts.loading,
-                          maybe(
-                            () =>
-                              voucherCataloguesAddOpts.data.voucherCataloguesAdd
-                                .errors
-                          )
-                        );
-                        const unassignTransitionState = getMutationState(
-                          voucherCataloguesRemoveOpts.called,
-                          voucherCataloguesRemoveOpts.loading,
-                          maybe(
-                            () =>
-                              voucherCataloguesRemoveOpts.data
-                                .voucherCataloguesRemove.errors
-                          )
-                        );
-                        const removeTransitionState = getMutationState(
-                          voucherDeleteOpts.called,
-                          voucherDeleteOpts.loading,
-                          maybe(
-                            () => voucherDeleteOpts.data.voucherDelete.errors
-                          )
-                        );
 
                         const handleCategoriesUnassign = (ids: string[]) =>
                           voucherCataloguesRemove({
@@ -225,7 +201,9 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
 
                         return (
                           <>
-                            <WindowTitle title={i18n.t("Vouchers")} />
+                            <WindowTitle
+                              title={intl.formatMessage(sectionNames.vouchers)}
+                            />
                             <VoucherDetailsPage
                               defaultCurrency={maybe(
                                 () => shop.defaultCurrency
@@ -234,10 +212,10 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                               disabled={
                                 loading || voucherCataloguesRemoveOpts.loading
                               }
-                              errors={maybe(
-                                () =>
-                                  voucherUpdateOpts.data.voucherUpdate.errors
-                              )}
+                              errors={
+                                voucherUpdateOpts.data?.voucherUpdate.errors ||
+                                []
+                              }
                               pageInfo={pageInfo}
                               onNextPage={loadNextPage}
                               onPreviousPage={loadPreviousPage}
@@ -340,7 +318,7 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                                         formData.requirementsPicker !==
                                         RequirementsPicker.ORDER
                                           ? 0
-                                          : parseFloat(formData.minAmountSpent),
+                                          : parseFloat(formData.minSpent),
                                       minCheckoutItemsQuantity:
                                         formData.requirementsPicker !==
                                         RequirementsPicker.ITEM
@@ -357,47 +335,61 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                                         "SHIPPING"
                                           ? VoucherTypeEnum.SHIPPING
                                           : formData.type,
-                                      usageLimit: parseInt(
-                                        formData.usageLimit,
-                                        10
-                                      )
+                                      usageLimit: formData.hasUsageLimit
+                                        ? parseInt(formData.usageLimit, 10)
+                                        : null
                                     }
                                   }
                                 })
                               }
                               onRemove={() => openModal("remove")}
-                              saveButtonBarState={formTransitionState}
+                              saveButtonBarState={voucherUpdateOpts.status}
                               categoryListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal("unassign-category", listElements)
+                                    openModal("unassign-category", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign category from voucher, button"
+                                    id="voucherDetailsUnassignCategory"
+                                  />
                                 </Button>
                               }
                               collectionListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal(
-                                      "unassign-collection",
-                                      listElements
-                                    )
+                                    openModal("unassign-collection", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign collection from voucher, button"
+                                    id="voucherDetailsUnassignCollection"
+                                  />
                                 </Button>
                               }
                               productListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal("unassign-product", listElements)
+                                    openModal("unassign-product", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign product from voucher, button"
+                                    id="voucherDetailsUnassignProduct"
+                                  />
                                 </Button>
                               }
                               isChecked={isSelected}
@@ -405,82 +397,66 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                               toggle={toggle}
                               toggleAll={toggleAll}
                             />
-                            <SearchCategories
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchCategories,
-                                result: searchCategoriesOpts
-                              }) => (
-                                <AssignCategoriesDialog
-                                  categories={maybe(() =>
-                                    searchCategoriesOpts.data.categories.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedCategory =>
-                                          suggestedCategory.id
-                                      )
-                                  )}
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-category"}
-                                  onFetch={searchCategories}
-                                  loading={searchCategoriesOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={categories =>
-                                    voucherCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          categories: categories.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
-                                  }
-                                />
+                            <AssignCategoriesDialog
+                              categories={maybe(() =>
+                                searchCategoriesOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedCategory => suggestedCategory.id
+                                  )
                               )}
-                            </SearchCategories>
-                            <SearchCollections
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchCollections,
-                                result: searchCollectionsOpts
-                              }) => (
-                                <AssignCollectionDialog
-                                  collections={maybe(() =>
-                                    searchCollectionsOpts.data.collections.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedCategory =>
-                                          suggestedCategory.id
+                              confirmButtonState={
+                                voucherCataloguesAddOpts.status
+                              }
+                              open={params.action === "assign-category"}
+                              onFetch={searchCategories}
+                              loading={searchCategoriesOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={categories =>
+                                voucherCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      categories: categories.map(
+                                        product => product.id
                                       )
-                                  )}
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-collection"}
-                                  onFetch={searchCollections}
-                                  loading={searchCollectionsOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={collections =>
-                                    voucherCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          collections: collections.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
+                                    }
                                   }
-                                />
+                                })
+                              }
+                            />
+                            <AssignCollectionDialog
+                              collections={maybe(() =>
+                                searchCollectionsOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedCategory => suggestedCategory.id
+                                  )
                               )}
-                            </SearchCollections>
+                              confirmButtonState={
+                                voucherCataloguesAddOpts.status
+                              }
+                              open={params.action === "assign-collection"}
+                              onFetch={searchCollections}
+                              loading={searchCollectionsOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={collections =>
+                                voucherCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      collections: collections.map(
+                                        product => product.id
+                                      )
+                                    }
+                                  }
+                                })
+                              }
+                            />
                             <DiscountCountrySelectDialog
-                              confirmButtonState={formTransitionState}
+                              confirmButtonState={voucherUpdateOpts.status}
                               countries={maybe(() => shop.countries, [])}
                               onClose={() => navigate(voucherUrl(id))}
                               onConfirm={formData =>
@@ -502,115 +478,141 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                                 []
                               )}
                             />
-                            <SearchProducts
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchProducts,
-                                result: searchProductsOpts
-                              }) => (
-                                <AssignProductDialog
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-product"}
-                                  onFetch={searchProducts}
-                                  loading={searchProductsOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={products =>
-                                    voucherCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          products: products.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
-                                  }
-                                  products={maybe(() =>
-                                    searchProductsOpts.data.products.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedProduct => suggestedProduct.id
+                            <AssignProductDialog
+                              confirmButtonState={
+                                voucherCataloguesAddOpts.status
+                              }
+                              open={params.action === "assign-product"}
+                              onFetch={searchProducts}
+                              loading={searchProductsOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={products =>
+                                voucherCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      products: products.map(
+                                        product => product.id
                                       )
-                                  )}
-                                />
+                                    }
+                                  }
+                                })
+                              }
+                              products={maybe(() =>
+                                searchProductsOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedProduct => suggestedProduct.id
+                                  )
                               )}
-                            </SearchProducts>
+                            />
                             <ActionDialog
-                              open={params.action === "unassign-category"}
-                              title={i18n.t("Unassign Categories From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-category" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage:
+                                  "Unassign Categories From Voucher",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                voucherCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleCategoriesUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> categories?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this category?} other{Are you sure you want to unassign {displayQuantity} categories?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
-                              open={params.action === "unassign-collection"}
-                              title={i18n.t("Unassign Collections From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-collection" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage:
+                                  "Unassign Collections From Voucher",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                voucherCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleCollectionsUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> collections?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this collection?} other{Are you sure you want to unassign {displayQuantity} collections?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
-                              open={params.action === "unassign-product"}
-                              title={i18n.t("Unassign Products From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-product" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage:
+                                  "Unassign Products From Voucher",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                voucherCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleProductsUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> products?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this product?} other{Are you sure you want to unassign {displayQuantity} products?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
                               open={params.action === "remove"}
-                              title={i18n.t("Remove Voucher")}
-                              confirmButtonState={removeTransitionState}
+                              title={intl.formatMessage({
+                                defaultMessage: "Delete Voucher",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={voucherDeleteOpts.status}
                               onClose={closeModal}
                               variant="delete"
                               onConfirm={() =>
@@ -619,19 +621,19 @@ export const VoucherDetails: React.StatelessComponent<VoucherDetailsProps> = ({
                                 })
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to remove <strong>{{ voucherCode }}</strong>?",
-                                    {
-                                      voucherCode: maybe(
-                                        () => data.voucher.code,
-                                        "..."
-                                      )
-                                    }
-                                  )
-                                }}
-                              />
+                              <DialogContentText>
+                                <FormattedMessage
+                                  defaultMessage="Are you sure you want to delete {voucherCode}?"
+                                  description="dialog content"
+                                  values={{
+                                    voucherCode: (
+                                      <strong>
+                                        {maybe(() => data.voucher.code, "...")}
+                                      </strong>
+                                    )
+                                  }}
+                                />
+                              </DialogContentText>
                             </ActionDialog>
                           </>
                         );

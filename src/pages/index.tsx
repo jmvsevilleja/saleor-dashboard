@@ -1,31 +1,34 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { asSortParams } from "@saleor/utils/sort";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   pageCreatePath,
   pageListPath,
   PageListUrlQueryParams,
   pagePath,
-  PageUrlQueryParams
+  PageUrlQueryParams,
+  PageListUrlSortField
 } from "./urls";
 import PageCreate from "./views/PageCreate";
 import PageDetailsComponent from "./views/PageDetails";
 import PageListComponent from "./views/PageList";
 
-const PageList: React.StatelessComponent<RouteComponentProps<any>> = ({
-  location
-}) => {
+const PageList: React.FC<RouteComponentProps<any>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: PageListUrlQueryParams = qs;
+  const params: PageListUrlQueryParams = asSortParams(
+    qs,
+    PageListUrlSortField,
+    PageListUrlSortField.title
+  );
   return <PageListComponent params={params} />;
 };
 
-const PageDetails: React.StatelessComponent<RouteComponentProps<any>> = ({
-  match
-}) => {
+const PageDetails: React.FC<RouteComponentProps<any>> = ({ match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: PageUrlQueryParams = qs;
 
@@ -37,15 +40,19 @@ const PageDetails: React.StatelessComponent<RouteComponentProps<any>> = ({
   );
 };
 
-const Component = () => (
-  <>
-    <WindowTitle title={i18n.t("Pages")} />
-    <Switch>
-      <Route exact path={pageListPath} component={PageList} />
-      <Route exact path={pageCreatePath} component={PageCreate} />
-      <Route path={pagePath(":id")} component={PageDetails} />
-    </Switch>
-  </>
-);
+const Component = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.pages)} />
+      <Switch>
+        <Route exact path={pageListPath} component={PageList} />
+        <Route exact path={pageCreatePath} component={PageCreate} />
+        <Route path={pagePath(":id")} component={PageDetails} />
+      </Switch>
+    </>
+  );
+};
 
 export default Component;

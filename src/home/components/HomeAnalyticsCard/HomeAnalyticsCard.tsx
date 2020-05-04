@@ -1,40 +1,35 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import { IconProps } from "@material-ui/core/Icon";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
-import i18n from "../../../i18n";
-
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     cardContent: {
       "&:last-child": {
-        paddingBottom: 16
+        padding: theme.spacing(2, 3)
       },
       display: "grid",
-      gridColumnGap: theme.spacing.unit * 3 + "px",
+      gridColumnGap: theme.spacing(3),
       gridTemplateColumns: "1fr 64px"
     },
     cardSpacing: {
       [theme.breakpoints.down("sm")]: {
-        marginBottom: theme.spacing.unit
+        marginBottom: theme.spacing(1)
       },
-      marginBottom: theme.spacing.unit * 3
+      marginBottom: theme.spacing(3)
     },
     cardSubtitle: {
-      color: theme.palette.text.secondary,
+      fontSize: 12,
       height: "20px",
       lineHeight: 0.9
     },
     cardTitle: {
-      fontWeight: 600 as 600
+      fontSize: 20,
+      fontWeight: 500 as 500
     },
     icon: {
       color: theme.palette.primary.contrastText,
@@ -53,16 +48,22 @@ const styles = (theme: Theme) =>
     value: {
       textAlign: "right"
     }
-  });
+  }),
+  { name: "HomeAnalyticsCard" }
+);
 
-interface HomeAnalyticsCardProps extends WithStyles<typeof styles> {
+interface HomeAnalyticsCardProps {
   icon: React.ReactElement<IconProps>;
   title: string;
   children?: React.ReactNode;
 }
 
-const HomeAnalyticsCard = withStyles(styles, { name: "HomeAnalyticsCard" })(
-  ({ children, classes, title, icon }: HomeAnalyticsCardProps) => (
+const HomeAnalyticsCard: React.FC<HomeAnalyticsCardProps> = props => {
+  const { children, title, icon } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Card className={classes.cardSpacing}>
       <CardContent className={classes.cardContent}>
         <div>
@@ -74,7 +75,10 @@ const HomeAnalyticsCard = withStyles(styles, { name: "HomeAnalyticsCard" })(
             variant="caption"
             color="textSecondary"
           >
-            {i18n.t("Today")}
+            <FormattedMessage
+              defaultMessage="Today"
+              id="homeAnalyticsCardHeader"
+            />
           </Typography>
           <Typography
             className={classes.value}
@@ -87,7 +91,7 @@ const HomeAnalyticsCard = withStyles(styles, { name: "HomeAnalyticsCard" })(
         <div className={classes.iconBackground}>{icon}</div>
       </CardContent>
     </Card>
-  )
-);
+  );
+};
 HomeAnalyticsCard.displayName = "HomeAnalyticsCard";
 export default HomeAnalyticsCard;

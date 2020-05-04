@@ -1,46 +1,53 @@
 import Card from "@material-ui/core/Card";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import classNames from "classnames";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { CountryList_shop_countries } from "../../types/CountryList";
 
-const styles = createStyles({
-  tableRow: {
-    cursor: "pointer"
+const useStyles = makeStyles(
+  {
+    tableRow: {
+      cursor: "pointer"
+    },
+    textRight: {
+      textAlign: "right"
+    }
   },
-  textRight: {
-    textAlign: "right"
-  }
-});
+  { name: "CountryList" }
+);
 
-interface CountryListProps extends WithStyles<typeof styles> {
+interface CountryListProps {
   countries: CountryList_shop_countries[];
   onRowClick: (code: string) => void;
 }
 
-const CountryList = withStyles(styles, { name: "CountryList" })(
-  ({ classes, onRowClick, countries }: CountryListProps) => (
+const CountryList: React.FC<CountryListProps> = props => {
+  const { onRowClick, countries } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Card>
-      <Table>
+      <ResponsiveTable>
         <TableHead>
           <TableRow>
             <TableCell>
-              {i18n.t("Country Code", { context: "object" })}
+              <FormattedMessage defaultMessage="Country Code" />
             </TableCell>
             <TableCell>
-              {i18n.t("Country Name", { context: "object" })}
+              <FormattedMessage defaultMessage="Country Name" />
             </TableCell>
             <TableCell className={classes.textRight}>
-              {i18n.t("Reduced Tax Rates", { context: "object" })}
+              <FormattedMessage defaultMessage="Reduced Tax Rates" />
             </TableCell>
           </TableRow>
         </TableHead>
@@ -73,15 +80,15 @@ const CountryList = withStyles(styles, { name: "CountryList" })(
             () => (
               <TableRow>
                 <TableCell colSpan={3}>
-                  {i18n.t("No countries found")}
+                  <FormattedMessage defaultMessage="No countries found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 CountryList.displayName = "CountryList";
 export default CountryList;

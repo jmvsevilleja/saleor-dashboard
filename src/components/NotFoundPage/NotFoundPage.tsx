@@ -1,27 +1,22 @@
 import Button from "@material-ui/core/Button";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
 import SVG from "react-inlinesvg";
+import { FormattedMessage } from "react-intl";
 
 import notFoundImage from "@assets/images/not-found-404.svg";
-import i18n from "@saleor/i18n";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     button: {
-      marginTop: theme.spacing.unit * 2,
+      marginTop: theme.spacing(2),
       padding: 20
     },
     container: {
       [theme.breakpoints.down("sm")]: {
         gridTemplateColumns: "1fr",
-        padding: theme.spacing.unit * 3,
+        padding: theme.spacing(3),
         width: "100%"
       },
       display: "grid",
@@ -49,28 +44,35 @@ const styles = (theme: Theme) =>
     root: {
       alignItems: "center",
       display: "flex",
-      height: "100vh",
-      width: "100vw"
+      height: "calc(100vh - 180px)"
     }
-  });
+  }),
+  { name: "NotFoundPage" }
+);
 
-interface NotFoundPageProps extends WithStyles<typeof styles> {
+interface NotFoundPageProps {
   onBack: () => void;
 }
 
-const NotFoundPage = withStyles(styles, { name: "NotFoundPage" })(
-  ({ classes, onBack }: NotFoundPageProps) => (
+const NotFoundPage: React.FC<NotFoundPageProps> = props => {
+  const { onBack } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <div className={classes.root}>
       <div className={classes.container}>
         <div className={classes.innerContainer}>
           <div>
             <Typography className={classes.header} variant="h3">
-              {i18n.t("Ooops!...")}
+              <FormattedMessage defaultMessage="Ooops!..." />
             </Typography>
             <Typography className={classes.header} variant="h4">
-              {i18n.t("Something's missing")}
+              <FormattedMessage defaultMessage="Something's missing" />
             </Typography>
-            <Typography>{i18n.t("Sorry, the page was not found")}</Typography>
+            <Typography>
+              <FormattedMessage defaultMessage="Sorry, the page was not found" />
+            </Typography>
           </div>
           <div>
             <Button
@@ -79,7 +81,10 @@ const NotFoundPage = withStyles(styles, { name: "NotFoundPage" })(
               variant="contained"
               onClick={onBack}
             >
-              {i18n.t("Go back to dashboard", { context: "button" })}
+              <FormattedMessage
+                defaultMessage="Go back to dashboard"
+                description="button"
+              />
             </Button>
           </div>
         </div>
@@ -88,7 +93,7 @@ const NotFoundPage = withStyles(styles, { name: "NotFoundPage" })(
         </div>
       </div>
     </div>
-  )
-);
+  );
+};
 NotFoundPage.displayName = "NotFoundPage";
 export default NotFoundPage;

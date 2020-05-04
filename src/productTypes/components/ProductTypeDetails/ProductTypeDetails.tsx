@@ -1,46 +1,60 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import i18n from "@saleor/i18n";
-import { FormErrors } from "@saleor/types";
+import { commonMessages } from "@saleor/intl";
+import { UserError } from "@saleor/types";
+import { getFieldError } from "@saleor/utils/errors";
 
-const styles = createStyles({
-  root: {
-    overflow: "visible"
-  }
-});
+const useStyles = makeStyles(
+  {
+    root: {
+      overflow: "visible"
+    }
+  },
+  { name: "ProductTypeDetails" }
+);
 
-interface ProductTypeDetailsProps extends WithStyles<typeof styles> {
+interface ProductTypeDetailsProps {
   data?: {
     name: string;
   };
   disabled: boolean;
-  errors: FormErrors<"name">;
+  errors: UserError[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const ProductTypeDetails = withStyles(styles, { name: "ProductTypeDetails" })(
-  ({ classes, data, disabled, errors, onChange }: ProductTypeDetailsProps) => (
+const ProductTypeDetails: React.FC<ProductTypeDetailsProps> = props => {
+  const { data, disabled, errors, onChange } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card className={classes.root}>
-      <CardTitle title={i18n.t("Information")} />
+      <CardTitle
+        title={intl.formatMessage(commonMessages.generalInformations)}
+      />
       <CardContent>
         <TextField
           disabled={disabled}
-          error={!!errors.name}
+          error={!!getFieldError(errors, "name")}
           fullWidth
-          helperText={errors.name}
-          label={i18n.t("Product Type Name")}
+          helperText={getFieldError(errors, "name")?.message}
+          label={intl.formatMessage({
+            defaultMessage: "Product Type Name"
+          })}
           name="name"
           onChange={onChange}
           value={data.name}
         />
       </CardContent>
     </Card>
-  )
-);
+  );
+};
 ProductTypeDetails.displayName = "ProductTypeDetails";
 export default ProductTypeDetails;

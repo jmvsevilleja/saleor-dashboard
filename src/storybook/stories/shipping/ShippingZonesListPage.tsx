@@ -1,7 +1,11 @@
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
-import { listActionsProps, pageListProps } from "../../../fixtures";
+import {
+  listActionsProps,
+  pageListProps,
+  adminUserPermissions
+} from "../../../fixtures";
 import ShippingZonesListPage, {
   ShippingZonesListPageProps
 } from "../../../shipping/components/ShippingZonesListPage";
@@ -17,7 +21,8 @@ const props: ShippingZonesListPageProps = {
   onBack: () => undefined,
   onRemove: () => undefined,
   onSubmit: () => undefined,
-  shippingZones
+  shippingZones,
+  userPermissions: adminUserPermissions
 };
 
 storiesOf("Views / Shipping / Shipping zones list", module)
@@ -30,6 +35,7 @@ storiesOf("Views / Shipping / Shipping zones list", module)
       shippingZones={undefined}
     />
   ))
-  .add("no data", () => (
-    <ShippingZonesListPage {...props} shippingZones={[]} />
+  .add("no data", () => <ShippingZonesListPage {...props} shippingZones={[]} />)
+  .add("no site settings permissions", () => (
+    <ShippingZonesListPage {...props} userPermissions={[]} />
   ));

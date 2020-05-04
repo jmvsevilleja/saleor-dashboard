@@ -8,18 +8,12 @@ import {
   ProductDetails_product_collections,
   ProductDetails_product_variants
 } from "@saleor/products/types/ProductDetails";
-import { UserError } from "@saleor/types";
+import { SearchProductTypes_search_edges_node_productAttributes } from "@saleor/searches/types/SearchProductTypes";
 import { ProductAttributeInput } from "../components/ProductAttributes";
 import { VariantAttributeInput } from "../components/ProductVariantAttributes";
-import { ProductCreateData_productTypes_edges_node_productAttributes } from "../types/ProductCreateData";
-import {
-  ProductVariant,
-  ProductVariant_attributes_attribute
-} from "../types/ProductVariant";
-import {
-  ProductVariantCreateData_product,
-  ProductVariantCreateData_product_productType_variantAttributes
-} from "../types/ProductVariantCreateData";
+import { ProductVariant } from "../types/ProductVariant";
+import { ProductVariantCreateData_product } from "../types/ProductVariantCreateData";
+import { ProductStockInput } from "../components/ProductStocks";
 
 export interface Collection {
   id: string;
@@ -35,7 +29,7 @@ export interface ProductType {
   hasVariants: boolean;
   id: string;
   name: string;
-  productAttributes: ProductCreateData_productTypes_edges_node_productAttributes[];
+  productAttributes: SearchProductTypes_search_edges_node_productAttributes[];
 }
 
 export function getAttributeInputFromProduct(
@@ -93,19 +87,32 @@ export function getAttributeInputFromProductType(
 }
 
 export function getAttributeInputFromVariant(
-  product: ProductVariant
+  variant: ProductVariant
 ): VariantAttributeInput[] {
   return maybe(
     (): VariantAttributeInput[] =>
-      product.attributes.map(attribute => ({
+      variant.attributes.map(attribute => ({
         data: {
           values: attribute.attribute.values
         },
         id: attribute.attribute.id,
         label: attribute.attribute.name,
-        value: attribute.value.slug
+        value: maybe(() => attribute.values[0].slug, null)
       })),
     []
+  );
+}
+
+export function getStockInputFromVariant(
+  variant: ProductVariant
+): ProductStockInput[] {
+  return (
+    variant?.stocks.map(stock => ({
+      data: null,
+      id: stock.warehouse.id,
+      label: stock.warehouse.name,
+      value: stock.quantity.toString()
+    })) || []
   );
 }
 
@@ -122,6 +129,17 @@ export function getVariantAttributeInputFromProduct(
       value: ""
     }))
   );
+}
+
+export function getStockInputFromProduct(
+  product: ProductDetails_product
+): ProductStockInput[] {
+  return product?.variants[0]?.stocks.map(stock => ({
+    data: null,
+    id: stock.warehouse.id,
+    label: stock.warehouse.name,
+    value: stock.quantity.toString()
+  }));
 }
 
 export function getCollectionInput(
@@ -160,7 +178,7 @@ export interface ProductUpdatePageFormData {
   seoDescription: string;
   seoTitle: string;
   sku: string;
-  stockQuantity: number;
+  trackInventory: boolean;
 }
 
 export function getProductUpdatePageFormData(
@@ -181,44 +199,15 @@ export function getProductUpdatePageFormData(
     publicationDate: maybe(() => product.publicationDate, ""),
     seoDescription: maybe(() => product.seoDescription, ""),
     seoTitle: maybe(() => product.seoTitle, ""),
-    sku: maybe(() =>
-      product.productType.hasVariants
-        ? undefined
-        : variants && variants[0]
-        ? variants[0].sku
-        : undefined
+    sku: maybe(
+      () =>
+        product.productType.hasVariants
+          ? undefined
+          : variants && variants[0]
+          ? variants[0].sku
+          : undefined,
+      ""
     ),
-    stockQuantity: maybe(() =>
-      product.productType.hasVariants
-        ? undefined
-        : variants && variants[0]
-        ? variants[0].quantity
-        : undefined
-    )
+    trackInventory: !!product?.variants[0]?.trackInventory
   };
-}
-
-export function getVariantAttributeErrors(
-  errors: UserError[],
-  variantAttributes: Array<
-    | ProductVariantCreateData_product_productType_variantAttributes
-    | ProductVariant_attributes_attribute
-  >
-): Record<string, string> {
-  return maybe(
-    () =>
-      errors.reduce((acc, err) => {
-        const slug = err.field.split(":")[1];
-        const attribute = variantAttributes.find(
-          attribute => attribute.slug === slug
-        );
-
-        if (!!attribute) {
-          acc[attribute.id] = err.message;
-        }
-
-        return acc;
-      }, {}),
-    {}
-  );
 }

@@ -1,19 +1,14 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import Skeleton from "@saleor/components/Skeleton";
-import i18n from "../../../i18n";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     headerContainer: {
-      marginBottom: theme.spacing.unit * 3
+      marginBottom: theme.spacing(3)
     },
     pageHeader: {
       fontWeight: 600 as 600
@@ -21,31 +16,48 @@ const styles = (theme: Theme) =>
     subtitle: {
       color: theme.typography.caption.color
     }
-  });
+  }),
+  { name: "HomeHeader" }
+);
 
-interface HomeOrdersCardProps extends WithStyles<typeof styles> {
+interface HomeOrdersCardProps {
   userName: string;
 }
 
-const HomeOrdersCard = withStyles(styles, { name: "HomeOrdersCard" })(
-  ({ classes, userName }: HomeOrdersCardProps) => (
+const HomeOrdersCard: React.FC<HomeOrdersCardProps> = props => {
+  const { userName } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <div className={classes.headerContainer} data-tc="home-header">
       <Typography className={classes.pageHeader} variant="h4">
         {userName ? (
-          i18n.t("Hello there, {{userName}}", { userName })
+          <FormattedMessage
+            defaultMessage="Hello there, {userName}"
+            description="header"
+            id="homeHeaderText"
+            values={{
+              userName
+            }}
+          />
         ) : (
           <Skeleton style={{ width: "10em" }} />
         )}
       </Typography>
       <Typography className={classes.subtitle}>
         {userName ? (
-          i18n.t("Here is some information we gathered about your store")
+          <FormattedMessage
+            defaultMessage="Here is some information we gathered about your store"
+            description="subheader"
+            id="homeHeaderTextCaption"
+          />
         ) : (
           <Skeleton style={{ width: "10em" }} />
         )}
       </Typography>
     </div>
-  )
-);
+  );
+};
 HomeOrdersCard.displayName = "HomeOrdersCard";
 export default HomeOrdersCard;

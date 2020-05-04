@@ -1,9 +1,11 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { asSortParams } from "@saleor/utils/sort";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   customerAddPath,
   customerAddressesPath,
@@ -11,27 +13,30 @@ import {
   customerListPath,
   CustomerListUrlQueryParams,
   customerPath,
-  CustomerUrlQueryParams
+  CustomerUrlQueryParams,
+  CustomerListUrlSortField
 } from "./urls";
 import CustomerAddressesViewComponent from "./views/CustomerAddresses";
 import CustomerCreateView from "./views/CustomerCreate";
 import CustomerDetailsViewComponent from "./views/CustomerDetails";
 import CustomerListViewComponent from "./views/CustomerList";
 
-const CustomerListView: React.StatelessComponent<RouteComponentProps<{}>> = ({
-  location
-}) => {
+const CustomerListView: React.FC<RouteComponentProps<{}>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: CustomerListUrlQueryParams = qs;
+  const params: CustomerListUrlQueryParams = asSortParams(
+    qs,
+    CustomerListUrlSortField
+  );
+
   return <CustomerListViewComponent params={params} />;
 };
 
 interface CustomerDetailsRouteParams {
   id: string;
 }
-const CustomerDetailsView: React.StatelessComponent<
-  RouteComponentProps<CustomerDetailsRouteParams>
-> = ({ location, match }) => {
+const CustomerDetailsView: React.FC<RouteComponentProps<
+  CustomerDetailsRouteParams
+>> = ({ location, match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: CustomerUrlQueryParams = qs;
 
@@ -46,9 +51,9 @@ const CustomerDetailsView: React.StatelessComponent<
 interface CustomerAddressesRouteParams {
   id: string;
 }
-const CustomerAddressesView: React.StatelessComponent<
-  RouteComponentProps<CustomerAddressesRouteParams>
-> = ({ match }) => {
+const CustomerAddressesView: React.FC<RouteComponentProps<
+  CustomerAddressesRouteParams
+>> = ({ match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: CustomerAddressesUrlQueryParams = qs;
 
@@ -60,17 +65,21 @@ const CustomerAddressesView: React.StatelessComponent<
   );
 };
 
-export const CustomerSection: React.StatelessComponent<{}> = () => (
-  <>
-    <WindowTitle title={i18n.t("Customers")} />
-    <Switch>
-      <Route exact path={customerListPath} component={CustomerListView} />
-      <Route exact path={customerAddPath} component={CustomerCreateView} />
-      <Route
-        path={customerAddressesPath(":id")}
-        component={CustomerAddressesView}
-      />
-      <Route path={customerPath(":id")} component={CustomerDetailsView} />
-    </Switch>
-  </>
-);
+export const CustomerSection: React.FC<{}> = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.customers)} />
+      <Switch>
+        <Route exact path={customerListPath} component={CustomerListView} />
+        <Route exact path={customerAddPath} component={CustomerCreateView} />
+        <Route
+          path={customerAddressesPath(":id")}
+          component={CustomerAddressesView}
+        />
+        <Route path={customerPath(":id")} component={CustomerDetailsView} />
+      </Switch>
+    </>
+  );
+};

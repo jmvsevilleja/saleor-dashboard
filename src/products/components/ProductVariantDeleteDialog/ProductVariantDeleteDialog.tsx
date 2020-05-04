@@ -4,21 +4,17 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
-import i18n from "../../../i18n";
+import { buttonMessages } from "@saleor/intl";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     deleteButton: {
       "&:hover": {
         backgroundColor: theme.palette.error.main
@@ -26,10 +22,11 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.error.main,
       color: theme.palette.error.contrastText
     }
-  });
+  }),
+  { name: "ProductVariantDeleteDialog" }
+);
 
-export interface ProductVariantDeleteDialogProps
-  extends WithStyles<typeof styles> {
+export interface ProductVariantDeleteDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
   open: boolean;
   name: string;
@@ -37,34 +34,35 @@ export interface ProductVariantDeleteDialogProps
   onConfirm?();
 }
 
-const ProductVariantDeleteDialog = withStyles(styles, {
-  name: "ProductVariantDeleteDialog"
-})(
-  ({
-    classes,
-    confirmButtonState,
-    name,
-    open,
-    onConfirm,
-    onClose
-  }: ProductVariantDeleteDialogProps) => (
+const ProductVariantDeleteDialog: React.FC<
+  ProductVariantDeleteDialogProps
+> = props => {
+  const { confirmButtonState, name, open, onConfirm, onClose } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Dialog onClose={onClose} open={open}>
       <DialogTitle>
-        {i18n.t("Delete variant", { context: "title" })}
+        <FormattedMessage
+          defaultMessage="Delete Variant"
+          description="dialog header"
+        />
       </DialogTitle>
       <DialogContent>
-        <DialogContentText
-          dangerouslySetInnerHTML={{
-            __html: i18n.t(
-              "Are you sure you want to remove <strong>{{name}}</strong>?",
-              { name }
-            )
-          }}
-        />
+        <DialogContentText>
+          <FormattedMessage
+            defaultMessage="Are you sure you want to delete {name}?"
+            description="delete product variant"
+            values={{
+              name
+            }}
+          />
+        </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>
-          {i18n.t("Cancel", { context: "button" })}
+          <FormattedMessage {...buttonMessages.back} />
         </Button>
         <ConfirmButton
           transitionState={confirmButtonState}
@@ -72,11 +70,14 @@ const ProductVariantDeleteDialog = withStyles(styles, {
           variant="contained"
           onClick={onConfirm}
         >
-          {i18n.t("Delete variant", { context: "button" })}
+          <FormattedMessage
+            defaultMessage="Delete variant"
+            description="button"
+          />
         </ConfirmButton>
       </DialogActions>
     </Dialog>
-  )
-);
+  );
+};
 ProductVariantDeleteDialog.displayName = "ProductVariantDeleteDialog";
 export default ProductVariantDeleteDialog;

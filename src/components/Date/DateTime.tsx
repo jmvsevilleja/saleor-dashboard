@@ -12,10 +12,7 @@ interface DateTimeProps {
   plain?: boolean;
 }
 
-export const DateTime: React.StatelessComponent<DateTimeProps> = ({
-  date,
-  plain
-}) => {
+export const DateTime: React.FC<DateTimeProps> = ({ date, plain }) => {
   const getTitle = (value: string, locale?: string, tz?: string) => {
     let date = moment(value).locale(locale);
     if (tz !== undefined) {
@@ -27,7 +24,7 @@ export const DateTime: React.StatelessComponent<DateTimeProps> = ({
     <TimezoneConsumer>
       {tz => (
         <LocaleConsumer>
-          {locale => (
+          {({ locale }) => (
             <Consumer>
               {currentDate =>
                 plain ? (

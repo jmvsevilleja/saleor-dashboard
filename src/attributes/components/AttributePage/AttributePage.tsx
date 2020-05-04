@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 import slugify from "slugify";
 
 import AppHeader from "@saleor/components/AppHeader";
@@ -9,10 +10,11 @@ import Form from "@saleor/components/Form";
 import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
-import i18n from "@saleor/i18n";
+import { sectionNames } from "@saleor/intl";
 import { maybe } from "@saleor/misc";
-import { ReorderAction, UserError } from "@saleor/types";
+import { ReorderAction } from "@saleor/types";
 import { AttributeInputTypeEnum } from "@saleor/types/globalTypes";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
 import {
   AttributeDetailsFragment,
   AttributeDetailsFragment_values
@@ -24,7 +26,7 @@ import AttributeValues from "../AttributeValues";
 export interface AttributePageProps {
   attribute: AttributeDetailsFragment | null;
   disabled: boolean;
-  errors: UserError[];
+  errors: ProductErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   values: AttributeDetailsFragment_values[];
   onBack: () => void;
@@ -37,6 +39,7 @@ export interface AttributePageProps {
 }
 
 export interface AttributePageFormData {
+  availableInGrid: boolean;
   filterableInDashboard: boolean;
   inputType: AttributeInputTypeEnum;
   filterableInStorefront: boolean;
@@ -61,9 +64,11 @@ const AttributePage: React.FC<AttributePageProps> = ({
   onValueReorder,
   onValueUpdate
 }) => {
+  const intl = useIntl();
   const initialForm: AttributePageFormData =
     attribute === null
       ? {
+          availableInGrid: true,
           filterableInDashboard: true,
           filterableInStorefront: true,
           inputType: AttributeInputTypeEnum.DROPDOWN,
@@ -74,6 +79,7 @@ const AttributePage: React.FC<AttributePageProps> = ({
           visibleInStorefront: true
         }
       : {
+          availableInGrid: maybe(() => attribute.availableInGrid, true),
           filterableInDashboard: maybe(
             () => attribute.filterableInDashboard,
             true
@@ -103,15 +109,18 @@ const AttributePage: React.FC<AttributePageProps> = ({
     });
 
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={handleSubmit}>
-      {({ change, errors: formErrors, data, submit }) => (
+    <Form initial={initialForm} onSubmit={handleSubmit}>
+      {({ change, data, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Attributes")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.attributes)}
+          </AppHeader>
           <PageHeader
             title={
               attribute === null
-                ? i18n.t("Create New Attribute", {
-                    context: "page title"
+                ? intl.formatMessage({
+                    defaultMessage: "Create New Attribute",
+                    description: "page title"
                   })
                 : maybe(() => attribute.name)
             }
@@ -122,7 +131,7 @@ const AttributePage: React.FC<AttributePageProps> = ({
                 canChangeType={attribute === null}
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -138,7 +147,7 @@ const AttributePage: React.FC<AttributePageProps> = ({
             <div>
               <AttributeProperties
                 data={data}
-                errors={formErrors}
+                errors={errors}
                 disabled={disabled}
                 onChange={change}
               />

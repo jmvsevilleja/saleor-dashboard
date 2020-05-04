@@ -1,12 +1,25 @@
 import gql from "graphql-tag";
 
-import { TypedQuery } from "../queries";
+import makeQuery from "@saleor/hooks/makeQuery";
+import { pageInfoFragment } from "../queries";
 import {
   CategoryDetails,
   CategoryDetailsVariables
 } from "./types/CategoryDetails";
 import { RootCategories } from "./types/RootCategories";
 
+export const categoryFragment = gql`
+  fragment CategoryFragment on Category {
+    id
+    name
+    children {
+      totalCount
+    }
+    products {
+      totalCount
+    }
+  }
+`;
 export const categoryDetailsFragment = gql`
   fragment CategoryDetailsFragment on Category {
     id
@@ -25,11 +38,15 @@ export const categoryDetailsFragment = gql`
 `;
 
 export const rootCategories = gql`
+  ${categoryFragment}
+  ${pageInfoFragment}
   query RootCategories(
     $first: Int
     $after: String
     $last: Int
     $before: String
+    $filter: CategoryFilterInput
+    $sort: CategorySortingInput
   ) {
     categories(
       level: 0
@@ -37,34 +54,28 @@ export const rootCategories = gql`
       after: $after
       last: $last
       before: $before
+      filter: $filter
+      sortBy: $sort
     ) {
       edges {
         node {
-          id
-          name
-          children {
-            totalCount
-          }
-          products {
-            totalCount
-          }
+          ...CategoryFragment
         }
       }
       pageInfo {
-        endCursor
-        hasNextPage
-        hasPreviousPage
-        startCursor
+        ...PageInfoFragment
       }
     }
   }
 `;
-export const TypedRootCategoriesQuery = TypedQuery<RootCategories, {}>(
+export const useRootCategoriesQuery = makeQuery<RootCategories, {}>(
   rootCategories
 );
 
 export const categoryDetails = gql`
+  ${categoryFragment}
   ${categoryDetailsFragment}
+  ${pageInfoFragment}
   query CategoryDetails(
     $id: ID!
     $first: Int
@@ -74,26 +85,19 @@ export const categoryDetails = gql`
   ) {
     category(id: $id) {
       ...CategoryDetailsFragment
-      children(first: 20) {
+      children(first: $first, after: $after, last: $last, before: $before) {
         edges {
           node {
-            id
-            name
-            children {
-              totalCount
-            }
-            products {
-              totalCount
-            }
+            ...CategoryFragment
           }
+        }
+        pageInfo {
+          ...PageInfoFragment
         }
       }
       products(first: $first, after: $after, last: $last, before: $before) {
         pageInfo {
-          endCursor
-          hasNextPage
-          hasPreviousPage
-          startCursor
+          ...PageInfoFragment
         }
         edges {
           cursor
@@ -118,7 +122,7 @@ export const categoryDetails = gql`
     }
   }
 `;
-export const TypedCategoryDetailsQuery = TypedQuery<
+export const useCategoryDetailsQuery = makeQuery<
   CategoryDetails,
   CategoryDetailsVariables
 >(categoryDetails);

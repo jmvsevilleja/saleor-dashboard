@@ -4,14 +4,18 @@
     "esModuleInterop": true,
     "jsx": "react",
     "lib": ["es2017", "dom", "esnext"],
+    "skipLibCheck": true,
     "sourceMap": true,
     "target": "es5",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
       "@assets/*": ["assets/*"],
-      "@saleor/*": ["src/*"]
-    }
+      "@locale/*": ["locale/*"],
+      "@saleor/*": ["src/*"],
+      "@test/*": ["testUtils/*"]
+    },
+    "resolveJsonModule": true
   },
   "exclude": ["node_modules"]
 }

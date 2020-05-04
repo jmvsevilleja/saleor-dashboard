@@ -1,14 +1,9 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import classNames from "classnames";
 import React from "react";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     "@keyframes skeleton-animation": {
       "0%": {
         opacity: 0.6
@@ -30,16 +25,22 @@ const styles = (theme: Theme) =>
       height: "0.8em",
       margin: "0.2em 0"
     }
-  });
+  }),
+  { name: "Skeleton" }
+);
 
-interface SkeletonProps extends WithStyles<typeof styles> {
+interface SkeletonProps {
   className?: string;
   primary?: boolean;
   style?: React.CSSProperties;
 }
 
-const Skeleton = withStyles(styles, { name: "Skeleton" })(
-  ({ className, classes, primary, style }: SkeletonProps) => (
+const Skeleton: React.FC<SkeletonProps> = props => {
+  const { className, primary, style } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <span
       className={classNames(classes.skeleton, className, {
         [classes.primary]: primary
@@ -48,8 +49,8 @@ const Skeleton = withStyles(styles, { name: "Skeleton" })(
     >
       &zwnj;
     </span>
-  )
-);
+  );
+};
 
 Skeleton.displayName = "Skeleton";
 export default Skeleton;

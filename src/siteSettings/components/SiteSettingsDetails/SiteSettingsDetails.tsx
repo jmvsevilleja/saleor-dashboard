@@ -2,80 +2,92 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import FormSpacer from "@saleor/components/FormSpacer";
-import i18n from "../../../i18n";
+import { commonMessages } from "@saleor/intl";
+import { getFormErrors } from "@saleor/utils/errors";
+import { ShopErrorFragment } from "@saleor/siteSettings/types/ShopErrorFragment";
+import getShopErrorMessage from "@saleor/utils/errors/shop";
 import { SiteSettingsPageFormData } from "../SiteSettingsPage";
 
 interface SiteSettingsDetailsProps {
   data: SiteSettingsPageFormData;
-  errors: Partial<{
-    description: string;
-    domain: string;
-    name: string;
-  }>;
+  errors: ShopErrorFragment[];
   disabled: boolean;
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const SiteSettingsDetails: React.StatelessComponent<
-  SiteSettingsDetailsProps
-> = ({ data, disabled, errors, onChange }) => (
-  <Card>
-    <CardTitle
-      title={i18n.t("General Information", {
-        context: "store configuration"
-      })}
-    />
-    <CardContent>
-      <TextField
-        disabled={disabled}
-        error={!!errors.name}
-        fullWidth
-        name="name"
-        label={i18n.t("Name of your store")}
-        helperText={
-          errors.name ||
-          i18n.t("Name of your store is shown on tab in web browser")
-        }
-        value={data.name}
-        onChange={onChange}
+const SiteSettingsDetails: React.FC<SiteSettingsDetailsProps> = ({
+  data,
+  disabled,
+  errors,
+  onChange
+}) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["name", "domain", "description"], errors);
+
+  return (
+    <Card>
+      <CardTitle
+        title={intl.formatMessage(commonMessages.generalInformations)}
       />
-      <FormSpacer />
-      <TextField
-        disabled={disabled}
-        error={!!errors.domain}
-        fullWidth
-        name="domain"
-        label={i18n.t("URL of your online store")}
-        helperText={errors.domain}
-        value={data.domain}
-        onChange={onChange}
-      />
-      <FormSpacer />
-      <TextField
-        disabled={disabled}
-        error={!!errors.domain}
-        fullWidth
-        name="description"
-        label={i18n.t("Store Description", {
-          context: "field label"
-        })}
-        helperText={
-          errors.description ||
-          i18n.t(
-            "Store description is shown on taskbar after your store name",
-            {
-              context: "help text"
-            }
-          )
-        }
-        value={data.description}
-        onChange={onChange}
-      />
-    </CardContent>
-  </Card>
-);
+      <CardContent>
+        <TextField
+          disabled={disabled}
+          error={!!formErrors.name}
+          fullWidth
+          name="name"
+          label={intl.formatMessage({
+            defaultMessage: "Name of your store"
+          })}
+          helperText={
+            getShopErrorMessage(formErrors.name, intl) ||
+            intl.formatMessage({
+              defaultMessage:
+                "Name of your store is shown on tab in web browser"
+            })
+          }
+          value={data.name}
+          onChange={onChange}
+        />
+        <FormSpacer />
+        <TextField
+          disabled={disabled}
+          error={!!formErrors.domain}
+          fullWidth
+          name="domain"
+          label={intl.formatMessage({
+            defaultMessage: "URL of your online store"
+          })}
+          helperText={getShopErrorMessage(formErrors.domain, intl)}
+          value={data.domain}
+          onChange={onChange}
+        />
+        <FormSpacer />
+        <TextField
+          disabled={disabled}
+          error={!!formErrors.description}
+          fullWidth
+          name="description"
+          label={intl.formatMessage({
+            defaultMessage: "Store Description"
+          })}
+          helperText={
+            getShopErrorMessage(formErrors.description, intl) ||
+            intl.formatMessage({
+              defaultMessage:
+                "Store description is shown on taskbar after your store name"
+            })
+          }
+          value={data.description}
+          onChange={onChange}
+        />
+      </CardContent>
+    </Card>
+  );
+};
 SiteSettingsDetails.displayName = "SiteSettingsDetails";
 export default SiteSettingsDetails;

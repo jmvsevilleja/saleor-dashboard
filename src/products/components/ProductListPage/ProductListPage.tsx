@@ -1,128 +1,176 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-import { Theme } from "@material-ui/core/styles";
-import AddIcon from "@material-ui/icons/Add";
-import makeStyles from "@material-ui/styles/makeStyles";
+import makeStyles from "@material-ui/core/styles/makeStyles";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
-import { CategoryDetails_category_products_edges_node } from "@saleor/categories/types/CategoryDetails";
 import ColumnPicker, {
   ColumnPickerChoice
 } from "@saleor/components/ColumnPicker";
 import Container from "@saleor/components/Container";
 import PageHeader from "@saleor/components/PageHeader";
-import ProductList from "@saleor/components/ProductList";
 import { ProductListColumns } from "@saleor/config";
-import useStateFromProps from "@saleor/hooks/useStateFromProps";
-import i18n from "@saleor/i18n";
-import { FilterPageProps, ListActions, PageListProps } from "@saleor/types";
-import { toggle } from "@saleor/utils/lists";
-import { ProductListUrlFilters } from "../../urls";
-import ProductListFilter from "../ProductListFilter";
+import { sectionNames } from "@saleor/intl";
+import {
+  AvailableInGridAttributes_availableInGrid_edges_node,
+  AvailableInGridAttributes_grid_edges_node
+} from "@saleor/products/types/AvailableInGridAttributes";
+import { ProductList_products_edges_node } from "@saleor/products/types/ProductList";
+import {
+  FetchMoreProps,
+  FilterPageProps,
+  ListActions,
+  PageListProps,
+  SortPage
+} from "@saleor/types";
+import FilterBar from "@saleor/components/FilterBar";
+import { ProductListUrlSortField } from "../../urls";
+import ProductList from "../ProductList";
+import {
+  createFilterStructure,
+  ProductFilterKeys,
+  ProductListFilterOpts
+} from "./filters";
 
 export interface ProductListPageProps
   extends PageListProps<ProductListColumns>,
     ListActions,
-    FilterPageProps<ProductListUrlFilters> {
+    FilterPageProps<ProductFilterKeys, ProductListFilterOpts>,
+    FetchMoreProps,
+    SortPage<ProductListUrlSortField> {
+  activeAttributeSortId: string;
+  availableInGridAttributes: AvailableInGridAttributes_availableInGrid_edges_node[];
   currencySymbol: string;
-  products: CategoryDetails_category_products_edges_node[];
+  gridAttributes: AvailableInGridAttributes_grid_edges_node[];
+  totalGridAttributes: number;
+  products: ProductList_products_edges_node[];
 }
 
-const useStyles = makeStyles((theme: Theme) => ({
-  columnPicker: {
-    marginRight: theme.spacing.unit * 3
-  }
-}));
+const useStyles = makeStyles(
+  theme => ({
+    columnPicker: {
+      marginRight: theme.spacing(3)
+    }
+  }),
+  { name: "ProductListPage" }
+);
 
 export const ProductListPage: React.FC<ProductListPageProps> = props => {
   const {
     currencySymbol,
     currentTab,
     defaultSettings,
-    filtersList,
-    filterTabs,
+    gridAttributes,
+    availableInGridAttributes,
+    filterOpts,
+    hasMore,
     initialSearch,
+    loading,
     settings,
+    tabs,
+    totalGridAttributes,
     onAdd,
     onAll,
+    onFetchMore,
+    onFilterChange,
     onSearchChange,
-    onFilterAdd,
-    onFilterSave,
     onTabChange,
-    onFilterDelete,
+    onTabDelete,
+    onTabSave,
     onUpdateListSettings,
     ...listProps
   } = props;
+  const intl = useIntl();
   const classes = useStyles(props);
-  const [selectedColumns, setSelectedColumns] = useStateFromProps(
-    settings.columns
-  );
 
-  const handleCancel = React.useCallback(
-    () => setSelectedColumns(settings.columns),
-    [settings.columns]
-  );
+  const handleSave = (columns: ProductListColumns[]) =>
+    onUpdateListSettings("columns", columns);
 
-  const handleColumnToggle = (column: ProductListColumns) =>
-    setSelectedColumns(prevSelectedColumns =>
-      toggle(column, prevSelectedColumns, (a, b) => a === b)
-    );
-
-  const handleReset = () => setSelectedColumns(defaultSettings.columns);
-
-  const handleSave = () => onUpdateListSettings("columns", selectedColumns);
+  const filterStructure = createFilterStructure(intl, filterOpts);
 
   const columns: ColumnPickerChoice[] = [
     {
-      label: i18n.t("Published"),
+      label: intl.formatMessage({
+        defaultMessage: "Published",
+        description: "product status"
+      }),
       value: "isPublished" as ProductListColumns
     },
     {
-      label: i18n.t("Price"),
+      label: intl.formatMessage({
+        defaultMessage: "Price",
+        description: "product price"
+      }),
       value: "price" as ProductListColumns
     },
     {
-      label: i18n.t("Type"),
+      label: intl.formatMessage({
+        defaultMessage: "Type",
+        description: "product type"
+      }),
       value: "productType" as ProductListColumns
-    }
+    },
+    ...availableInGridAttributes.map(attribute => ({
+      label: attribute.name,
+      value: `attribute:${attribute.id}`
+    }))
   ];
 
   return (
     <Container>
-      <PageHeader title={i18n.t("Products")}>
+      <PageHeader title={intl.formatMessage(sectionNames.products)}>
         <ColumnPicker
           className={classes.columnPicker}
           columns={columns}
-          selectedColumns={selectedColumns}
-          onColumnToggle={handleColumnToggle}
-          onCancel={handleCancel}
-          onReset={handleReset}
+          defaultColumns={defaultSettings.columns}
+          hasMore={hasMore}
+          loading={loading}
+          initialColumns={settings.columns}
+          total={
+            columns.length -
+            availableInGridAttributes.length +
+            totalGridAttributes
+          }
+          onFetchMore={onFetchMore}
           onSave={handleSave}
         />
-        <Button onClick={onAdd} color="primary" variant="contained">
-          {i18n.t("Add product")} <AddIcon />
+        <Button
+          onClick={onAdd}
+          color="primary"
+          variant="contained"
+          data-tc="add-product"
+        >
+          <FormattedMessage
+            defaultMessage="Create Product"
+            description="button"
+          />
         </Button>
       </PageHeader>
       <Card>
-        <ProductListFilter
-          allTabLabel={i18n.t("All Products")}
+        <FilterBar
           currencySymbol={currencySymbol}
           currentTab={currentTab}
-          filterLabel={i18n.t("Select all products where:")}
-          filterTabs={filterTabs}
-          filtersList={filtersList}
           initialSearch={initialSearch}
-          searchPlaceholder={i18n.t("Search Products...")}
           onAll={onAll}
+          onFilterChange={onFilterChange}
           onSearchChange={onSearchChange}
-          onFilterAdd={onFilterAdd}
-          onFilterSave={onFilterSave}
           onTabChange={onTabChange}
-          onFilterDelete={onFilterDelete}
+          onTabDelete={onTabDelete}
+          onTabSave={onTabSave}
+          tabs={tabs}
+          allTabLabel={intl.formatMessage({
+            defaultMessage: "All Products",
+            description: "tab name"
+          })}
+          filterStructure={filterStructure}
+          searchPlaceholder={intl.formatMessage({
+            defaultMessage: "Search Products..."
+          })}
         />
         <ProductList
           {...listProps}
-          settings={{ ...settings, columns: selectedColumns }}
+          gridAttributes={gridAttributes}
+          settings={settings}
           onUpdateListSettings={onUpdateListSettings}
         />
       </Card>

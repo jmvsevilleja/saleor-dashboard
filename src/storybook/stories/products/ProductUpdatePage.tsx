@@ -3,11 +3,13 @@ import React from "react";
 
 import placeholderImage from "@assets/images/placeholder255x255.png";
 import { collections } from "@saleor/collections/fixtures";
-import { listActionsProps } from "@saleor/fixtures";
+import { fetchMoreProps, listActionsProps } from "@saleor/fixtures";
 import ProductUpdatePage, {
   ProductUpdatePageProps
 } from "@saleor/products/components/ProductUpdatePage";
 import { product as productFixture } from "@saleor/products/fixtures";
+import { ProductUpdatePageFormData } from "@saleor/products/utils/data";
+import { ProductErrorCode } from "@saleor/types/globalTypes";
 import Decorator from "../../Decorator";
 
 const product = productFixture(placeholderImage);
@@ -20,17 +22,19 @@ const props: ProductUpdatePageProps = {
   errors: [],
   fetchCategories: () => undefined,
   fetchCollections: () => undefined,
+  fetchMoreCategories: fetchMoreProps,
+  fetchMoreCollections: fetchMoreProps,
   header: product.name,
   images: product.images,
-  onAttributesEdit: () => undefined,
   onBack: () => undefined,
   onDelete: () => undefined,
   onImageDelete: () => undefined,
   onImageUpload: () => undefined,
-  onProductShow: () => undefined,
   onSubmit: () => undefined,
   onVariantAdd: () => undefined,
   onVariantShow: () => undefined,
+  onVariantsAdd: () => undefined,
+  onWarehousesEdit: () => undefined,
   placeholderImage,
   product,
   saveButtonBarState: "default",
@@ -62,5 +66,66 @@ storiesOf("Views / Products / Product edit", module)
       product={undefined}
       collections={undefined}
       images={undefined}
+    />
+  ))
+  .add("no variants", () => (
+    <ProductUpdatePage
+      {...props}
+      product={{
+        ...props.product,
+        productType: {
+          ...product.productType,
+          hasVariants: false
+        }
+      }}
+    />
+  ))
+  .add("no stock and no variants", () => (
+    <ProductUpdatePage
+      {...props}
+      product={{
+        ...product,
+        productType: {
+          ...product.productType,
+          hasVariants: false
+        },
+        variants: [
+          {
+            ...product.variants[0],
+            stocks: []
+          }
+        ]
+      }}
+    />
+  ))
+  .add("no product attributes", () => (
+    <ProductUpdatePage
+      {...props}
+      product={{
+        ...props.product,
+        attributes: []
+      }}
+    />
+  ))
+  .add("form errors", () => (
+    <ProductUpdatePage
+      {...props}
+      errors={([
+        "basePrice",
+        "category",
+        "chargeTaxes",
+        "collections",
+        "isPublished",
+        "name",
+        "publicationDate",
+        "seoDescription",
+        "seoTitle",
+        "sku",
+        "stockQuantity"
+      ] as Array<keyof ProductUpdatePageFormData>).map(field => ({
+        __typename: "ProductError",
+        code: ProductErrorCode.INVALID,
+        field
+      }))}
     />
   ));

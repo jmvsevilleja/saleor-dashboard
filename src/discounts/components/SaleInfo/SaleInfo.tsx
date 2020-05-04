@@ -1,62 +1,55 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import {
-  createStyles,
-  Theme,
-  WithStyles,
-  withStyles
-} from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import i18n from "../../../i18n";
+import { commonMessages } from "@saleor/intl";
+import { getFormErrors } from "@saleor/utils/errors";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import getDiscountErrorMessage from "@saleor/utils/errors/discounts";
 import { FormData } from "../SaleDetailsPage";
 
 export interface SaleInfoProps {
   data: FormData;
   disabled: boolean;
-  errors: {
-    name?: string;
-  };
+  errors: DiscountErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
-    root: {
-      display: "grid",
-      gridColumnGap: theme.spacing.unit * 2 + "px",
-      gridTemplateColumns: "3fr 1fr"
-    }
-  });
+const SaleInfo: React.FC<SaleInfoProps> = ({
+  data,
+  disabled,
+  errors,
+  onChange
+}) => {
+  const intl = useIntl();
 
-const SaleInfo = withStyles(styles, {
-  name: "SaleInfo"
-})(
-  ({
-    classes,
-    data,
-    disabled,
-    errors,
-    onChange
-  }: SaleInfoProps & WithStyles<typeof styles>) => (
+  const formErrors = getFormErrors(["name"], errors);
+
+  return (
     <Card>
-      <CardTitle title={i18n.t("General Information")} />
-      <CardContent className={classes.root}>
+      <CardTitle
+        title={intl.formatMessage(commonMessages.generalInformations)}
+      />
+      <CardContent>
         <TextField
           disabled={disabled}
-          error={!!errors.name}
-          helperText={errors.name}
+          error={!!formErrors.name}
+          helperText={getDiscountErrorMessage(formErrors.name, intl)}
           name={"name" as keyof FormData}
           onChange={onChange}
-          label={i18n.t("Name")}
+          label={intl.formatMessage({
+            defaultMessage: "Name",
+            description: "sale name"
+          })}
           value={data.name}
           fullWidth
         />
       </CardContent>
     </Card>
-  )
-);
+  );
+};
 SaleInfo.displayName = "SaleInfo";
 export default SaleInfo;

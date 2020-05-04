@@ -1,35 +1,36 @@
 import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import Checkbox from "@saleor/components/Checkbox";
 import IconButtonTableCell from "@saleor/components/IconButtonTableCell";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection } from "@saleor/misc";
-import { ListActions, ListProps } from "@saleor/types";
+import { ListActions, ListProps, SortPage } from "@saleor/types";
+import { MenuListUrlSortField } from "@saleor/navigation/urls";
+import TableCellHeader from "@saleor/components/TableCellHeader";
+import { getArrowDirection } from "@saleor/utils/sort";
 import { MenuList_menus_edges_node } from "../../types/MenuList";
 
-export interface MenuListProps extends ListProps, ListActions {
+export interface MenuListProps
+  extends ListProps,
+    ListActions,
+    SortPage<MenuListUrlSortField> {
   menus: MenuList_menus_edges_node[];
   onDelete: (id: string) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     [theme.breakpoints.up("lg")]: {
       colItems: {
         width: 200
@@ -39,17 +40,20 @@ const styles = (theme: Theme) =>
     colItems: {
       textAlign: "right"
     },
-    colTitle: {},
+    colTitle: {
+      paddingLeft: 0
+    },
     row: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "MenuList" }
+);
 
 const numberOfColumns = 4;
 
-const MenuList = withStyles(styles, { name: "MenuList" })(
-  ({
-    classes,
+const MenuList: React.FC<MenuListProps> = props => {
+  const {
     settings,
     disabled,
     isChecked,
@@ -59,14 +63,20 @@ const MenuList = withStyles(styles, { name: "MenuList" })(
     onPreviousPage,
     onUpdateListSettings,
     onRowClick,
+    onSort,
     pageInfo,
     selected,
+    sort,
     toggle,
     toggleAll,
     toolbar
-  }: MenuListProps & WithStyles<typeof styles>) => (
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Card>
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           selected={selected}
@@ -75,12 +85,38 @@ const MenuList = withStyles(styles, { name: "MenuList" })(
           toggleAll={toggleAll}
           toolbar={toolbar}
         >
-          <TableCell className={classes.colTitle}>
-            {i18n.t("Menu Title", { context: "object" })}
-          </TableCell>
-          <TableCell className={classes.colItems}>
-            {i18n.t("Items", { context: "number of menu items" })}
-          </TableCell>
+          <TableCellHeader
+            direction={
+              sort.sort === MenuListUrlSortField.name
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            arrowPosition="right"
+            onClick={() => onSort(MenuListUrlSortField.name)}
+            className={classes.colTitle}
+          >
+            <FormattedMessage
+              defaultMessage="Menu Title"
+              id="menuListMenutitle"
+            />
+          </TableCellHeader>
+          <TableCellHeader
+            direction={
+              sort.sort === MenuListUrlSortField.items
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            textAlign="right"
+            onClick={() => onSort(MenuListUrlSortField.items)}
+            className={classes.colItems}
+          >
+            <FormattedMessage
+              defaultMessage="Items"
+              description="number of menu items"
+              id="menuListItems"
+            />
+          </TableCellHeader>
+          <TableCell />
         </TableHead>
         <TableFooter>
           <TableRow>
@@ -140,15 +176,18 @@ const MenuList = withStyles(styles, { name: "MenuList" })(
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No menus found")}
+                  <FormattedMessage
+                    defaultMessage="No menus found"
+                    id="menuListNoMenus"
+                  />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 MenuList.displayName = "MenuList";
 export default MenuList;

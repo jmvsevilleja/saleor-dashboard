@@ -1,12 +1,12 @@
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { fetchMoreProps } from "@saleor/fixtures";
+import { ProductErrorCode } from "@saleor/types/globalTypes";
+import { warehouseList } from "@saleor/warehouses/fixtures";
 import ProductCreatePage, {
   ProductCreatePageSubmitData
 } from "../../../products/components/ProductCreatePage";
-
-import { formError } from "../../misc";
-
 import { product as productFixture } from "../../../products/fixtures";
 import { productTypes } from "../../../productTypes/fixtures";
 import Decorator from "../../Decorator";
@@ -24,12 +24,17 @@ storiesOf("Views / Products / Create product", module)
       collections={product.collections}
       fetchCategories={() => undefined}
       fetchCollections={() => undefined}
+      fetchProductTypes={() => undefined}
+      fetchMoreCategories={fetchMoreProps}
+      fetchMoreCollections={fetchMoreProps}
+      fetchMoreProductTypes={fetchMoreProps}
       productTypes={productTypes}
       categories={[product.category]}
-      onAttributesEdit={undefined}
       onBack={() => undefined}
       onSubmit={() => undefined}
       saveButtonBarState="default"
+      onWarehouseEdit={() => undefined}
+      warehouses={warehouseList}
     />
   ))
   .add("When loading", () => (
@@ -41,12 +46,17 @@ storiesOf("Views / Products / Create product", module)
       collections={product.collections}
       fetchCategories={() => undefined}
       fetchCollections={() => undefined}
+      fetchProductTypes={() => undefined}
+      fetchMoreCategories={fetchMoreProps}
+      fetchMoreCollections={fetchMoreProps}
+      fetchMoreProductTypes={fetchMoreProps}
       productTypes={productTypes}
       categories={[product.category]}
-      onAttributesEdit={undefined}
       onBack={() => undefined}
       onSubmit={() => undefined}
       saveButtonBarState="default"
+      onWarehouseEdit={() => undefined}
+      warehouses={undefined}
     />
   ))
   .add("form errors", () => (
@@ -55,16 +65,25 @@ storiesOf("Views / Products / Create product", module)
       disabled={false}
       errors={(["name", "productType", "category", "sku"] as Array<
         keyof ProductCreatePageSubmitData
-      >).map(formError)}
+      >).map(field => ({
+        __typename: "ProductError",
+        code: ProductErrorCode.INVALID,
+        field
+      }))}
       header="Add product"
       collections={product.collections}
       fetchCategories={() => undefined}
       fetchCollections={() => undefined}
+      fetchProductTypes={() => undefined}
+      fetchMoreCategories={fetchMoreProps}
+      fetchMoreCollections={fetchMoreProps}
+      fetchMoreProductTypes={fetchMoreProps}
       productTypes={productTypes}
       categories={[product.category]}
-      onAttributesEdit={undefined}
       onBack={() => undefined}
       onSubmit={() => undefined}
       saveButtonBarState="default"
+      onWarehouseEdit={() => undefined}
+      warehouses={warehouseList}
     />
   ));

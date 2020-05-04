@@ -1,16 +1,19 @@
 import Button from "@material-ui/core/Button";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import { attributeUrl } from "@saleor/attributes/urls";
 import { WindowTitle } from "@saleor/components/WindowTitle";
+import { DEFAULT_INITIAL_SEARCH_DATA } from "@saleor/config";
 import useBulkActions from "@saleor/hooks/useBulkActions";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
-import i18n from "@saleor/i18n";
-import { getMutationState, maybe } from "@saleor/misc";
+import { commonMessages } from "@saleor/intl";
+import { maybe } from "@saleor/misc";
 import AssignAttributeDialog from "@saleor/productTypes/components/AssignAttributeDialog";
 import { ReorderEvent } from "@saleor/types";
 import { AttributeTypeEnum } from "@saleor/types/globalTypes";
+import NotFoundPage from "@saleor/components/NotFoundPage";
 import ProductTypeAttributeUnassignDialog from "../../components/ProductTypeAttributeUnassignDialog";
 import ProductTypeBulkAttributeUnassignDialog from "../../components/ProductTypeBulkAttributeUnassignDialog";
 import ProductTypeDeleteDialog from "../../components/ProductTypeDeleteDialog";
@@ -18,7 +21,7 @@ import ProductTypeDetailsPage, {
   ProductTypeForm
 } from "../../components/ProductTypeDetailsPage";
 import ProductTypeOperations from "../../containers/ProductTypeOperations";
-import SearchAttributes from "../../containers/SearchAttributes";
+import useAvailableAttributeSearch from "../../hooks/useAvailableAttributeSearch";
 import { TypedProductTypeDetailsQuery } from "../../queries";
 import { AssignAttribute } from "../../types/AssignAttribute";
 import { ProductTypeDelete } from "../../types/ProductTypeDelete";
@@ -44,24 +47,33 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
   const notify = useNotifier();
   const productAttributeListActions = useBulkActions();
   const variantAttributeListActions = useBulkActions();
+  const intl = useIntl();
+  const { loadMore, search, result } = useAvailableAttributeSearch({
+    variables: {
+      ...DEFAULT_INITIAL_SEARCH_DATA,
+      id
+    }
+  });
+
+  const handleBack = () => navigate(productTypeListUrl());
 
   return (
     <ProductTypeUpdateErrors>
       {({ errors, set: setErrors }) => (
-        <TypedProductTypeDetailsQuery
-          displayLoader
-          variables={{ id }}
-          require={["productType"]}
-        >
+        <TypedProductTypeDetailsQuery displayLoader variables={{ id }}>
           {({ data, loading: dataLoading }) => {
+            const productType = data?.productType;
+
+            if (productType === null) {
+              return <NotFoundPage onBack={handleBack} />;
+            }
+
             const closeModal = () => navigate(productTypeUrl(id), true);
 
             const handleAttributeAssignSuccess = (data: AssignAttribute) => {
               if (data.attributeAssign.errors.length === 0) {
                 notify({
-                  text: i18n.t("Attributes assigned", {
-                    context: "notification"
-                  })
+                  text: intl.formatMessage(commonMessages.savedChanges)
                 });
                 closeModal();
               } else if (
@@ -76,9 +88,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
             ) => {
               if (data.attributeUnassign.errors.length === 0) {
                 notify({
-                  text: i18n.t("Attribute unassigned", {
-                    context: "notification"
-                  })
+                  text: intl.formatMessage(commonMessages.savedChanges)
                 });
                 closeModal();
                 productAttributeListActions.reset();
@@ -90,8 +100,8 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
             ) => {
               if (deleteData.productTypeDelete.errors.length === 0) {
                 notify({
-                  text: i18n.t("Product type deleted", {
-                    context: "notification"
+                  text: intl.formatMessage({
+                    defaultMessage: "Product type deleted"
                   })
                 });
                 navigate(productTypeListUrl(), true);
@@ -105,9 +115,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                 updateData.productTypeUpdate.errors.length === 0
               ) {
                 notify({
-                  text: i18n.t("Product type updated", {
-                    context: "notification"
-                  })
+                  text: intl.formatMessage(commonMessages.savedChanges)
                 });
               } else if (
                 updateData.productTypeUpdate.errors !== null &&
@@ -155,6 +163,15 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                       }
                     });
                   };
+                  const handleProductTypeVariantsToggle = (
+                    hasVariants: boolean
+                  ) =>
+                    updateProductType.mutate({
+                      id,
+                      input: {
+                        hasVariants
+                      }
+                    });
                   const handleAssignAttribute = () =>
                     assignAttribute.mutate({
                       id,
@@ -177,38 +194,6 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                     });
 
                   const loading = updateProductType.opts.loading || dataLoading;
-
-                  const assignTransactionState = getMutationState(
-                    assignAttribute.opts.called,
-                    assignAttribute.opts.loading,
-                    maybe(
-                      () => assignAttribute.opts.data.attributeAssign.errors
-                    )
-                  );
-
-                  const unassignTransactionState = getMutationState(
-                    unassignAttribute.opts.called,
-                    unassignAttribute.opts.loading,
-                    maybe(
-                      () => unassignAttribute.opts.data.attributeUnassign.errors
-                    )
-                  );
-
-                  const deleteTransactionState = getMutationState(
-                    deleteProductType.opts.called,
-                    deleteProductType.opts.loading,
-                    maybe(
-                      () => deleteProductType.opts.data.productTypeDelete.errors
-                    )
-                  );
-
-                  const formTransitionState = getMutationState(
-                    updateProductType.opts.called,
-                    updateProductType.opts.loading,
-                    maybe(
-                      () => updateProductType.opts.data.productTypeUpdate.errors
-                    )
-                  );
 
                   const handleAttributeReorder = (
                     event: ReorderEvent,
@@ -240,7 +225,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                         errors={errors.formErrors}
                         pageTitle={maybe(() => data.productType.name)}
                         productType={maybe(() => data.productType)}
-                        saveButtonBarState={formTransitionState}
+                        saveButtonBarState={updateProductType.opts.status}
                         taxTypes={maybe(() => data.taxTypes, [])}
                         onAttributeAdd={type =>
                           navigate(
@@ -262,7 +247,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                             })
                           )
                         }
-                        onBack={() => navigate(productTypeListUrl())}
+                        onBack={handleBack}
                         onDelete={() =>
                           navigate(
                             productTypeUrl(id, {
@@ -270,6 +255,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                             })
                           )
                         }
+                        onHasVariantsToggle={handleProductTypeVariantsToggle}
                         onSubmit={handleProductTypeUpdate}
                         productAttributeList={{
                           isChecked: productAttributeListActions.isSelected,
@@ -290,9 +276,10 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                                 )
                               }
                             >
-                              {i18n.t("Unassign", {
-                                context: "unassign attribute from product type"
-                              })}
+                              <FormattedMessage
+                                defaultMessage="Unassign"
+                                description="unassign attribute from product type, button"
+                              />
                             </Button>
                           )
                         }}
@@ -315,129 +302,73 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                                 )
                               }
                             >
-                              {i18n.t("Unassign", {
-                                context: "unassign attribute from product type"
-                              })}
+                              <FormattedMessage
+                                defaultMessage="Unassign"
+                                description="unassign attribute from product type, button"
+                              />
                             </Button>
                           )
                         }}
                       />
-                      {!dataLoading && (
-                        <SearchAttributes
-                          variables={{
-                            first: 15,
-                            id,
-                            query: ""
-                          }}
-                        >
-                          {({ search, result }) => {
-                            const fetchMore = () =>
-                              result.loadMore(
-                                (prev, next) => {
-                                  if (
-                                    prev.productType.availableAttributes
-                                      .pageInfo.endCursor ===
-                                    next.productType.availableAttributes
-                                      .pageInfo.endCursor
-                                  ) {
-                                    return prev;
-                                  }
-                                  return {
-                                    ...prev,
-                                    productType: {
-                                      ...prev.productType,
-                                      availableAttributes: {
-                                        ...prev.productType.availableAttributes,
-                                        edges: [
-                                          ...prev.productType
-                                            .availableAttributes.edges,
-                                          ...next.productType
-                                            .availableAttributes.edges
-                                        ],
-                                        pageInfo:
-                                          next.productType.availableAttributes
-                                            .pageInfo
-                                      }
-                                    }
-                                  };
-                                },
-                                {
-                                  after:
-                                    result.data.productType.availableAttributes
-                                      .pageInfo.endCursor
-                                }
-                              );
-
-                            return (
-                              <>
-                                {Object.keys(AttributeTypeEnum).map(key => (
-                                  <AssignAttributeDialog
-                                    attributes={maybe(() =>
-                                      result.data.productType.availableAttributes.edges.map(
-                                        edge => edge.node
+                      {!dataLoading &&
+                        Object.keys(AttributeTypeEnum).map(key => (
+                          <AssignAttributeDialog
+                            attributes={maybe(() =>
+                              result.data.productType.availableAttributes.edges.map(
+                                edge => edge.node
+                              )
+                            )}
+                            confirmButtonState={assignAttribute.opts.status}
+                            errors={maybe(
+                              () =>
+                                assignAttribute.opts.data.attributeAssign.errors.map(
+                                  err => err.message
+                                ),
+                              []
+                            )}
+                            loading={result.loading}
+                            onClose={closeModal}
+                            onSubmit={handleAssignAttribute}
+                            onFetch={search}
+                            onFetchMore={loadMore}
+                            onOpen={result.refetch}
+                            hasMore={maybe(
+                              () =>
+                                result.data.productType.availableAttributes
+                                  .pageInfo.hasNextPage,
+                              false
+                            )}
+                            open={
+                              params.action === "assign-attribute" &&
+                              params.type === AttributeTypeEnum[key]
+                            }
+                            selected={maybe(() => params.ids, [])}
+                            onToggle={attributeId => {
+                              const ids = maybe(() => params.ids, []);
+                              navigate(
+                                productTypeUrl(id, {
+                                  ...params,
+                                  ids: ids.includes(attributeId)
+                                    ? params.ids.filter(
+                                        selectedId => selectedId !== attributeId
                                       )
-                                    )}
-                                    confirmButtonState={assignTransactionState}
-                                    errors={maybe(
-                                      () =>
-                                        assignAttribute.opts.data.attributeAssign.errors.map(
-                                          err => err.message
-                                        ),
-                                      []
-                                    )}
-                                    loading={result.loading}
-                                    onClose={closeModal}
-                                    onSubmit={handleAssignAttribute}
-                                    onFetch={search}
-                                    onFetchMore={fetchMore}
-                                    onOpen={result.refetch}
-                                    hasMore={maybe(
-                                      () =>
-                                        result.data.productType
-                                          .availableAttributes.pageInfo
-                                          .hasNextPage,
-                                      false
-                                    )}
-                                    open={
-                                      params.action === "assign-attribute" &&
-                                      params.type === AttributeTypeEnum[key]
-                                    }
-                                    selected={maybe(() => params.ids, [])}
-                                    onToggle={attributeId => {
-                                      const ids = maybe(() => params.ids, []);
-                                      navigate(
-                                        productTypeUrl(id, {
-                                          ...params,
-                                          ids: ids.includes(attributeId)
-                                            ? params.ids.filter(
-                                                selectedId =>
-                                                  selectedId !== attributeId
-                                              )
-                                            : [...ids, attributeId]
-                                        })
-                                      );
-                                    }}
-                                    key={key}
-                                  />
-                                ))}
-                              </>
-                            );
-                          }}
-                        </SearchAttributes>
-                      )}
+                                    : [...ids, attributeId]
+                                })
+                              );
+                            }}
+                            key={key}
+                          />
+                        ))}
                       <ProductTypeDeleteDialog
-                        confirmButtonState={deleteTransactionState}
+                        confirmButtonState={deleteProductType.opts.status}
                         name={maybe(() => data.productType.name, "...")}
                         open={params.action === "remove"}
                         onClose={() => navigate(productTypeUrl(id))}
                         onConfirm={handleProductTypeDelete}
                       />
                       <ProductTypeBulkAttributeUnassignDialog
-                        attributeQuantity={maybe(
-                          () => params.ids.length.toString(),
-                          "..."
-                        )}
-                        confirmButtonState={unassignTransactionState}
+                        attributeQuantity={maybe(() => params.ids.length)}
+                        confirmButtonState={unassignAttribute.opts.status}
                         onClose={closeModal}
                         onConfirm={handleBulkAttributeUnassign}
                         open={params.action === "unassign-attributes"}
@@ -456,7 +387,7 @@ export const ProductTypeUpdate: React.FC<ProductTypeUpdateProps> = ({
                               .name,
                           "..."
                         )}
-                        confirmButtonState={unassignTransactionState}
+                        confirmButtonState={unassignAttribute.opts.status}
                         onClose={closeModal}
                         onConfirm={handleAttributeUnassign}
                         open={params.action === "unassign-attribute"}

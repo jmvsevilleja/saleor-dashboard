@@ -1,18 +1,23 @@
 import { RawDraftContentState } from "draft-js";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import { CardSpacer } from "@saleor/components/CardSpacer";
 import { ConfirmButtonTransitionState } from "@saleor/components/ConfirmButton";
 import { Container } from "@saleor/components/Container";
-import { ControlledSwitch } from "@saleor/components/ControlledSwitch";
+import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
 import Form from "@saleor/components/Form";
+import FormSpacer from "@saleor/components/FormSpacer";
 import Grid from "@saleor/components/Grid";
+import Hr from "@saleor/components/Hr";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import SeoForm from "@saleor/components/SeoForm";
 import VisibilityCard from "@saleor/components/VisibilityCard";
-import i18n from "../../../i18n";
+import useDateLocalize from "@saleor/hooks/useDateLocalize";
+import { sectionNames } from "@saleor/intl";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
 import { maybe } from "../../../misc";
 import { ListActions, PageListProps } from "../../../types";
 import { CollectionDetails_collection } from "../../types/CollectionDetails";
@@ -33,6 +38,7 @@ export interface CollectionDetailsPageFormData {
 
 export interface CollectionDetailsPageProps extends PageListProps, ListActions {
   collection: CollectionDetails_collection;
+  errors: ProductErrorFragment[];
   isFeatured: boolean;
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
@@ -43,11 +49,10 @@ export interface CollectionDetailsPageProps extends PageListProps, ListActions {
   onSubmit: (data: CollectionDetailsPageFormData) => void;
 }
 
-const CollectionDetailsPage: React.StatelessComponent<
-  CollectionDetailsPageProps
-> = ({
+const CollectionDetailsPage: React.FC<CollectionDetailsPageProps> = ({
   collection,
   disabled,
+  errors,
   isFeatured,
   saveButtonBarState,
   onBack,
@@ -57,6 +62,9 @@ const CollectionDetailsPage: React.StatelessComponent<
   onSubmit,
   ...collectionProductsProps
 }: CollectionDetailsPageProps) => {
+  const intl = useIntl();
+  const localizeDate = useDateLocalize();
+
   return (
     <Form
       initial={{
@@ -72,9 +80,11 @@ const CollectionDetailsPage: React.StatelessComponent<
       onSubmit={onSubmit}
       confirmLeave
     >
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Collections")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.collections)}
+          </AppHeader>
           <PageHeader title={maybe(() => collection.name)} />
           <Grid>
             <div>
@@ -82,7 +92,7 @@ const CollectionDetailsPage: React.StatelessComponent<
                 collection={collection}
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -104,12 +114,10 @@ const CollectionDetailsPage: React.StatelessComponent<
                 description={data.seoDescription}
                 disabled={disabled}
                 descriptionPlaceholder=""
-                helperText={i18n.t(
-                  "Add search engine title and description to make this collection easier to find",
-                  {
-                    context: "help text"
-                  }
-                )}
+                helperText={intl.formatMessage({
+                  defaultMessage:
+                    "Add search engine title and description to make this collection easier to find"
+                })}
                 title={data.seoTitle}
                 titlePlaceholder={maybe(() => collection.name)}
                 onChange={change}
@@ -119,18 +127,39 @@ const CollectionDetailsPage: React.StatelessComponent<
               <div>
                 <VisibilityCard
                   data={data}
-                  errors={formErrors}
+                  errors={errors}
                   disabled={disabled}
+                  hiddenMessage={intl.formatMessage(
+                    {
+                      defaultMessage: "will be visible from {date}",
+                      description: "collection"
+                    },
+                    {
+                      date: localizeDate(data.publicationDate)
+                    }
+                  )}
                   onChange={change}
+                  visibleMessage={intl.formatMessage(
+                    {
+                      defaultMessage: "since {date}",
+                      description: "collection"
+                    },
+                    {
+                      date: localizeDate(data.publicationDate)
+                    }
+                  )}
                 >
-                  <ControlledSwitch
-                    checked={data.isFeatured}
-                    disabled={disabled}
-                    name="isFeatured"
-                    onChange={change}
-                    label={i18n.t("Feature on Homepage", {
-                      context: "button"
+                  <FormSpacer />
+                  <Hr />
+                  <ControlledCheckbox
+                    name={"isFeatured" as keyof CollectionDetailsPageFormData}
+                    label={intl.formatMessage({
+                      defaultMessage: "Feature on Homepage",
+                      description: "switch button"
                     })}
+                    checked={data.isFeatured}
+                    onChange={change}
+                    disabled={disabled}
                   />
                 </VisibilityCard>
               </div>

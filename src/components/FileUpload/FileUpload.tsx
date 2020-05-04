@@ -1,30 +1,37 @@
 import Button from "@material-ui/core/Button";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
-import i18n from "../../i18n";
+import { FormattedMessage } from "react-intl";
 
-const styles = createStyles({
-  fileUploadField: {
-    display: "none"
+const useStyles = makeStyles(
+  {
+    fileUploadField: {
+      display: "none"
+    },
+    root: {
+      display: "flex"
+    },
+    textField: {
+      flex: 1
+    }
   },
-  root: {
-    display: "flex"
-  },
-  textField: {
-    flex: 1
-  }
-});
+  { name: "FileUpload" }
+);
 
-interface FileUploadProps extends WithStyles<typeof styles> {
+interface FileUploadProps {
   disabled?: boolean;
   name?: string;
   value?: any;
   onChange?(event: React.ChangeEvent<any>);
 }
 
-const FileUpload = withStyles(styles, { name: "FileUpload" })(
-  ({ classes, disabled, name, value, onChange }: FileUploadProps) => (
+const FileUpload: React.FC<FileUploadProps> = props => {
+  const { disabled, name, value, onChange } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <div className={classes.root}>
       <input
         disabled={disabled}
@@ -42,10 +49,13 @@ const FileUpload = withStyles(styles, { name: "FileUpload" })(
         value={value}
       />
       <Button disabled={disabled} onClick={() => this.upload.click()}>
-        {i18n.t("Upload")}
+        <FormattedMessage
+          defaultMessage="Upload"
+          description="upload file, button"
+        />
       </Button>
     </div>
-  )
-);
+  );
+};
 FileUpload.displayName = "FileUpload";
 export default FileUpload;

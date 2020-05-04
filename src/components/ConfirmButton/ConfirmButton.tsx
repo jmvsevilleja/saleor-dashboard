@@ -1,17 +1,16 @@
-import { Omit } from "@material-ui/core";
 import Button, { ButtonProps } from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import {
   createStyles,
   Theme,
-  withStyles,
-  WithStyles
+  WithStyles,
+  withStyles
 } from "@material-ui/core/styles";
 import CheckIcon from "@material-ui/icons/Check";
+import { buttonMessages } from "@saleor/intl";
 import classNames from "classnames";
 import React from "react";
-
-import i18n from "../../i18n";
+import { FormattedMessage } from "react-intl";
 
 export type ConfirmButtonTransitionState =
   | "loading"
@@ -68,7 +67,7 @@ interface ConfirmButtonState {
   displayCompletedActionState: boolean;
 }
 
-const ConfirmButton = withStyles(styles)(
+const ConfirmButton = withStyles(styles, { name: "ConfirmButton" })(
   class ConfirmButtonComponent extends React.Component<
     ConfirmButtonProps &
       WithStyles<
@@ -76,6 +75,11 @@ const ConfirmButton = withStyles(styles)(
       >,
     ConfirmButtonState
   > {
+    state: ConfirmButtonState = {
+      displayCompletedActionState: false
+    };
+    timeout = null;
+
     static getDerivedStateFromProps(
       nextProps: ConfirmButtonProps,
       prevState: ConfirmButtonState
@@ -87,11 +91,6 @@ const ConfirmButton = withStyles(styles)(
       }
       return prevState;
     }
-
-    state: ConfirmButtonState = {
-      displayCompletedActionState: false
-    };
-    timeout = null;
 
     componentDidUpdate(prevProps: ConfirmButtonProps) {
       const { transitionState } = this.props;
@@ -170,14 +169,11 @@ const ConfirmButton = withStyles(styles)(
                 displayCompletedActionState
             })}
           >
-            {transitionState === "error" && displayCompletedActionState
-              ? i18n.t("Error", {
-                  context: "button"
-                })
-              : children ||
-                i18n.t("Confirm", {
-                  context: "button"
-                })}
+            {transitionState === "error" && displayCompletedActionState ? (
+              <FormattedMessage defaultMessage="Error" description="button" />
+            ) : (
+              children || <FormattedMessage {...buttonMessages.confirm} />
+            )}
           </span>
         </Button>
       );

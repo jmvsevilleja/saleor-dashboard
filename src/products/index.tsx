@@ -1,39 +1,53 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { asSortParams } from "@saleor/utils/sort";
+import { getArrayQueryParam } from "@saleor/utils/urls";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   productAddPath,
   productImagePath,
   ProductImageUrlQueryParams,
   productListPath,
   ProductListUrlQueryParams,
+  ProductListUrlSortField,
   productPath,
   ProductUrlQueryParams,
   productVariantAddPath,
   productVariantEditPath,
-  ProductVariantEditUrlQueryParams
+  ProductVariantEditUrlQueryParams,
+  ProductAddUrlQueryParams,
+  ProductVariantAddUrlQueryParams,
+  productVariantCreatorPath
 } from "./urls";
-import ProductCreate from "./views/ProductCreate";
+import ProductCreateComponent from "./views/ProductCreate";
 import ProductImageComponent from "./views/ProductImage";
 import ProductListComponent from "./views/ProductList";
 import ProductUpdateComponent from "./views/ProductUpdate";
 import ProductVariantComponent from "./views/ProductVariant";
 import ProductVariantCreateComponent from "./views/ProductVariantCreate";
+import ProductVariantCreatorComponent from "./views/ProductVariantCreator";
 
-const ProductList: React.StatelessComponent<RouteComponentProps<any>> = ({
-  location
-}) => {
+const ProductList: React.FC<RouteComponentProps<any>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: ProductListUrlQueryParams = qs;
+  const params: ProductListUrlQueryParams = asSortParams(
+    {
+      ...qs,
+      categories: getArrayQueryParam(qs.categories),
+      collections: getArrayQueryParam(qs.collections),
+      ids: getArrayQueryParam(qs.ids),
+      productTypes: getArrayQueryParam(qs.productTypes)
+    },
+    ProductListUrlSortField
+  );
+
   return <ProductListComponent params={params} />;
 };
 
-const ProductUpdate: React.StatelessComponent<RouteComponentProps<any>> = ({
-  match
-}) => {
+const ProductUpdate: React.FC<RouteComponentProps<any>> = ({ match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: ProductUrlQueryParams = qs;
 
@@ -45,9 +59,7 @@ const ProductUpdate: React.StatelessComponent<RouteComponentProps<any>> = ({
   );
 };
 
-const ProductVariant: React.StatelessComponent<RouteComponentProps<any>> = ({
-  match
-}) => {
+const ProductVariant: React.FC<RouteComponentProps<any>> = ({ match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: ProductVariantEditUrlQueryParams = qs;
 
@@ -60,7 +72,7 @@ const ProductVariant: React.StatelessComponent<RouteComponentProps<any>> = ({
   );
 };
 
-const ProductImage: React.StatelessComponent<RouteComponentProps<any>> = ({
+const ProductImage: React.FC<RouteComponentProps<any>> = ({
   location,
   match
 }) => {
@@ -76,38 +88,63 @@ const ProductImage: React.StatelessComponent<RouteComponentProps<any>> = ({
   );
 };
 
-const ProductVariantCreate: React.StatelessComponent<
-  RouteComponentProps<any>
-> = ({ match }) => {
+const ProductVariantCreate: React.FC<RouteComponentProps<any>> = ({
+  match
+}) => {
+  const qs = parseQs(location.search.substr(1));
+  const params: ProductVariantAddUrlQueryParams = qs;
+
   return (
     <ProductVariantCreateComponent
       productId={decodeURIComponent(match.params.id)}
+      params={params}
     />
   );
 };
 
-const Component = () => (
-  <>
-    <WindowTitle title={i18n.t("Products")} />
-    <Switch>
-      <Route exact path={productListPath} component={ProductList} />
-      <Route exact path={productAddPath} component={ProductCreate} />
-      <Route
-        exact
-        path={productVariantAddPath(":id")}
-        component={ProductVariantCreate}
-      />
-      <Route
-        path={productVariantEditPath(":productId", ":variantId")}
-        component={ProductVariant}
-      />
-      <Route
-        path={productImagePath(":productId", ":imageId")}
-        component={ProductImage}
-      />
-      <Route path={productPath(":id")} component={ProductUpdate} />
-    </Switch>
-  </>
+const ProductVariantCreator: React.FC<RouteComponentProps<{
+  id: string;
+}>> = ({ match }) => (
+  <ProductVariantCreatorComponent id={decodeURIComponent(match.params.id)} />
 );
+
+const ProductCreate: React.FC<RouteComponentProps> = ({ location }) => {
+  const qs = parseQs(location.search.substr(1));
+  const params: ProductAddUrlQueryParams = qs;
+
+  return <ProductCreateComponent params={params} />;
+};
+
+const Component = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.products)} />
+      <Switch>
+        <Route exact path={productListPath} component={ProductList} />
+        <Route exact path={productAddPath} component={ProductCreate} />
+        <Route
+          path={productVariantCreatorPath(":id")}
+          component={ProductVariantCreator}
+        />
+        <Route
+          exact
+          path={productVariantAddPath(":id")}
+          component={ProductVariantCreate}
+        />
+        <Route
+          path={productVariantEditPath(":productId", ":variantId")}
+          component={ProductVariant}
+        />
+        <Route
+          path={productImagePath(":productId", ":imageId")}
+          component={ProductImage}
+        />
+        <Route path={productPath(":id")} component={ProductUpdate} />
+      </Switch>
+    </>
+  );
+};
 
 export default Component;

@@ -1,55 +1,73 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import classNames from "classnames";
 import React from "react";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     action: {
-      flex: "0 0 auto"
+      flex: "0 0 auto",
+      [theme.breakpoints.down("sm")]: {
+        marginTop: theme.spacing()
+      }
+    },
+    block: {
+      [theme.breakpoints.down("sm")]: {
+        "&&": {
+          display: "block"
+        }
+      }
     },
     grid: {
-      padding: theme.spacing.unit * 2
+      padding: theme.spacing(2)
     },
     menuButton: {
       flex: "0 0 auto",
-      marginLeft: theme.spacing.unit * -2,
-      marginRight: theme.spacing.unit * 3,
-      marginTop: -theme.spacing.unit * 2
+      marginLeft: -theme.spacing(2),
+      marginRight: theme.spacing(3),
+      marginTop: -theme.spacing(2)
     },
     root: {
       alignItems: "center",
       display: "flex",
-      marginBottom: theme.spacing.unit * 3
+      marginBottom: theme.spacing(3)
     },
     subtitle: {
       alignItems: "center",
       display: "flex",
-      marginBottom: theme.spacing.unit * 2
+      marginBottom: theme.spacing(2)
     },
     title: {
       flex: 1,
-      paddingBottom: theme.spacing.unit * 2
+      paddingBottom: theme.spacing(2)
     }
-  });
+  }),
+  {
+    name: "ExtendedPageHeader"
+  }
+);
 
-interface ExtendedPageHeaderProps extends WithStyles<typeof styles> {
+interface ExtendedPageHeaderProps {
   children?: React.ReactNode;
   className?: string;
+  inline?: boolean;
   title?: React.ReactNode;
 }
 
-const ExtendedPageHeader = withStyles(styles, { name: "ExtendedPageHeader" })(
-  ({ children, classes, className, title }: ExtendedPageHeaderProps) => (
-    <div className={classNames(classes.root, className)}>
+const ExtendedPageHeader: React.FC<ExtendedPageHeaderProps> = props => {
+  const { children, className, inline, title } = props;
+
+  const classes = useStyles(props);
+
+  return (
+    <div
+      className={classNames(classes.root, className, {
+        [classes.block]: !inline
+      })}
+    >
       {title}
       <div className={classes.action}>{children}</div>
     </div>
-  )
-);
+  );
+};
 ExtendedPageHeader.displayName = "ExtendedPageHeader";
 export default ExtendedPageHeader;

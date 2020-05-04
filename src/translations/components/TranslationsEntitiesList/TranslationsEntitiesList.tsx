@@ -1,6 +1,5 @@
 import { Omit } from "@material-ui/core";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
@@ -8,11 +7,12 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import classNames from "classnames";
 import React from "react";
-import { ListProps } from "../../../types";
+import { FormattedMessage, useIntl } from "react-intl";
 
-import Skeleton from "@saleor/components/Skeleton";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "../../../i18n";
+import Skeleton from "@saleor/components/Skeleton";
+import { ListProps } from "../../../types";
 import { maybe, renderCollection } from "../../../misc";
 
 export interface TranslatableEntity {
@@ -30,39 +30,47 @@ export interface TranslationsEntitiesListProps
   onRowClick: (code: string) => void;
 }
 
-const styles = createStyles({
-  tableRow: {
-    cursor: "pointer"
+const useStyles = makeStyles(
+  {
+    tableRow: {
+      cursor: "pointer"
+    },
+    textRight: {
+      textAlign: "right"
+    },
+    wideColumn: {
+      width: "80%"
+    }
   },
-  textRight: {
-    textAlign: "right"
-  },
-  wideColumn: {
-    width: "80%"
-  }
-});
-const TranslationsEntitiesList = withStyles(styles, {
-  name: "TranslationsEntitiesList"
-})(
-  ({
-    classes,
+  { name: "TranslationsEntitiesList" }
+);
+const TranslationsEntitiesList: React.FC<
+  TranslationsEntitiesListProps
+> = props => {
+  const {
     disabled,
     entities,
     onNextPage,
     onPreviousPage,
     onRowClick,
     pageInfo
-  }: TranslationsEntitiesListProps & WithStyles<typeof styles>) => (
-    <Table>
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
+    <ResponsiveTable>
       <TableHead>
         <TableRow>
           <TableCell className={classes.wideColumn}>
-            {i18n.t("Name", { context: "table header" })}
+            <FormattedMessage
+              defaultMessage="Name"
+              description="entity (product, collection, shipping method) name"
+            />
           </TableCell>
           <TableCell className={classes.textRight}>
-            {i18n.t("Completed Translations", {
-              context: "table header"
-            })}
+            <FormattedMessage defaultMessage="Completed Translations" />
           </TableCell>
         </TableRow>
       </TableHead>
@@ -99,10 +107,13 @@ const TranslationsEntitiesList = withStyles(styles, {
               <TableCell className={classes.textRight}>
                 {maybe<React.ReactNode>(
                   () =>
-                    i18n.t("{{ current }} of {{ max }}", {
-                      context: "translation progress",
-                      ...entity.completion
-                    }),
+                    intl.formatMessage(
+                      {
+                        defaultMessage: "{current} of {max}",
+                        description: "translation progress"
+                      },
+                      entity.completion
+                    ),
                   <Skeleton />
                 )}
               </TableCell>
@@ -111,14 +122,14 @@ const TranslationsEntitiesList = withStyles(styles, {
           () => (
             <TableRow>
               <TableCell colSpan={2}>
-                {i18n.t("No translatable entities found")}
+                <FormattedMessage defaultMessage="No translatable entities found" />
               </TableCell>
             </TableRow>
           )
         )}
       </TableBody>
-    </Table>
-  )
-);
+    </ResponsiveTable>
+  );
+};
 TranslationsEntitiesList.displayName = "TranslationsEntitiesList";
 export default TranslationsEntitiesList;

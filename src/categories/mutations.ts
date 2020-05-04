@@ -1,6 +1,7 @@
 import gql from "graphql-tag";
 
-import { TypedMutation } from "../mutations";
+import makeMutation from "@saleor/hooks/makeMutation";
+import { productErrorFragment } from "@saleor/attributes/mutations";
 import { categoryDetailsFragment } from "./queries";
 import {
   CategoryBulkDelete,
@@ -20,69 +21,69 @@ import {
 } from "./types/CategoryUpdate";
 
 export const categoryDeleteMutation = gql`
+  ${productErrorFragment}
   mutation CategoryDelete($id: ID!) {
     categoryDelete(id: $id) {
-      errors {
-        field
-        message
+      errors: productErrors {
+        ...ProductErrorFragment
       }
     }
   }
 `;
-export const TypedCategoryDeleteMutation = TypedMutation<
+export const useCategoryDeleteMutation = makeMutation<
   CategoryDelete,
   CategoryDeleteVariables
 >(categoryDeleteMutation);
 
 export const categoryCreateMutation = gql`
   ${categoryDetailsFragment}
+  ${productErrorFragment}
   mutation CategoryCreate($parent: ID, $input: CategoryInput!) {
     categoryCreate(parent: $parent, input: $input) {
-      errors {
-        field
-        message
-      }
       category {
         ...CategoryDetailsFragment
+      }
+      errors: productErrors {
+        ...ProductErrorFragment
       }
     }
   }
 `;
-export const TypedCategoryCreateMutation = TypedMutation<
+export const useCategoryCreateMutation = makeMutation<
   CategoryCreate,
   CategoryCreateVariables
 >(categoryCreateMutation);
 
 export const categoryUpdateMutation = gql`
   ${categoryDetailsFragment}
+  ${productErrorFragment}
   mutation CategoryUpdate($id: ID!, $input: CategoryInput!) {
     categoryUpdate(id: $id, input: $input) {
-      errors {
-        field
-        message
-      }
       category {
         ...CategoryDetailsFragment
+      }
+      errors: productErrors {
+        ...ProductErrorFragment
       }
     }
   }
 `;
-export const TypedCategoryUpdateMutation = TypedMutation<
+export const useCategoryUpdateMutation = makeMutation<
   CategoryUpdate,
   CategoryUpdateVariables
 >(categoryUpdateMutation);
 
 export const categoryBulkDeleteMutation = gql`
+  ${productErrorFragment}
   mutation CategoryBulkDelete($ids: [ID]!) {
     categoryBulkDelete(ids: $ids) {
-      errors {
-        field
-        message
+      errors: productErrors {
+        ...ProductErrorFragment
       }
     }
   }
 `;
-export const TypedCategoryBulkDeleteMutation = TypedMutation<
+export const useCategoryBulkDeleteMutation = makeMutation<
   CategoryBulkDelete,
   CategoryBulkDeleteVariables
 >(categoryBulkDeleteMutation);

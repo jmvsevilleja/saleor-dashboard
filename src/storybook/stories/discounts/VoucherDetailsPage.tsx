@@ -1,6 +1,7 @@
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { DiscountErrorCode } from "@saleor/types/globalTypes";
 import VoucherDetailsPage, {
   FormData,
   VoucherDetailsPageProps,
@@ -9,7 +10,6 @@ import VoucherDetailsPage, {
 import { voucherDetails } from "../../../discounts/fixtures";
 import { listActionsProps, pageListProps } from "../../../fixtures";
 import Decorator from "../../Decorator";
-import { formError } from "../../misc";
 
 const props: VoucherDetailsPageProps = {
   ...listActionsProps,
@@ -53,12 +53,16 @@ storiesOf("Views / Discounts / Voucher details", module)
         "code",
         "discountType",
         "endDate",
-        "minAmountSpent",
+        "minSpent",
         "name",
         "startDate",
         "type",
         "usageLimit",
         "discountValue"
-      ] as Array<keyof FormData>).map(formError)}
+      ] as Array<keyof FormData>).map(field => ({
+        __typename: "DiscountError",
+        code: DiscountErrorCode.INVALID,
+        field
+      }))}
     />
   ));

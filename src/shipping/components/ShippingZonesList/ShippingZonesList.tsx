@@ -1,26 +1,21 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import IconButton from "@material-ui/core/IconButton";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection } from "@saleor/misc";
 import { ICONBUTTON_SIZE } from "@saleor/theme";
 import { ListActions, ListProps } from "@saleor/types";
@@ -32,30 +27,33 @@ export interface ShippingZonesListProps extends ListProps, ListActions {
   onRemove: (id: string) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     [theme.breakpoints.up("lg")]: {
       colCountries: {},
       colName: { width: 200 }
     },
     alignRight: {
       "&:last-child": {
-        paddingRight: theme.spacing.unit
+        paddingRight: theme.spacing(1)
       },
-      width: ICONBUTTON_SIZE + theme.spacing.unit / 2
+      width: ICONBUTTON_SIZE + theme.spacing(0.5)
     },
     colCountries: {},
-    colName: {},
+    colName: {
+      paddingLeft: 0
+    },
     row: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "ShippingZonesList" }
+);
 
 const numberOfColumns = 4;
 
-const ShippingZonesList = withStyles(styles, { name: "ShippingZonesList" })(
-  ({
-    classes,
+const ShippingZonesList: React.FC<ShippingZonesListProps> = props => {
+  const {
     disabled,
     settings,
     onAdd,
@@ -71,20 +69,29 @@ const ShippingZonesList = withStyles(styles, { name: "ShippingZonesList" })(
     toggle,
     toggleAll,
     toolbar
-  }: ShippingZonesListProps & WithStyles<typeof styles>) => (
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
     <Card>
       <CardTitle
         height="const"
-        title={i18n.t("Shipping by zone")}
+        title={intl.formatMessage({
+          defaultMessage: "Shipping By Zone",
+          description: "sort shipping methods by zone, section header"
+        })}
         toolbar={
           <Button color="primary" onClick={onAdd}>
-            {i18n.t("Add shipping zone", {
-              context: "button"
-            })}
+            <FormattedMessage
+              defaultMessage="Create shipping zone"
+              description="button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           selected={selected}
@@ -94,10 +101,13 @@ const ShippingZonesList = withStyles(styles, { name: "ShippingZonesList" })(
           toolbar={toolbar}
         >
           <TableCell className={classes.colName}>
-            {i18n.t("Name", { context: "object" })}
+            <FormattedMessage
+              defaultMessage="Name"
+              description="shipping zone"
+            />
           </TableCell>
           <TableCell className={classes.colCountries}>
-            {i18n.t("Countries", { context: "object" })}
+            <FormattedMessage defaultMessage="Countries" />
           </TableCell>
           <TableCell />
         </TableHead>
@@ -170,15 +180,15 @@ const ShippingZonesList = withStyles(styles, { name: "ShippingZonesList" })(
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No shipping zones found")}
+                  <FormattedMessage defaultMessage="No shipping zones found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 ShippingZonesList.displayName = "ShippingZonesList";
 export default ShippingZonesList;

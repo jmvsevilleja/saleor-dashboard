@@ -2,37 +2,52 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import i18n from "../../../i18n";
-import { FormErrors } from "../../../types";
-import { FormData } from "../ShippingZoneDetailsPage";
+import { commonMessages } from "@saleor/intl";
+import { getFormErrors } from "@saleor/utils/errors";
+import getShippingErrorMessage from "@saleor/utils/errors/shipping";
+import { ShippingErrorFragment } from "@saleor/shipping/types/ShippingErrorFragment";
 
 export interface ShippingZoneInfoProps {
-  data: FormData;
-  errors: FormErrors<"name">;
+  data: Record<"name", string>;
+  disabled: boolean;
+  errors: ShippingErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const ShippingZoneInfo: React.StatelessComponent<ShippingZoneInfoProps> = ({
+const ShippingZoneInfo: React.FC<ShippingZoneInfoProps> = ({
   data,
+  disabled,
   errors,
   onChange
-}) => (
-  <Card>
-    <CardTitle title={i18n.t("General Information")} />
-    <CardContent>
-      <TextField
-        error={!!errors.name}
-        fullWidth
-        helperText={errors.name}
-        label={i18n.t("Shipping Zone Name")}
-        name={"name" as keyof FormData}
-        value={data.name}
-        onChange={onChange}
+}) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["name"], errors);
+
+  return (
+    <Card>
+      <CardTitle
+        title={intl.formatMessage(commonMessages.generalInformations)}
       />
-    </CardContent>
-  </Card>
-);
+      <CardContent>
+        <TextField
+          disabled={disabled}
+          error={!!formErrors.name}
+          fullWidth
+          helperText={getShippingErrorMessage(formErrors.name, intl)}
+          label={intl.formatMessage({
+            defaultMessage: "Shipping Zone Name"
+          })}
+          name="name"
+          value={data.name}
+          onChange={onChange}
+        />
+      </CardContent>
+    </Card>
+  );
+};
 ShippingZoneInfo.displayName = "ShippingZoneInfo";
 export default ShippingZoneInfo;

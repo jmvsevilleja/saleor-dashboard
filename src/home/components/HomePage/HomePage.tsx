@@ -1,16 +1,14 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
 
 import CardSpacer from "@saleor/components/CardSpacer";
 import Container from "@saleor/components/Container";
 import Grid from "@saleor/components/Grid";
 import Money from "@saleor/components/Money";
+import RequirePermissions from "@saleor/components/RequirePermissions";
 import Skeleton from "@saleor/components/Skeleton";
+import { UserPermissionProps } from "@saleor/types";
+import { PermissionEnum } from "@saleor/types/globalTypes";
 import Orders from "../../../icons/Orders";
 import Sales from "../../../icons/Sales";
 import {
@@ -24,22 +22,24 @@ import HomeHeader from "../HomeHeader";
 import HomeNotificationTable from "../HomeNotificationTable/HomeNotificationTable";
 import HomeProductListCard from "../HomeProductListCard";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     cardContainer: {
       display: "grid",
-      gridColumnGap: `${theme.spacing.unit * 3}px`,
+      gridColumnGap: theme.spacing(3),
       gridTemplateColumns: "1fr 1fr",
       [theme.breakpoints.down("sm")]: {
-        gridColumnGap: `${theme.spacing.unit}px`
+        gridColumnGap: theme.spacing(1)
       },
       [theme.breakpoints.down("xs")]: {
         gridTemplateColumns: "1fr"
       }
     }
-  });
+  }),
+  { name: "HomePage" }
+);
 
-export interface HomePageProps extends WithStyles<typeof styles> {
+export interface HomePageProps extends UserPermissionProps {
   activities: Home_activities_edges_node[];
   orders: number;
   ordersToCapture: number;
@@ -54,9 +54,8 @@ export interface HomePageProps extends WithStyles<typeof styles> {
   onProductsOutOfStockClick: () => void;
 }
 
-const HomePage = withStyles(styles, { name: "HomePage" })(
-  ({
-    classes,
+const HomePage: React.FC<HomePageProps> = props => {
+  const {
     userName,
     orders,
     sales,
@@ -68,35 +67,45 @@ const HomePage = withStyles(styles, { name: "HomePage" })(
     onProductsOutOfStockClick,
     ordersToCapture,
     ordersToFulfill,
-    productsOutOfStock
-  }: HomePageProps) => (
+    productsOutOfStock,
+    userPermissions
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Container>
       <HomeHeader userName={userName} />
       <CardSpacer />
       <Grid>
         <div>
-          <div className={classes.cardContainer}>
-            <HomeAnalyticsCard
-              title={"Sales"}
-              icon={<Sales fontSize={"inherit"} viewBox="0 0 48 48" />}
-            >
-              {sales ? (
-                <Money money={sales} />
-              ) : (
-                <Skeleton style={{ width: "5em" }} />
-              )}
-            </HomeAnalyticsCard>
-            <HomeAnalyticsCard
-              title={"Orders"}
-              icon={<Orders fontSize={"inherit"} viewBox="0 0 48 48" />}
-            >
-              {orders === undefined ? (
-                <Skeleton style={{ width: "5em" }} />
-              ) : (
-                orders
-              )}
-            </HomeAnalyticsCard>
-          </div>
+          <RequirePermissions
+            userPermissions={userPermissions}
+            requiredPermissions={[PermissionEnum.MANAGE_ORDERS]}
+          >
+            <div className={classes.cardContainer}>
+              <HomeAnalyticsCard
+                title={"Sales"}
+                icon={<Sales fontSize={"inherit"} viewBox="0 0 64 64" />}
+              >
+                {sales ? (
+                  <Money money={sales} />
+                ) : (
+                  <Skeleton style={{ width: "5em" }} />
+                )}
+              </HomeAnalyticsCard>
+              <HomeAnalyticsCard
+                title={"Orders"}
+                icon={<Orders fontSize={"inherit"} viewBox="0 0 64 64" />}
+              >
+                {orders === undefined ? (
+                  <Skeleton style={{ width: "5em" }} />
+                ) : (
+                  orders
+                )}
+              </HomeAnalyticsCard>
+            </div>
+          </RequirePermissions>
           <HomeNotificationTable
             onOrdersToCaptureClick={onOrdersToCaptureClick}
             onOrdersToFulfillClick={onOrdersToFulfillClick}
@@ -104,20 +113,34 @@ const HomePage = withStyles(styles, { name: "HomePage" })(
             ordersToCapture={ordersToCapture}
             ordersToFulfill={ordersToFulfill}
             productsOutOfStock={productsOutOfStock}
+            userPermissions={userPermissions}
           />
           <CardSpacer />
-          <HomeProductListCard
-            onRowClick={onProductClick}
-            topProducts={topProducts}
-          />
-          <CardSpacer />
+          <RequirePermissions
+            userPermissions={userPermissions}
+            requiredPermissions={[
+              PermissionEnum.MANAGE_ORDERS,
+              PermissionEnum.MANAGE_PRODUCTS
+            ]}
+          >
+            <HomeProductListCard
+              onRowClick={onProductClick}
+              topProducts={topProducts}
+            />
+            <CardSpacer />
+          </RequirePermissions>
         </div>
         <div>
-          <HomeActivityCard activities={activities} />
+          <RequirePermissions
+            userPermissions={userPermissions}
+            requiredPermissions={[PermissionEnum.MANAGE_ORDERS]}
+          >
+            <HomeActivityCard activities={activities} />
+          </RequirePermissions>
         </div>
       </Grid>
     </Container>
-  )
-);
+  );
+};
 HomePage.displayName = "HomePage";
 export default HomePage;

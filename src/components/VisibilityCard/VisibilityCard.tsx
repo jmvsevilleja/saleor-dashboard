@@ -1,104 +1,155 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
+import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import ControlledSwitch from "@saleor/components/ControlledSwitch";
-import { FormSpacer } from "@saleor/components/FormSpacer";
-import useDateLocalize from "@saleor/hooks/useDateLocalize";
-import i18n from "../../i18n";
+import RadioSwitchField from "@saleor/components/RadioSwitchField";
+import { UserError } from "@saleor/types";
+import { getFieldError } from "@saleor/utils/errors";
 import { DateContext } from "../Date/DateContext";
+import FormSpacer from "../FormSpacer";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
+    children: {
+      "& button": {
+        margin: "0 9px"
+      },
+      "& label": {
+        marginTop: theme.spacing(2.5)
+      }
+    },
     date: {
       "& svg": {
         fill: theme.palette.primary.main
       },
-      marginTop: theme.spacing.unit * 4
+      marginTop: theme.spacing(3)
     },
-    expandedSwitchContainer: {
-      marginBottom: 0
+    label: {
+      lineHeight: 1,
+      margin: 0
     },
-    switchContainer: {
-      marginBottom: -theme.spacing.unit
+    secondLabel: {
+      fontSize: 12
+    },
+    setPublicationDate: {
+      color: theme.palette.primary.main,
+      cursor: "pointer",
+      fontSize: "14px",
+      paddingTop: "15px",
+      textDecoration: "underline"
     }
-  });
+  }),
+  { name: "VisibilityCard" }
+);
 
-interface VisibilityCardProps extends WithStyles<typeof styles> {
+interface VisibilityCardProps {
   children?: React.ReactNode | React.ReactNodeArray;
   data: {
     isPublished: boolean;
     publicationDate: string;
   };
-  errors: { [key: string]: string };
+  errors: UserError[];
   disabled?: boolean;
-  onChange(event: any);
+  hiddenMessage: string;
+  onChange: (event: React.ChangeEvent<any>) => void;
+  visibleMessage: string;
 }
 
-export const VisibilityCard = withStyles(styles, {
-  name: "VisibilityCard"
-})(
-  ({
+export const VisibilityCard: React.FC<VisibilityCardProps> = props => {
+  const {
     children,
-    classes,
     data: { isPublished, publicationDate },
     errors,
     disabled,
-    onChange
-  }: VisibilityCardProps) => {
-    const localizeDate = useDateLocalize();
-    const dateNow = React.useContext(DateContext);
-    return (
-      <Card>
-        <CardTitle title={i18n.t("Visibility")} />
-        <CardContent>
-          <div
-            className={
-              isPublished
-                ? classes.expandedSwitchContainer
-                : classes.switchContainer
-            }
-          >
-            <ControlledSwitch
-              name="isPublished"
-              label={i18n.t("Visible")}
-              uncheckedLabel={i18n.t("Hidden")}
-              secondLabel={
-                publicationDate
-                  ? isPublished
-                    ? i18n.t("since {{ date }}", {
-                        date: localizeDate(publicationDate)
-                      })
-                    : Date.parse(publicationDate) > dateNow
-                    ? i18n.t("will be visible from {{ date }}", {
-                        date: localizeDate(publicationDate)
-                      })
-                    : null
-                  : null
-              }
-              checked={isPublished}
-              onChange={onChange}
-              disabled={disabled}
-            />
-          </div>
-          {!isPublished && (
+    hiddenMessage,
+    onChange,
+    visibleMessage
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+  const [isPublicationDate, setPublicationDate] = React.useState(
+    publicationDate === null ? true : false
+  );
+  const dateNow = React.useContext(DateContext);
+  const visibleSecondLabel = publicationDate
+    ? isPublished
+      ? visibleMessage
+      : null
+    : null;
+  const hiddenSecondLabel = publicationDate
+    ? isPublished
+      ? null
+      : Date.parse(publicationDate) > dateNow
+      ? hiddenMessage
+      : null
+    : null;
+
+  return (
+    <Card>
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Visibility",
+          description: "section header"
+        })}
+      />
+      <CardContent>
+        <RadioSwitchField
+          disabled={disabled}
+          error={!!getFieldError(errors, "isPublished")}
+          firstOptionLabel={
             <>
+              <p className={classes.label}>
+                {intl.formatMessage({
+                  defaultMessage: "Visible"
+                })}
+              </p>
+              <span className={classes.secondLabel}>{visibleSecondLabel}</span>
+            </>
+          }
+          name={"isPublished" as keyof FormData}
+          secondOptionLabel={
+            <>
+              <p className={classes.label}>
+                {intl.formatMessage({
+                  defaultMessage: "Hidden"
+                })}
+              </p>
+              <span className={classes.secondLabel}>{hiddenSecondLabel}</span>
+            </>
+          }
+          value={isPublished}
+          onChange={onChange}
+        />
+        {!isPublished && (
+          <>
+            {!isPublished && (
+              <Typography
+                className={classes.setPublicationDate}
+                onClick={() => setPublicationDate(!isPublicationDate)}
+              >
+                {intl.formatMessage({
+                  defaultMessage: "Set publication date"
+                })}
+              </Typography>
+            )}
+            {isPublicationDate && (
               <TextField
-                error={!!errors.publicationDate}
+                error={!!getFieldError(errors, "publicationDate")}
                 disabled={disabled}
-                label={i18n.t("Publish on")}
+                label={intl.formatMessage({
+                  defaultMessage: "Publish on",
+                  description: "publish on date"
+                })}
                 name="publicationDate"
                 type="date"
                 fullWidth={true}
-                helperText={errors.publicationDate}
+                helperText={getFieldError(errors, "publicationDate")?.message}
                 value={publicationDate ? publicationDate : ""}
                 onChange={onChange}
                 className={classes.date}
@@ -106,14 +157,21 @@ export const VisibilityCard = withStyles(styles, {
                   shrink: true
                 }}
               />
-            </>
-          )}
-          <FormSpacer />
-          {children}
-        </CardContent>
-      </Card>
-    );
-  }
-);
+            )}
+          </>
+        )}
+        {getFieldError(errors, "isPublished") && (
+          <>
+            <FormSpacer />
+            <Typography color="error">
+              {getFieldError(errors, "isPublished")?.message}
+            </Typography>
+          </>
+        )}
+        <div className={classes.children}>{children}</div>
+      </CardContent>
+    </Card>
+  );
+};
 VisibilityCard.displayName = "VisibilityCard";
 export default VisibilityCard;

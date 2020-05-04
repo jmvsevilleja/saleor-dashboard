@@ -1,27 +1,22 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import IconButton from "@material-ui/core/IconButton";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import {
   SortableTableBody,
   SortableTableRow
 } from "@saleor/components/SortableTable";
 import TableHead from "@saleor/components/TableHead";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection, stopPropagation } from "@saleor/misc";
 import { ListActions, ReorderAction } from "@saleor/types";
 import { AttributeTypeEnum } from "@saleor/types/globalTypes";
@@ -30,8 +25,8 @@ import {
   ProductTypeDetails_productType_variantAttributes
 } from "../../types/ProductTypeDetails";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     colName: {},
     colSlug: {
       width: 300
@@ -40,7 +35,7 @@ const styles = (theme: Theme) =>
       "&:last-child": {
         paddingRight: 0
       },
-      width: 48 + theme.spacing.unit * 1.5
+      width: 48 + theme.spacing(1.5)
     },
     link: {
       cursor: "pointer"
@@ -48,7 +43,9 @@ const styles = (theme: Theme) =>
     textLeft: {
       textAlign: "left"
     }
-  });
+  }),
+  { name: "ProductTypeAttributes" }
+);
 
 interface ProductTypeAttributesProps extends ListActions {
   attributes:
@@ -64,12 +61,10 @@ interface ProductTypeAttributesProps extends ListActions {
 
 const numberOfColumns = 5;
 
-const ProductTypeAttributes = withStyles(styles, {
-  name: "ProductTypeAttributes"
-})(
-  ({
+const ProductTypeAttributes: React.FC<ProductTypeAttributesProps> = props => {
+  const {
     attributes,
-    classes,
+
     disabled,
     isChecked,
     selected,
@@ -81,13 +76,30 @@ const ProductTypeAttributes = withStyles(styles, {
     onAttributeClick,
     onAttributeReorder,
     onAttributeUnassign
-  }: ProductTypeAttributesProps & WithStyles<typeof styles>) => (
-    <Card>
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
+    <Card
+      data-tc={
+        type === AttributeTypeEnum.PRODUCT
+          ? "product-attributes"
+          : "variant-attributes"
+      }
+    >
       <CardTitle
         title={
           type === AttributeTypeEnum.PRODUCT
-            ? i18n.t("Product Attributes")
-            : i18n.t("Variant Attributes")
+            ? intl.formatMessage({
+                defaultMessage: "Product Attributes",
+                description: "section header"
+              })
+            : intl.formatMessage({
+                defaultMessage: "Variant Attributes",
+                description: "section header"
+              })
         }
         toolbar={
           <Button
@@ -95,11 +107,14 @@ const ProductTypeAttributes = withStyles(styles, {
             variant="text"
             onClick={() => onAttributeAssign(AttributeTypeEnum[type])}
           >
-            {i18n.t("Assign attribute", { context: "button" })}
+            <FormattedMessage
+              defaultMessage="Assign attribute"
+              description="button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           disabled={disabled}
@@ -110,9 +125,14 @@ const ProductTypeAttributes = withStyles(styles, {
           toolbar={toolbar}
         >
           <TableCell className={classes.colName}>
-            {i18n.t("Attribute name")}
+            <FormattedMessage defaultMessage="Attribute name" />
           </TableCell>
-          <TableCell className={classes.colName}>{i18n.t("Slug")}</TableCell>
+          <TableCell className={classes.colName}>
+            <FormattedMessage
+              defaultMessage="Slug"
+              description="attribute internal name"
+            />
+          </TableCell>
           <TableCell />
         </TableHead>
         <SortableTableBody onSortEnd={onAttributeReorder}>
@@ -133,6 +153,8 @@ const ProductTypeAttributes = withStyles(styles, {
                   }
                   key={maybe(() => attribute.id)}
                   index={attributeIndex || 0}
+                  data-tc="id"
+                  data-tc-id={maybe(() => attribute.id)}
                 >
                   <TableCell padding="checkbox">
                     <Checkbox
@@ -142,14 +164,14 @@ const ProductTypeAttributes = withStyles(styles, {
                       onChange={() => toggle(attribute.id)}
                     />
                   </TableCell>
-                  <TableCell className={classes.colName}>
+                  <TableCell className={classes.colName} data-tc="name">
                     {maybe(() => attribute.name) ? (
                       attribute.name
                     ) : (
                       <Skeleton />
                     )}
                   </TableCell>
-                  <TableCell className={classes.colSlug}>
+                  <TableCell className={classes.colSlug} data-tc="slug">
                     {maybe(() => attribute.slug) ? (
                       attribute.slug
                     ) : (
@@ -171,15 +193,15 @@ const ProductTypeAttributes = withStyles(styles, {
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No attributes found")}
+                  <FormattedMessage defaultMessage="No attributes found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </SortableTableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 ProductTypeAttributes.displayName = "ProductTypeAttributes";
 export default ProductTypeAttributes;

@@ -1,43 +1,42 @@
+import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
+
 import Button from "@material-ui/core/Button";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
-import Typography from "@material-ui/core/Typography";
-import React from "react";
-
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
-import { ControlledCheckbox } from "@saleor/components/ControlledCheckbox";
 import Form from "@saleor/components/Form";
 import FormSpacer from "@saleor/components/FormSpacer";
-import i18n from "../../../i18n";
-import { UserError } from "../../../types";
+import { buttonMessages, commonMessages } from "@saleor/intl";
+import useModalDialogErrors from "@saleor/hooks/useModalDialogErrors";
+import { getFormErrors } from "@saleor/utils/errors";
+import { StaffErrorFragment } from "@saleor/staff/types/StaffErrorFragment";
+import { SearchPermissionGroups_search_edges_node } from "@saleor/searches/types/SearchPermissionGroups";
+import { FetchMoreProps, SearchPageProps } from "@saleor/types";
+import getStaffErrorMessage from "@saleor/utils/errors/staff";
 
-export interface FormData {
+export interface AddMemberFormData {
   email: string;
   firstName: string;
-  fullAccess: boolean;
   lastName: string;
+  permissionGroups: string[];
 }
 
-const initialForm: FormData = {
+const initialForm: AddMemberFormData = {
   email: "",
   firstName: "",
-  fullAccess: false,
-  lastName: ""
+  lastName: "",
+  permissionGroups: []
 };
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     hr: {
       backgroundColor: "#eaeaea",
       border: "none",
@@ -46,58 +45,75 @@ const styles = (theme: Theme) =>
     },
     sectionTitle: {
       fontWeight: 600 as 600,
-      marginBottom: theme.spacing.unit,
-      marginTop: theme.spacing.unit * 2
+      marginBottom: theme.spacing(),
+      marginTop: theme.spacing(2)
     },
     textFieldGrid: {
       display: "grid",
-      gridColumnGap: `${theme.spacing.unit * 2}px`,
+      gridColumnGap: theme.spacing(2),
       gridTemplateColumns: "1fr 1fr"
     }
-  });
+  }),
+  { name: "StaffAddMemberDialog" }
+);
 
-interface StaffAddMemberDialogProps extends WithStyles<typeof styles> {
+interface StaffAddMemberDialogProps extends SearchPageProps {
+  availablePermissionGroups: SearchPermissionGroups_search_edges_node[];
   confirmButtonState: ConfirmButtonTransitionState;
-  errors: UserError[];
+  disabled: boolean;
+  errors: StaffErrorFragment[];
+  fetchMorePermissionGroups: FetchMoreProps;
   open: boolean;
   onClose: () => void;
-  onConfirm: (data: FormData) => void;
+  onConfirm: (data: AddMemberFormData) => void;
 }
 
-const StaffAddMemberDialog = withStyles(styles, {
-  name: "StaffAddMemberDialog"
-})(
-  ({
-    classes,
-    confirmButtonState,
-    errors,
-    open,
-    onClose,
-    onConfirm
-  }: StaffAddMemberDialogProps) => (
+const StaffAddMemberDialog: React.FC<StaffAddMemberDialogProps> = props => {
+  const { confirmButtonState, errors, onClose, onConfirm, open } = props;
+
+  const classes = useStyles(props);
+  const dialogErrors = useModalDialogErrors(errors, open);
+  const intl = useIntl();
+  const formErrors = getFormErrors(
+    ["firstName", "lastName", "email"],
+    dialogErrors
+  );
+
+  return (
     <Dialog onClose={onClose} open={open}>
-      <Form errors={errors} initial={initialForm} onSubmit={onConfirm}>
-        {({ change, data, errors: formErrors, hasChanged }) => (
+      <Form initial={initialForm} onSubmit={onConfirm}>
+        {({ change, data: formData, hasChanged }) => (
           <>
-            <DialogTitle>{i18n.t("Add Staff Member")}</DialogTitle>
+            <DialogTitle>
+              <FormattedMessage
+                defaultMessage="Invite Staff Member"
+                description="dialog header"
+              />
+            </DialogTitle>
             <DialogContent>
               <div className={classes.textFieldGrid}>
                 <TextField
                   error={!!formErrors.firstName}
-                  helperText={formErrors.firstName}
-                  label={i18n.t("First Name")}
+                  helperText={
+                    !!formErrors.firstName &&
+                    getStaffErrorMessage(formErrors.firstName, intl)
+                  }
+                  label={intl.formatMessage(commonMessages.firstName)}
                   name="firstName"
                   type="text"
-                  value={data.firstName}
+                  value={formData.firstName}
                   onChange={change}
                 />
                 <TextField
                   error={!!formErrors.lastName}
-                  helperText={formErrors.lastName}
-                  label={i18n.t("Last Name")}
+                  helperText={
+                    !!formErrors.lastName &&
+                    getStaffErrorMessage(formErrors.lastName, intl)
+                  }
+                  label={intl.formatMessage(commonMessages.lastName)}
                   name="lastName"
                   type="text"
-                  value={data.lastName}
+                  value={formData.lastName}
                   onChange={change}
                 />
               </div>
@@ -105,34 +121,21 @@ const StaffAddMemberDialog = withStyles(styles, {
               <TextField
                 error={!!formErrors.email}
                 fullWidth
-                helperText={formErrors.email}
-                label={i18n.t("Email address")}
+                helperText={
+                  !!formErrors.email &&
+                  getStaffErrorMessage(formErrors.email, intl)
+                }
+                label={intl.formatMessage(commonMessages.email)}
                 name="email"
                 type="email"
-                value={data.email}
+                value={formData.email}
                 onChange={change}
               />
             </DialogContent>
             <hr className={classes.hr} />
-            <DialogContent>
-              <Typography className={classes.sectionTitle}>
-                {i18n.t("Permissions")}
-              </Typography>
-              <Typography>
-                {i18n.t(
-                  "Expand or restrict user’s permissions to access certain part of saleor system."
-                )}
-              </Typography>
-              <ControlledCheckbox
-                checked={data.fullAccess}
-                label={i18n.t("User has full access")}
-                name="fullAccess"
-                onChange={change}
-              />
-            </DialogContent>
             <DialogActions>
               <Button onClick={onClose}>
-                {i18n.t("Cancel", { context: "button" })}
+                <FormattedMessage {...buttonMessages.back} />
               </Button>
               <ConfirmButton
                 color="primary"
@@ -141,14 +144,17 @@ const StaffAddMemberDialog = withStyles(styles, {
                 type="submit"
                 transitionState={confirmButtonState}
               >
-                {i18n.t("Send invite", { context: "button" })}
+                <FormattedMessage
+                  defaultMessage="Send invite"
+                  description="button"
+                />
               </ConfirmButton>
             </DialogActions>
           </>
         )}
       </Form>
     </Dialog>
-  )
-);
+  );
+};
 StaffAddMemberDialog.displayName = "StaffAddMemberDialog";
 export default StaffAddMemberDialog;

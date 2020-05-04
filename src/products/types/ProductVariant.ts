@@ -22,7 +22,7 @@ export interface ProductVariant_attributes_attribute {
   values: (ProductVariant_attributes_attribute_values | null)[] | null;
 }
 
-export interface ProductVariant_attributes_value {
+export interface ProductVariant_attributes_values {
   __typename: "AttributeValue";
   id: string;
   name: string | null;
@@ -32,7 +32,7 @@ export interface ProductVariant_attributes_value {
 export interface ProductVariant_attributes {
   __typename: "SelectedAttribute";
   attribute: ProductVariant_attributes_attribute;
-  value: ProductVariant_attributes_value | null;
+  values: (ProductVariant_attributes_values | null)[];
 }
 
 export interface ProductVariant_costPrice {
@@ -89,6 +89,20 @@ export interface ProductVariant_product {
   variants: (ProductVariant_product_variants | null)[] | null;
 }
 
+export interface ProductVariant_stocks_warehouse {
+  __typename: "Warehouse";
+  id: string;
+  name: string;
+}
+
+export interface ProductVariant_stocks {
+  __typename: "Stock";
+  id: string;
+  quantity: number;
+  quantityAllocated: number;
+  warehouse: ProductVariant_stocks_warehouse;
+}
+
 export interface ProductVariant {
   __typename: "ProductVariant";
   id: string;
@@ -99,6 +113,6 @@ export interface ProductVariant {
   priceOverride: ProductVariant_priceOverride | null;
   product: ProductVariant_product;
   sku: string;
-  quantity: number;
-  quantityAllocated: number;
+  stocks: (ProductVariant_stocks | null)[] | null;
+  trackInventory: boolean;
 }

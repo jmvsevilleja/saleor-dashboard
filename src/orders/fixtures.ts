@@ -1,4 +1,6 @@
-import { SearchCustomers_customers_edges_node } from "../containers/SearchCustomers/types/SearchCustomers";
+import { SearchCustomers_search_edges_node } from "@saleor/searches/types/SearchCustomers";
+import { MessageDescriptor } from "react-intl";
+import { warehouseList } from "@saleor/warehouses/fixtures";
 import { transformOrderStatus, transformPaymentStatus } from "../misc";
 import {
   FulfillmentStatus,
@@ -9,27 +11,36 @@ import {
 } from "../types/globalTypes";
 import { OrderDetails_order } from "./types/OrderDetails";
 import { OrderList_orders_edges_node } from "./types/OrderList";
+import { SearchOrderVariant_search_edges_node } from "./types/SearchOrderVariant";
 
-export const clients: SearchCustomers_customers_edges_node[] = [
+export const clients: SearchCustomers_search_edges_node[] = [
   {
     __typename: "User" as "User",
     email: "test.client1@example.com",
-    id: "c1"
+    firstName: "John",
+    id: "c1",
+    lastName: "Doe"
   },
   {
     __typename: "User" as "User",
     email: "test.client2@example.com",
-    id: "c2"
+    firstName: "Dough",
+    id: "c2",
+    lastName: "Jones"
   },
   {
     __typename: "User" as "User",
     email: "test.client3@example.com",
-    id: "c3"
+    firstName: "Jonas",
+    id: "c3",
+    lastName: "Dough"
   },
   {
     __typename: "User" as "User",
     email: "test.client4@example.com",
-    id: "c4"
+    firstName: "Bill",
+    id: "c4",
+    lastName: "Jonas"
   }
 ];
 export const orders: OrderList_orders_edges_node[] = [
@@ -855,7 +866,8 @@ export const order = (placeholder: string): OrderDetails_order => ({
         }
       ],
       status: FulfillmentStatus.FULFILLED,
-      trackingNumber: ""
+      trackingNumber: "",
+      warehouse: warehouseList[1]
     },
     {
       __typename: "Fulfillment",
@@ -895,7 +907,8 @@ export const order = (placeholder: string): OrderDetails_order => ({
         }
       ],
       status: FulfillmentStatus.FULFILLED,
-      trackingNumber: ""
+      trackingNumber: "01nn12399su12nndfsy",
+      warehouse: warehouseList[0]
     }
   ],
   id: "T3JkZXI6OQ==",
@@ -1126,8 +1139,12 @@ export const draftOrder = (placeholder: string): OrderDetails_order => ({
 });
 export const flatOrders = orders.map(order => ({
   ...order,
-  orderStatus: transformOrderStatus(order.status),
-  paymentStatus: transformPaymentStatus(order.paymentStatus)
+  orderStatus: transformOrderStatus(order.status, {
+    formatMessage: (message: MessageDescriptor) => message.defaultMessage
+  } as any),
+  paymentStatus: transformPaymentStatus(order.paymentStatus, {
+    formatMessage: (message: MessageDescriptor) => message.defaultMessage
+  } as any)
 }));
 export const variants = [
   { id: "p1", name: "Product 1: variant 1", sku: "12345", stockQuantity: 3 },
@@ -1147,10 +1164,12 @@ export const countries = [
   { code: "AS", label: "American Samoa" }
 ];
 export const shippingMethods = [
-  { id: "s1", name: "DHL", country: "whole world", price: {} },
-  { id: "s2", name: "UPS", country: "Afghanistan" }
+  { country: "whole world", id: "s1", name: "DHL", price: {} },
+  { country: "Afghanistan", id: "s2", name: "UPS" }
 ];
-export const orderLineSearch = (placeholderImage: string) => [
+export const orderLineSearch = (
+  placeholderImage: string
+): SearchOrderVariant_search_edges_node[] => [
   {
     __typename: "Product" as "Product",
     id: "UHJvZHVjdDo3Mg==",
@@ -1164,21 +1183,51 @@ export const orderLineSearch = (placeholderImage: string) => [
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjAy",
         name: "500ml",
-        price: { amount: 3.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 3.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "93855755"
       },
       {
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjAz",
         name: "1l",
-        price: { amount: 5.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 5.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "43226647"
       },
       {
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjA0",
         name: "2l",
-        price: { amount: 7.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 7.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "80884671"
       }
     ]
@@ -1196,21 +1245,51 @@ export const orderLineSearch = (placeholderImage: string) => [
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjEx",
         name: "500ml",
-        price: { amount: 3.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 3.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "43200242"
       },
       {
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjEy",
         name: "1l",
-        price: { amount: 5.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 5.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "79129513"
       },
       {
         __typename: "ProductVariant" as "ProductVariant",
         id: "UHJvZHVjdFZhcmlhbnQ6MjEz",
         name: "2l",
-        price: { amount: 7.0, currency: "USD", __typename: "Money" as "Money" },
+        pricing: {
+          __typename: "VariantPricingInfo",
+          priceUndiscounted: {
+            __typename: "TaxedMoney",
+            net: {
+              __typename: "Money" as "Money",
+              amount: 7.0,
+              currency: "USD"
+            }
+          }
+        },
         sku: "75799450"
       }
     ]

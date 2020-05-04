@@ -1,22 +1,17 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import classNames from "classnames";
 import React from "react";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     children: theme.mixins.gutters({}),
     constantHeight: {
       height: 56
     },
     hr: {
       border: "none",
-      borderTop: `1px solid ${theme.overrides.MuiCard.root.borderColor}`,
+      borderTop: `1px solid ${theme.palette.divider}`,
       height: 0,
       marginBottom: 0,
       marginTop: 0,
@@ -29,14 +24,17 @@ const styles = (theme: Theme) =>
     }),
     title: {
       flex: 1,
+      fontWeight: 500,
       lineHeight: 1
     },
     toolbar: {
-      marginRight: -theme.spacing.unit
+      marginRight: -theme.spacing(1)
     }
-  });
+  }),
+  { name: "CardTitle" }
+);
 
-interface CardTitleProps extends WithStyles<typeof styles> {
+interface CardTitleProps {
   children?: React.ReactNode;
   className?: string;
   height?: "default" | "const";
@@ -45,24 +43,27 @@ interface CardTitleProps extends WithStyles<typeof styles> {
   onClick?: (event: React.MouseEvent<any>) => void;
 }
 
-const CardTitle = withStyles(styles, { name: "CardTitle" })(
-  ({
-    classes,
+const CardTitle: React.FC<CardTitleProps> = props => {
+  const {
     className,
     children,
     height,
     title,
     toolbar,
     onClick,
-    ...props
-  }: CardTitleProps) => (
+    ...rest
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <>
       <div
         className={classNames(classes.root, {
           [className]: !!className,
           [classes.constantHeight]: height === "const"
         })}
-        {...props}
+        {...rest}
       >
         <Typography
           className={classes.title}
@@ -77,7 +78,7 @@ const CardTitle = withStyles(styles, { name: "CardTitle" })(
       <div className={classes.children}>{children}</div>
       <hr className={classes.hr} />
     </>
-  )
-);
+  );
+};
 CardTitle.displayName = "CardTitle";
 export default CardTitle;

@@ -4,101 +4,85 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
-import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
-import Form from "@saleor/components/Form";
-import i18n from "../../../i18n";
+import { buttonMessages } from "@saleor/intl";
+import { OrderErrorFragment } from "@saleor/orders/types/OrderErrorFragment";
+import FormSpacer from "@saleor/components/FormSpacer";
+import getOrderErrorMessage from "@saleor/utils/errors/order";
+import useModalDialogErrors from "@saleor/hooks/useModalDialogErrors";
 
-export interface FormData {
-  restock: boolean;
-}
-
-const styles = (theme: Theme) =>
-  createStyles({
-    deleteButton: {
-      "&:hover": {
-        backgroundColor: theme.palette.error.main
-      },
-      backgroundColor: theme.palette.error.main,
-      color: theme.palette.error.contrastText
-    }
-  });
-
-interface OrderCancelDialogProps extends WithStyles<typeof styles> {
+export interface OrderCancelDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
+  errors: OrderErrorFragment[];
   number: string;
   open: boolean;
-  onClose?();
-  onSubmit(data: FormData);
+  onClose: () => void;
+  onSubmit: () => void;
 }
 
-const OrderCancelDialog = withStyles(styles, { name: "OrderCancelDialog" })(
-  ({
-    classes,
+const OrderCancelDialog: React.FC<OrderCancelDialogProps> = props => {
+  const {
     confirmButtonState,
+    errors: apiErrors,
     number: orderNumber,
     open,
     onSubmit,
     onClose
-  }: OrderCancelDialogProps) => (
-    <Dialog onClose={onClose} open={open}>
-      <Form
-        initial={{
-          restock: true
-        }}
-        onSubmit={onSubmit}
-      >
-        {({ data, change }) => {
-          return (
-            <>
-              <DialogTitle>
-                {i18n.t("Cancel order", { context: "title" })}
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText
-                  dangerouslySetInnerHTML={{
-                    __html: i18n.t(
-                      "Are you sure you want to cancel order <strong>{{ orderNumber }}</strong>?",
-                      { orderNumber }
-                    )
-                  }}
-                />
-                <ControlledCheckbox
-                  checked={data.restock}
-                  label={i18n.t("Release all stock allocated to this order")}
-                  name="restock"
-                  onChange={change}
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={onClose}>
-                  {i18n.t("Back", { context: "button" })}
-                </Button>
-                <ConfirmButton
-                  transitionState={confirmButtonState}
-                  className={classes.deleteButton}
-                  variant="contained"
-                  type="submit"
-                >
-                  {i18n.t("Cancel order", { context: "button" })}
-                </ConfirmButton>
-              </DialogActions>
-            </>
-          );
-        }}
-      </Form>
+  } = props;
+
+  const intl = useIntl();
+  const errors = useModalDialogErrors(apiErrors, open);
+
+  return (
+    <Dialog onClose={onClose} open={open} maxWidth="sm">
+      <DialogTitle>
+        <FormattedMessage
+          defaultMessage="Cancel Order"
+          description="dialog header"
+          id="OrderCancelDialogHeader"
+        />
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          <FormattedMessage
+            defaultMessage="Cancelling this order will release unfulfilled stocks, so they can be bought by other customers. <b>Order will not be refunded when cancelling order - You need to do it manually.</b> Are you sure you want to cancel this order?"
+            values={{
+              b: (...chunks) => <b>{chunks}</b>,
+              orderNumber
+            }}
+          />
+        </DialogContentText>
+        {errors.length > 0 && (
+          <>
+            <FormSpacer />
+            {errors.map(err => (
+              <DialogContentText color="error">
+                {getOrderErrorMessage(err, intl)}
+              </DialogContentText>
+            ))}
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>
+          <FormattedMessage {...buttonMessages.back} />
+        </Button>
+        <ConfirmButton
+          onClick={onSubmit}
+          transitionState={confirmButtonState}
+          variant="contained"
+          type="submit"
+        >
+          <FormattedMessage {...buttonMessages.accept} />
+        </ConfirmButton>
+      </DialogActions>
     </Dialog>
-  )
-);
+  );
+};
 OrderCancelDialog.displayName = "OrderCancelDialog";
 export default OrderCancelDialog;

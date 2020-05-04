@@ -1,12 +1,12 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import IconButton from "@material-ui/core/IconButton";
-import { Theme } from "@material-ui/core/styles";
+import makeStyles from "@material-ui/core/styles/makeStyles";
 import Typography from "@material-ui/core/Typography";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
-import makeStyles from "@material-ui/styles/makeStyles";
 import classNames from "classnames";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import Grid from "@saleor/components/Grid";
@@ -18,7 +18,6 @@ import SingleAutocompleteSelectField, {
   SingleAutocompleteChoiceType
 } from "@saleor/components/SingleAutocompleteSelectField";
 import { FormsetAtomicData, FormsetChange } from "@saleor/hooks/useFormset";
-import i18n from "@saleor/i18n";
 import { maybe } from "@saleor/misc";
 import { ProductDetails_product_attributes_attribute_values } from "@saleor/products/types/ProductDetails";
 import { AttributeInputTypeEnum } from "@saleor/types/globalTypes";
@@ -39,48 +38,51 @@ export interface ProductAttributesProps {
   onMultiChange: FormsetChange;
 }
 
-const useStyles = makeStyles((theme: Theme) => ({
-  attributeSection: {
-    "&:last-of-type": {
-      paddingBottom: 0
+const useStyles = makeStyles(
+  theme => ({
+    attributeSection: {
+      "&:last-of-type": {
+        paddingBottom: 0
+      },
+      padding: theme.spacing(2, 0)
     },
-    padding: `${theme.spacing.unit * 2}px 0`
-  },
-  attributeSectionLabel: {
-    alignItems: "center",
-    display: "flex"
-  },
-  card: {
-    overflow: "visible"
-  },
-  cardContent: {
-    "&:last-child": {
-      paddingBottom: theme.spacing.unit
+    attributeSectionLabel: {
+      alignItems: "center",
+      display: "flex"
     },
-    paddingTop: theme.spacing.unit
-  },
-  expansionBar: {
-    display: "flex"
-  },
-  expansionBarButton: {
-    marginBottom: theme.spacing.unit
-  },
-  expansionBarButtonIcon: {
-    transition: theme.transitions.duration.short + "ms"
-  },
-  expansionBarLabel: {
-    color: theme.palette.text.disabled,
-    fontSize: 14
-  },
-  expansionBarLabelContainer: {
-    alignItems: "center",
-    display: "flex",
-    flex: 1
-  },
-  rotate: {
-    transform: "rotate(180deg)"
-  }
-}));
+    card: {
+      overflow: "visible"
+    },
+    cardContent: {
+      "&:last-child": {
+        paddingBottom: theme.spacing(1)
+      },
+      paddingTop: theme.spacing(1)
+    },
+    expansionBar: {
+      display: "flex"
+    },
+    expansionBarButton: {
+      marginBottom: theme.spacing(1)
+    },
+    expansionBarButtonIcon: {
+      transition: theme.transitions.duration.short + "ms"
+    },
+    expansionBarLabel: {
+      color: theme.palette.text.disabled,
+      fontSize: 14
+    },
+    expansionBarLabelContainer: {
+      alignItems: "center",
+      display: "flex",
+      flex: 1
+    },
+    rotate: {
+      transform: "rotate(180deg)"
+    }
+  }),
+  { name: "ProductAttributes" }
+);
 
 function getMultiChoices(
   values: ProductDetails_product_attributes_attribute_values[]
@@ -127,26 +129,36 @@ const ProductAttributes: React.FC<ProductAttributesProps> = ({
   onChange,
   onMultiChange
 }) => {
+  const intl = useIntl();
   const classes = useStyles({});
   const [expanded, setExpansionStatus] = React.useState(true);
   const toggleExpansion = () => setExpansionStatus(!expanded);
 
   return (
     <Card className={classes.card}>
-      <CardTitle title={i18n.t("Attributes")} />
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Attributes",
+          description: "product attributes, section header"
+        })}
+      />
       <CardContent className={classes.cardContent}>
         <div className={classes.expansionBar}>
           <div className={classes.expansionBarLabelContainer}>
             <Typography className={classes.expansionBarLabel} variant="caption">
-              {i18n.t("{{ number }} Attributes", {
-                context: "number of attribute",
-                number: attributes.length
-              })}
+              <FormattedMessage
+                defaultMessage="{number} Attributes"
+                description="number of product attributes"
+                values={{
+                  number: attributes.length
+                }}
+              />
             </Typography>
           </div>
           <IconButton
             className={classes.expansionBarButton}
             onClick={toggleExpansion}
+            data-tc="product-attributes-expand"
           >
             <ArrowDropDownIcon
               className={classNames(classes.expansionBarButtonIcon, {
@@ -162,10 +174,13 @@ const ProductAttributes: React.FC<ProductAttributesProps> = ({
               <React.Fragment key={attribute.id}>
                 {attributeIndex > 0 && <Hr />}
                 <Grid className={classes.attributeSection} variant="uniform">
-                  <div className={classes.attributeSectionLabel}>
+                  <div
+                    className={classes.attributeSectionLabel}
+                    data-tc="product-attribute-label"
+                  >
                     <Typography>{attribute.label}</Typography>
                   </div>
-                  <div>
+                  <div data-tc="product-attribute-value">
                     {attribute.data.inputType ===
                     AttributeInputTypeEnum.DROPDOWN ? (
                       <SingleAutocompleteSelectField
@@ -180,7 +195,10 @@ const ProductAttributes: React.FC<ProductAttributesProps> = ({
                         )}
                         emptyOption
                         name={`attribute:${attribute.label}`}
-                        label={i18n.t("Value")}
+                        label={intl.formatMessage({
+                          defaultMessage: "Value",
+                          description: "attribute value"
+                        })}
                         value={attribute.value[0]}
                         onChange={event =>
                           onChange(attribute.id, event.target.value)
@@ -191,7 +209,10 @@ const ProductAttributes: React.FC<ProductAttributesProps> = ({
                       <MultiAutocompleteSelectField
                         choices={getMultiChoices(attribute.data.values)}
                         displayValues={getMultiDisplayValue(attribute)}
-                        label={i18n.t("Values")}
+                        label={intl.formatMessage({
+                          defaultMessage: "Values",
+                          description: "attribute values"
+                        })}
                         name={`attribute:${attribute.label}`}
                         value={attribute.value}
                         onChange={event =>

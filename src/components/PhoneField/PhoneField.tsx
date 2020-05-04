@@ -1,24 +1,21 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
 
 import SingleSelectField from "@saleor/components/SingleSelectField";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     root: {
       display: "grid",
-      gridColumnGap: `${theme.spacing.unit * 2}px`,
+      gridColumnGap: theme.spacing(2),
       gridTemplateColumns: "5rem 1fr"
     }
-  });
+  }),
+  { name: "PhoneField" }
+);
 
-interface PhoneFieldProps extends WithStyles<typeof styles> {
+interface PhoneFieldProps {
   name: string;
   prefix: string;
   number: string;
@@ -27,16 +24,19 @@ interface PhoneFieldProps extends WithStyles<typeof styles> {
   onChange(event: React.ChangeEvent<any>);
 }
 
-const PhoneField = withStyles(styles, { name: "PhoneField" })(
-  ({
-    classes,
+const PhoneField: React.FC<PhoneFieldProps> = props => {
+  const {
     name,
     number: phoneNumber,
     prefix,
     prefixes,
     label,
     onChange
-  }: PhoneFieldProps) => (
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <div className={classes.root}>
       <SingleSelectField
         name={name + "_prefix"}
@@ -52,7 +52,7 @@ const PhoneField = withStyles(styles, { name: "PhoneField" })(
         label="&nbsp;"
       />
     </div>
-  )
-);
+  );
+};
 PhoneField.displayName = "PhoneField";
 export default PhoneField;

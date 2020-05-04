@@ -2,15 +2,18 @@ import { parse as parseQs } from "qs";
 import React from "react";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { useIntl } from "react-intl";
+import { asSortParams } from "@saleor/utils/sort";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   attributeAddPath,
   AttributeAddUrlQueryParams,
   attributeListPath,
   AttributeListUrlQueryParams,
   attributePath,
-  AttributeUrlQueryParams
+  AttributeUrlQueryParams,
+  AttributeListUrlSortField
 } from "./urls";
 import AttributeCreateComponent from "./views/AttributeCreate";
 import AttributeDetailsComponent from "./views/AttributeDetails";
@@ -18,7 +21,11 @@ import AttributeListComponent from "./views/AttributeList";
 
 const AttributeList: React.FC<RouteComponentProps<{}>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: AttributeListUrlQueryParams = qs;
+  const params: AttributeListUrlQueryParams = asSortParams(
+    qs,
+    AttributeListUrlSortField
+  );
+
   return <AttributeListComponent params={params} />;
 };
 
@@ -42,14 +49,18 @@ const AttributeDetails: React.FC<RouteComponentProps<{ id: string }>> = ({
   );
 };
 
-export const AttributeSection: React.FC = () => (
-  <>
-    <WindowTitle title={i18n.t("Attributes")} />
-    <Switch>
-      <Route exact path={attributeListPath} component={AttributeList} />
-      <Route exact path={attributeAddPath} component={AttributeCreate} />
-      <Route path={attributePath(":id")} component={AttributeDetails} />
-    </Switch>
-  </>
-);
+export const AttributeSection: React.FC = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.attributes)} />
+      <Switch>
+        <Route exact path={attributeListPath} component={AttributeList} />
+        <Route exact path={attributeAddPath} component={AttributeCreate} />
+        <Route path={attributePath(":id")} component={AttributeDetails} />
+      </Switch>
+    </>
+  );
+};
 export default AttributeSection;

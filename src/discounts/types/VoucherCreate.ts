@@ -2,16 +2,16 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { VoucherInput, DiscountValueTypeEnum } from "./../../types/globalTypes";
+import { VoucherInput, DiscountErrorCode, DiscountValueTypeEnum } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL mutation operation: VoucherCreate
 // ====================================================
 
 export interface VoucherCreate_voucherCreate_errors {
-  __typename: "Error";
+  __typename: "DiscountError";
+  code: DiscountErrorCode;
   field: string | null;
-  message: string | null;
 }
 
 export interface VoucherCreate_voucherCreate_voucher_countries {
@@ -20,7 +20,7 @@ export interface VoucherCreate_voucherCreate_voucher_countries {
   country: string;
 }
 
-export interface VoucherCreate_voucherCreate_voucher_minAmountSpent {
+export interface VoucherCreate_voucherCreate_voucher_minSpent {
   __typename: "Money";
   currency: string;
   amount: number;
@@ -36,13 +36,13 @@ export interface VoucherCreate_voucherCreate_voucher {
   discountValueType: DiscountValueTypeEnum;
   discountValue: number;
   countries: (VoucherCreate_voucherCreate_voucher_countries | null)[] | null;
-  minAmountSpent: VoucherCreate_voucherCreate_voucher_minAmountSpent | null;
+  minSpent: VoucherCreate_voucherCreate_voucher_minSpent | null;
   minCheckoutItemsQuantity: number | null;
 }
 
 export interface VoucherCreate_voucherCreate {
   __typename: "VoucherCreate";
-  errors: VoucherCreate_voucherCreate_errors[] | null;
+  errors: VoucherCreate_voucherCreate_errors[];
   voucher: VoucherCreate_voucherCreate_voucher | null;
 }
 

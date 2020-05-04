@@ -1,26 +1,21 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import IconButton from "@material-ui/core/IconButton";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { ListActions, ListProps } from "../../../types";
 import { SaleDetails_sale } from "../../types/SaleDetails";
@@ -32,13 +27,13 @@ export interface DiscountCategoriesProps extends ListProps, ListActions {
   onCategoryUnassign: (id: string) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     iconCell: {
       "&:last-child": {
         paddingRight: 0
       },
-      width: 48 + theme.spacing.unit / 2
+      width: 48 + theme.spacing(0.5)
     },
     tableRow: {
       cursor: "pointer"
@@ -49,16 +44,16 @@ const styles = (theme: Theme) =>
     wideColumn: {
       width: "60%"
     }
-  });
+  }),
+  { name: "DiscountCategories" }
+);
 
 const numberOfColumns = 4;
 
-const DiscountCategories = withStyles(styles, {
-  name: "DiscountCategories"
-})(
-  ({
+const DiscountCategories: React.FC<DiscountCategoriesProps> = props => {
+  const {
     discount: sale,
-    classes,
+
     disabled,
     pageInfo,
     onCategoryAssign,
@@ -71,17 +66,28 @@ const DiscountCategories = withStyles(styles, {
     toggleAll,
     selected,
     isChecked
-  }: DiscountCategoriesProps & WithStyles<typeof styles>) => (
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card>
       <CardTitle
-        title={i18n.t("Eligible Categories")}
+        title={intl.formatMessage({
+          defaultMessage: "Eligible Categories",
+          description: "section header"
+        })}
         toolbar={
           <Button color="primary" onClick={onCategoryAssign}>
-            {i18n.t("Assign categories")}
+            <FormattedMessage
+              defaultMessage="Assign categories"
+              description="button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           selected={selected}
@@ -92,10 +98,13 @@ const DiscountCategories = withStyles(styles, {
         >
           <>
             <TableCell className={classes.wideColumn}>
-              {i18n.t("Category name")}
+              <FormattedMessage defaultMessage="Category name" />
             </TableCell>
             <TableCell className={classes.textRight}>
-              {i18n.t("Products")}
+              <FormattedMessage
+                defaultMessage="Products"
+                description="number of products"
+              />
             </TableCell>
             <TableCell />
           </>
@@ -161,15 +170,15 @@ const DiscountCategories = withStyles(styles, {
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No categories found")}
+                  <FormattedMessage defaultMessage="No categories found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 DiscountCategories.displayName = "DiscountCategories";
 export default DiscountCategories;

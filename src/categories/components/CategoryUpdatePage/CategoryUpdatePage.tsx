@@ -1,8 +1,12 @@
+import Button from "@material-ui/core/Button";
+import Card from "@material-ui/core/Card";
 import { RawDraftContentState } from "draft-js";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import { CardSpacer } from "@saleor/components/CardSpacer";
+import CardTitle from "@saleor/components/CardTitle";
 import { ConfirmButtonTransitionState } from "@saleor/components/ConfirmButton";
 import Container from "@saleor/components/Container";
 import Form from "@saleor/components/Form";
@@ -10,9 +14,10 @@ import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import SeoForm from "@saleor/components/SeoForm";
 import { Tab, TabContainer } from "@saleor/components/Tab";
-import i18n from "../../../i18n";
+import { sectionNames } from "@saleor/intl";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
 import { maybe } from "../../../misc";
-import { TabListActions, UserError } from "../../../types";
+import { TabListActions } from "../../../types";
 import CategoryDetailsForm from "../../components/CategoryDetailsForm";
 import CategoryList from "../../components/CategoryList";
 import {
@@ -21,7 +26,7 @@ import {
   CategoryDetails_category_products_edges_node
 } from "../../types/CategoryDetails";
 import CategoryBackground from "../CategoryBackground";
-import CategoryProductsCard from "../CategoryProductsCard";
+import CategoryProducts from "../CategoryProducts";
 
 export interface FormData {
   backgroundImageAlt: string;
@@ -40,7 +45,7 @@ export interface CategoryUpdatePageProps
   extends TabListActions<"productListToolbar" | "subcategoryListToolbar"> {
   changeTab: (index: CategoryPageTab) => void;
   currentTab: CategoryPageTab;
-  errors: UserError[];
+  errors: ProductErrorFragment[];
   disabled: boolean;
   category: CategoryDetails_category;
   products: CategoryDetails_category_products_edges_node[];
@@ -66,14 +71,12 @@ export interface CategoryUpdatePageProps
 const CategoriesTab = Tab(CategoryPageTab.categories);
 const ProductsTab = Tab(CategoryPageTab.products);
 
-export const CategoryUpdatePage: React.StatelessComponent<
-  CategoryUpdatePageProps
-> = ({
+export const CategoryUpdatePage: React.FC<CategoryUpdatePageProps> = ({
   changeTab,
   currentTab,
   category,
   disabled,
-  errors: userErrors,
+  errors,
   pageInfo,
   products,
   saveButtonBarState,
@@ -96,6 +99,7 @@ export const CategoryUpdatePage: React.StatelessComponent<
   toggle,
   toggleAll
 }: CategoryUpdatePageProps) => {
+  const intl = useIntl();
   const initialData: FormData = category
     ? {
         backgroundImageAlt: maybe(() => category.backgroundImage.alt, ""),
@@ -112,15 +116,12 @@ export const CategoryUpdatePage: React.StatelessComponent<
         seoTitle: ""
       };
   return (
-    <Form
-      onSubmit={onSubmit}
-      initial={initialData}
-      errors={userErrors}
-      confirmLeave
-    >
-      {({ data, change, errors, submit, hasChanged }) => (
+    <Form onSubmit={onSubmit} initial={initialData} confirmLeave>
+      {({ data, change, submit, hasChanged }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Categories")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.categories)}
+          </AppHeader>
           <PageHeader title={category ? category.name : undefined} />
           <CategoryDetailsForm
             category={category}
@@ -139,9 +140,10 @@ export const CategoryUpdatePage: React.StatelessComponent<
           />
           <CardSpacer />
           <SeoForm
-            helperText={i18n.t(
-              "Add search engine title and description to make this category easier to find"
-            )}
+            helperText={intl.formatMessage({
+              defaultMessage:
+                "Add search engine title and description to make this category easier to find"
+            })}
             title={data.seoTitle}
             titlePlaceholder={data.name}
             description={data.seoDescription}
@@ -156,35 +158,62 @@ export const CategoryUpdatePage: React.StatelessComponent<
               isActive={currentTab === CategoryPageTab.categories}
               changeTab={changeTab}
             >
-              {i18n.t("Subcategories")}
+              <FormattedMessage
+                defaultMessage="Subcategories"
+                description="number of subcategories in category"
+              />
             </CategoriesTab>
             <ProductsTab
               isActive={currentTab === CategoryPageTab.products}
               changeTab={changeTab}
             >
-              {i18n.t("Products")}
+              <FormattedMessage
+                defaultMessage="Products"
+                description="number of products in category"
+              />
             </ProductsTab>
           </TabContainer>
           <CardSpacer />
           {currentTab === CategoryPageTab.categories && (
-            <CategoryList
-              disabled={disabled}
-              isRoot={false}
-              categories={subcategories}
-              onAdd={onAddCategory}
-              onRowClick={onCategoryClick}
-              onNextPage={onNextPage}
-              onPreviousPage={onPreviousPage}
-              pageInfo={pageInfo}
-              toggle={toggle}
-              toggleAll={toggleAll}
-              selected={selected}
-              isChecked={isChecked}
-              toolbar={subcategoryListToolbar}
-            />
+            <Card>
+              <CardTitle
+                title={intl.formatMessage({
+                  defaultMessage: "All Subcategories",
+                  description: "section header"
+                })}
+                toolbar={
+                  <Button
+                    color="primary"
+                    variant="text"
+                    onClick={onAddCategory}
+                  >
+                    <FormattedMessage
+                      defaultMessage="Create subcategory"
+                      description="button"
+                    />
+                  </Button>
+                }
+              />
+              <CategoryList
+                categories={subcategories}
+                disabled={disabled}
+                isChecked={isChecked}
+                isRoot={false}
+                pageInfo={pageInfo}
+                selected={selected}
+                sort={undefined}
+                toggle={toggle}
+                toggleAll={toggleAll}
+                toolbar={subcategoryListToolbar}
+                onNextPage={onNextPage}
+                onPreviousPage={onPreviousPage}
+                onRowClick={onCategoryClick}
+                onSort={() => undefined}
+              />
+            </Card>
           )}
           {currentTab === CategoryPageTab.products && (
-            <CategoryProductsCard
+            <CategoryProducts
               categoryName={maybe(() => category.name)}
               products={products}
               disabled={disabled}
@@ -204,9 +233,6 @@ export const CategoryUpdatePage: React.StatelessComponent<
             onCancel={onBack}
             onDelete={onDelete}
             onSave={submit}
-            labels={{
-              delete: i18n.t("Delete category")
-            }}
             state={saveButtonBarState}
             disabled={disabled || !hasChanged}
           />

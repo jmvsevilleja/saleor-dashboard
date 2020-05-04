@@ -2,16 +2,16 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { MenuItemCreateInput } from "./../../types/globalTypes";
+import { MenuItemCreateInput, MenuErrorCode } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL mutation operation: MenuItemCreate
 // ====================================================
 
 export interface MenuItemCreate_menuItemCreate_errors {
-  __typename: "Error";
+  __typename: "MenuError";
+  code: MenuErrorCode;
   field: string | null;
-  message: string | null;
 }
 
 export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_category {
@@ -148,7 +148,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children_chil
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children_children_children_page | null;
-  sortOrder: number | null;
   url: string | null;
 }
 
@@ -160,7 +159,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children_chil
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children_children_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children_children_children | null)[] | null;
 }
@@ -173,7 +171,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children_chil
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children_children | null)[] | null;
 }
@@ -186,7 +183,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children_chil
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children_children | null)[] | null;
 }
@@ -199,7 +195,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children_chil
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children_children | null)[] | null;
 }
@@ -212,7 +207,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items_children {
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_children_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children_children | null)[] | null;
 }
@@ -225,7 +219,6 @@ export interface MenuItemCreate_menuItemCreate_menuItem_menu_items {
   level: number;
   name: string;
   page: MenuItemCreate_menuItemCreate_menuItem_menu_items_page | null;
-  sortOrder: number | null;
   url: string | null;
   children: (MenuItemCreate_menuItemCreate_menuItem_menu_items_children | null)[] | null;
 }
@@ -243,7 +236,7 @@ export interface MenuItemCreate_menuItemCreate_menuItem {
 
 export interface MenuItemCreate_menuItemCreate {
   __typename: "MenuItemCreate";
-  errors: MenuItemCreate_menuItemCreate_errors[] | null;
+  errors: MenuItemCreate_menuItemCreate_errors[];
   menuItem: MenuItemCreate_menuItemCreate_menuItem | null;
 }
 

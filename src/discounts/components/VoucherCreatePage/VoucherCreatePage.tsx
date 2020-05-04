@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -8,8 +9,8 @@ import Form from "@saleor/components/Form";
 import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
-import i18n from "../../../i18n";
-import { UserError } from "../../../types";
+import { sectionNames } from "@saleor/intl";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
 import {
   DiscountValueTypeEnum,
   VoucherTypeEnum
@@ -20,8 +21,8 @@ import VoucherInfo from "../VoucherInfo";
 import VoucherLimits from "../VoucherLimits";
 import VoucherRequirements from "../VoucherRequirements";
 import VoucherTypes from "../VoucherTypes";
-
 import VoucherValue from "../VoucherValue";
+
 export interface FormData {
   applyOncePerCustomer: boolean;
   applyOncePerOrder: boolean;
@@ -31,8 +32,8 @@ export interface FormData {
   endTime: string;
   hasEndDate: boolean;
   hasUsageLimit: boolean;
-  minAmountSpent: string;
   minCheckoutItemsQuantity: string;
+  minSpent: string;
   requirementsPicker: RequirementsPicker;
   startDate: string;
   startTime: string;
@@ -44,13 +45,13 @@ export interface FormData {
 export interface VoucherCreatePageProps {
   defaultCurrency: string;
   disabled: boolean;
-  errors: UserError[];
+  errors: DiscountErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
   onSubmit: (data: FormData) => void;
 }
 
-const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
+const VoucherCreatePage: React.FC<VoucherCreatePageProps> = ({
   defaultCurrency,
   disabled,
   errors,
@@ -58,6 +59,8 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
   onBack,
   onSubmit
 }) => {
+  const intl = useIntl();
+
   const initialForm: FormData = {
     applyOncePerCustomer: false,
     applyOncePerOrder: false,
@@ -67,8 +70,8 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
     endTime: "",
     hasEndDate: false,
     hasUsageLimit: false,
-    minAmountSpent: "0",
     minCheckoutItemsQuantity: "0",
+    minSpent: "0",
     requirementsPicker: RequirementsPicker.NONE,
     startDate: "",
     startTime: "",
@@ -78,16 +81,23 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
   };
 
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Vouchers")}</AppHeader>
-          <PageHeader title={i18n.t("Create Voucher")} />
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.vouchers)}
+          </AppHeader>
+          <PageHeader
+            title={intl.formatMessage({
+              defaultMessage: "Create Voucher",
+              description: "page header"
+            })}
+          />
           <Grid>
             <div>
               <VoucherInfo
                 data={data}
-                errors={formErrors}
+                errors={errors}
                 disabled={disabled}
                 onChange={change}
                 variant="create"
@@ -96,7 +106,7 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
               <VoucherTypes
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               {data.discountType.toString() !== "SHIPPING" ? (
@@ -104,7 +114,7 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
                   data={data}
                   disabled={disabled}
                   defaultCurrency={defaultCurrency}
-                  errors={formErrors}
+                  errors={errors}
                   onChange={change}
                   variant="create"
                 />
@@ -114,7 +124,7 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -122,7 +132,7 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -130,7 +140,7 @@ const VoucherCreatePage: React.StatelessComponent<VoucherCreatePageProps> = ({
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
             </div>

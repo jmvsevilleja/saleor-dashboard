@@ -13,8 +13,15 @@ export interface StaffMemberDetails_user_avatar {
   url: string;
 }
 
-export interface StaffMemberDetails_user_permissions {
-  __typename: "PermissionDisplay";
+export interface StaffMemberDetails_user_permissionGroups {
+  __typename: "Group";
+  id: string;
+  name: string;
+  userCanManage: boolean;
+}
+
+export interface StaffMemberDetails_user_userPermissions {
+  __typename: "UserPermission";
   code: PermissionEnum;
   name: string;
 }
@@ -27,23 +34,12 @@ export interface StaffMemberDetails_user {
   isActive: boolean;
   lastName: string;
   avatar: StaffMemberDetails_user_avatar | null;
-  permissions: (StaffMemberDetails_user_permissions | null)[] | null;
-}
-
-export interface StaffMemberDetails_shop_permissions {
-  __typename: "PermissionDisplay";
-  code: PermissionEnum;
-  name: string;
-}
-
-export interface StaffMemberDetails_shop {
-  __typename: "Shop";
-  permissions: (StaffMemberDetails_shop_permissions | null)[];
+  permissionGroups: (StaffMemberDetails_user_permissionGroups | null)[] | null;
+  userPermissions: (StaffMemberDetails_user_userPermissions | null)[] | null;
 }
 
 export interface StaffMemberDetails {
   user: StaffMemberDetails_user | null;
-  shop: StaffMemberDetails_shop | null;
 }
 
 export interface StaffMemberDetailsVariables {

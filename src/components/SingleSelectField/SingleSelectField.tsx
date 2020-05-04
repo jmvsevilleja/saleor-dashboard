@@ -1,22 +1,31 @@
-import FilledInput from "@material-ui/core/FilledInput";
 import FormControl from "@material-ui/core/FormControl";
 import FormHelperText from "@material-ui/core/FormHelperText";
 import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
+import OutlinedInput from "@material-ui/core/OutlinedInput";
 import Select, { SelectProps } from "@material-ui/core/Select";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import classNames from "classnames";
 import React from "react";
+import { FormattedMessage } from "react-intl";
+import { InputProps } from "@material-ui/core/Input";
 
-import i18n from "../../i18n";
+const useStyles = makeStyles(
+  theme => ({
+    formControl: {
+      "& label": {
+        top: "-3px"
+      },
+      width: "100%"
+    },
+    noLabel: {
+      padding: theme.spacing(2, 1.5)
+    }
+  }),
+  { name: "SingleSelectField" }
+);
 
-const styles = createStyles({
-  formControl: {
-    width: "100%"
-  }
-});
-
-interface SingleSelectFieldProps extends WithStyles<typeof styles> {
+interface SingleSelectFieldProps {
   choices: Array<{
     value: string;
     label: string | React.ReactNode;
@@ -30,15 +39,13 @@ interface SingleSelectFieldProps extends WithStyles<typeof styles> {
   selectProps?: SelectProps;
   placeholder?: string;
   value?: string;
+  InputProps?: InputProps;
   onChange(event: any);
 }
 
-export const SingleSelectField = withStyles(styles, {
-  name: "SingleSelectField"
-})(
-  ({
+export const SingleSelectField: React.FC<SingleSelectFieldProps> = props => {
+  const {
     className,
-    classes,
     disabled,
     error,
     label,
@@ -48,48 +55,63 @@ export const SingleSelectField = withStyles(styles, {
     name,
     hint,
     selectProps,
-    placeholder
-  }: SingleSelectFieldProps) => {
-    const choicesByKey: { [key: string]: string } =
-      choices === undefined
-        ? {}
-        : choices.reduce((prev, curr) => {
-            prev[curr.value] = curr.label;
-            return prev;
-          }, {});
+    placeholder,
+    InputProps
+  } = props;
+  const classes = useStyles(props);
 
-    return (
-      <FormControl
-        className={classNames(classes.formControl, className)}
-        error={error}
-        disabled={disabled}
+  const choicesByKey: { [key: string]: string } =
+    choices === undefined
+      ? {}
+      : choices.reduce((prev, curr) => {
+          prev[curr.value] = curr.label;
+          return prev;
+        }, {});
+
+  return (
+    <FormControl
+      className={classNames(classes.formControl, className)}
+      error={error}
+      disabled={disabled}
+    >
+      <InputLabel shrink={!!value}>{label}</InputLabel>
+      <Select
+        variant="outlined"
+        fullWidth
+        renderValue={choiceValue =>
+          choiceValue ? choicesByKey[choiceValue.toString()] : placeholder
+        }
+        value={value || ""}
+        onChange={onChange}
+        input={
+          <OutlinedInput
+            classes={{
+              input: classNames({
+                [classes.noLabel]: !label
+              })
+            }}
+            name={name}
+            labelWidth={180}
+            {...InputProps}
+          />
+        }
+        {...selectProps}
       >
-        <InputLabel shrink={!!value}>{label}</InputLabel>
-        <Select
-          variant="filled"
-          fullWidth
-          renderValue={choiceValue =>
-            choiceValue ? choicesByKey[choiceValue.toString()] : placeholder
-          }
-          value={value || ""}
-          onChange={onChange}
-          input={<FilledInput name={name} />}
-          {...selectProps}
-        >
-          {choices.length > 0 ? (
-            choices.map(choice => (
-              <MenuItem value={choice.value} key={choice.value}>
-                {choice.label}
-              </MenuItem>
-            ))
-          ) : (
-            <MenuItem disabled={true}>{i18n.t("No results found")}</MenuItem>
-          )}
-        </Select>
-        {hint && <FormHelperText>{hint}</FormHelperText>}
-      </FormControl>
-    );
-  }
-);
+        {choices.length > 0 ? (
+          choices.map(choice => (
+            <MenuItem value={choice.value} key={choice.value}>
+              {choice.label}
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem disabled={true}>
+            <FormattedMessage defaultMessage="No results found" />
+          </MenuItem>
+        )}
+      </Select>
+      {hint && <FormHelperText>{hint}</FormHelperText>}
+    </FormControl>
+  );
+};
 SingleSelectField.displayName = "SingleSelectField";
 export default SingleSelectField;

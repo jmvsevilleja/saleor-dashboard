@@ -3,13 +3,15 @@ import { storiesOf } from "@storybook/react";
 import React from "react";
 
 import placeholderImage from "@assets/images/placeholder60x60.png";
+import { adminUserPermissions } from "@saleor/fixtures";
+import { PermissionEnum } from "@saleor/types/globalTypes";
 import HomePage, { HomePageProps } from "../../../home/components/HomePage";
 import { shop as shopFixture } from "../../../home/fixtures";
 import Decorator from "../../Decorator";
 
 const shop = shopFixture(placeholderImage);
 
-const HomePageProps: Omit<HomePageProps, "classes"> = {
+const homePageProps: Omit<HomePageProps, "classes"> = {
   activities: shop.activities.edges.map(edge => edge.node),
   onOrdersToCaptureClick: () => undefined,
   onOrdersToFulfillClick: () => undefined,
@@ -21,15 +23,16 @@ const HomePageProps: Omit<HomePageProps, "classes"> = {
   productsOutOfStock: shop.productsOutOfStock.totalCount,
   sales: shop.salesToday.gross,
   topProducts: shop.productTopToday.edges.map(edge => edge.node),
-  userName: "admin@example.com"
+  userName: "admin@example.com",
+  userPermissions: adminUserPermissions
 };
 
 storiesOf("Views / HomePage", module)
   .addDecorator(Decorator)
-  .add("default", () => <HomePage {...HomePageProps} />)
+  .add("default", () => <HomePage {...homePageProps} />)
   .add("loading", () => (
     <HomePage
-      {...HomePageProps}
+      {...homePageProps}
       activities={undefined}
       orders={undefined}
       ordersToCapture={undefined}
@@ -41,5 +44,24 @@ storiesOf("Views / HomePage", module)
     />
   ))
   .add("no data", () => (
-    <HomePage {...HomePageProps} topProducts={[]} activities={[]} />
+    <HomePage {...homePageProps} topProducts={[]} activities={[]} />
+  ))
+  .add("no permissions", () => (
+    <HomePage {...homePageProps} userPermissions={[]} />
+  ))
+  .add("product permissions", () => (
+    <HomePage
+      {...homePageProps}
+      userPermissions={adminUserPermissions.filter(
+        perm => perm.code === PermissionEnum.MANAGE_PRODUCTS
+      )}
+    />
+  ))
+  .add("order permissions", () => (
+    <HomePage
+      {...homePageProps}
+      userPermissions={adminUserPermissions.filter(
+        perm => perm.code === PermissionEnum.MANAGE_ORDERS
+      )}
+    />
   ));

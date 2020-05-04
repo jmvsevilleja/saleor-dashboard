@@ -2,9 +2,18 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
+import { AttributeFilterInput, AttributeSortingInput } from "./../../types/globalTypes";
+
 // ====================================================
 // GraphQL query operation: AttributeList
 // ====================================================
+
+export interface AttributeList_attributes_edges_node_values {
+  __typename: "AttributeValue";
+  id: string;
+  name: string | null;
+  slug: string | null;
+}
 
 export interface AttributeList_attributes_edges_node {
   __typename: "Attribute";
@@ -14,6 +23,7 @@ export interface AttributeList_attributes_edges_node {
   visibleInStorefront: boolean;
   filterableInDashboard: boolean;
   filterableInStorefront: boolean;
+  values: (AttributeList_attributes_edges_node_values | null)[] | null;
 }
 
 export interface AttributeList_attributes_edges {
@@ -40,11 +50,10 @@ export interface AttributeList {
 }
 
 export interface AttributeListVariables {
-  query?: string | null;
-  inCategory?: string | null;
-  inCollection?: string | null;
+  filter?: AttributeFilterInput | null;
   before?: string | null;
   after?: string | null;
   first?: number | null;
   last?: number | null;
+  sort?: AttributeSortingInput | null;
 }

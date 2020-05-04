@@ -13,14 +13,15 @@
 !.nvmrc
 !.npmrc
 !.plop
+!.prettierignore
 !.pylintrc
 !.travis*
 !.testcafe
 !.tx
 *.css
 *.log
-*.pot
 *.pyc
+*.mo
 local_settings.py
 __pycache__/
 build/

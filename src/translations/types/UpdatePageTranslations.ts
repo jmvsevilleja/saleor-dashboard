@@ -31,7 +31,7 @@ export interface UpdatePageTranslations_pageTranslate_page_translation {
 }
 
 export interface UpdatePageTranslations_pageTranslate_page {
-  __typename: "Page";
+  __typename: "PageTranslatableContent";
   id: string;
   contentJson: any;
   seoDescription: string | null;
@@ -42,7 +42,7 @@ export interface UpdatePageTranslations_pageTranslate_page {
 
 export interface UpdatePageTranslations_pageTranslate {
   __typename: "PageTranslate";
-  errors: UpdatePageTranslations_pageTranslate_errors[] | null;
+  errors: UpdatePageTranslations_pageTranslate_errors[];
   page: UpdatePageTranslations_pageTranslate_page | null;
 }
 

@@ -1,12 +1,14 @@
 import Button from "@material-ui/core/Button";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ActionDialog from "@saleor/components/ActionDialog";
 import AssignCategoriesDialog from "@saleor/components/AssignCategoryDialog";
 import AssignCollectionDialog from "@saleor/components/AssignCollectionDialog";
 import AssignProductDialog from "@saleor/components/AssignProductDialog";
 import { WindowTitle } from "@saleor/components/WindowTitle";
+import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "@saleor/config";
 import useBulkActions from "@saleor/hooks/useBulkActions";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
@@ -14,14 +16,14 @@ import usePaginator, {
   createPaginationState
 } from "@saleor/hooks/usePaginator";
 import useShop from "@saleor/hooks/useShop";
+import { commonMessages, sectionNames } from "@saleor/intl";
+import useCategorySearch from "@saleor/searches/useCategorySearch";
+import useCollectionSearch from "@saleor/searches/useCollectionSearch";
+import useProductSearch from "@saleor/searches/useProductSearch";
+import createDialogActionHandlers from "@saleor/utils/handlers/dialogActionHandlers";
 import { categoryUrl } from "../../categories/urls";
 import { collectionUrl } from "../../collections/urls";
-import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "../../config";
-import SearchCategories from "../../containers/SearchCategories";
-import SearchCollections from "../../containers/SearchCollections";
-import SearchProducts from "../../containers/SearchProducts";
-import i18n from "../../i18n";
-import { decimal, getMutationState, maybe } from "../../misc";
+import { decimal, joinDateTime, maybe } from "../../misc";
 import { productUrl } from "../../products/urls";
 import { DiscountValueTypeEnum, SaleType } from "../../types/globalTypes";
 import SaleDetailsPage, {
@@ -41,8 +43,8 @@ import { SaleUpdate } from "../types/SaleUpdate";
 import {
   saleListUrl,
   saleUrl,
-  SaleUrlDialog,
-  SaleUrlQueryParams
+  SaleUrlQueryParams,
+  SaleUrlDialog
 } from "../urls";
 
 interface SaleDetailsProps {
@@ -56,10 +58,7 @@ function discountValueTypeEnum(type: SaleType): DiscountValueTypeEnum {
     : DiscountValueTypeEnum.PERCENTAGE;
 }
 
-export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
-  id,
-  params
-}) => {
+export const SaleDetails: React.FC<SaleDetailsProps> = ({ id, params }) => {
   const navigate = useNavigator();
   const paginate = usePaginator();
   const notify = useNotifier();
@@ -67,6 +66,25 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
   const { isSelected, listElements, reset, toggle, toggleAll } = useBulkActions(
     params.ids
   );
+  const intl = useIntl();
+  const {
+    search: searchCategories,
+    result: searchCategoriesOpts
+  } = useCategorySearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
+  const {
+    search: searchCollections,
+    result: searchCollectionsOpts
+  } = useCollectionSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
+  const {
+    search: searchProducts,
+    result: searchProductsOpts
+  } = useProductSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
 
   const paginationState = createPaginationState(PAGINATE_BY, params);
   const changeTab = (tab: SaleDetailsPageTab) => {
@@ -81,8 +99,8 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
   const handleSaleDelete = (data: SaleDelete) => {
     if (data.saleDelete.errors.length === 0) {
       notify({
-        text: i18n.t("Removed sale", {
-          context: "notification"
+        text: intl.formatMessage({
+          defaultMessage: "Removed sale"
         })
       });
       navigate(saleListUrl(), true);
@@ -92,31 +110,15 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
   const handleSaleUpdate = (data: SaleUpdate) => {
     if (data.saleUpdate.errors.length === 0) {
       notify({
-        text: i18n.t("Updated sale", {
-          context: "notification"
-        })
+        text: intl.formatMessage(commonMessages.savedChanges)
       });
     }
   };
 
-  const closeModal = () =>
-    navigate(
-      saleUrl(id, {
-        ...params,
-        action: undefined,
-        ids: undefined
-      }),
-      true
-    );
-
-  const openModal = (action: SaleUrlDialog, ids?: string[]) =>
-    navigate(
-      saleUrl(id, {
-        ...params,
-        action,
-        ids
-      })
-    );
+  const [openModal, closeModal] = createDialogActionHandlers<
+    SaleUrlDialog,
+    SaleUrlQueryParams
+  >(navigate, params => saleUrl(id, params), params);
 
   const handleCatalogueAdd = (data: SaleCataloguesAdd) => {
     if (data.saleCataloguesAdd.errors.length === 0) {
@@ -130,6 +132,8 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
       reset();
     }
   };
+
+  const canOpenBulkActionDialog = maybe(() => params.ids.length > 0);
 
   return (
     <TypedSaleCataloguesRemove onCompleted={handleCatalogueRemove}>
@@ -152,34 +156,6 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                               SaleDetailsPageTab.collections
                             ? maybe(() => data.sale.collections.pageInfo)
                             : maybe(() => data.sale.products.pageInfo);
-                        const formTransitionState = getMutationState(
-                          saleUpdateOpts.called,
-                          saleUpdateOpts.loading,
-                          maybe(() => saleUpdateOpts.data.saleUpdate.errors)
-                        );
-                        const assignTransitionState = getMutationState(
-                          saleCataloguesAddOpts.called,
-                          saleCataloguesAddOpts.loading,
-                          maybe(
-                            () =>
-                              saleCataloguesAddOpts.data.saleCataloguesAdd
-                                .errors
-                          )
-                        );
-                        const unassignTransitionState = getMutationState(
-                          saleCataloguesRemoveOpts.called,
-                          saleCataloguesRemoveOpts.loading,
-                          maybe(
-                            () =>
-                              saleCataloguesRemoveOpts.data.saleCataloguesRemove
-                                .errors
-                          )
-                        );
-                        const removeTransitionState = getMutationState(
-                          saleDeleteOpts.called,
-                          saleDeleteOpts.loading,
-                          maybe(() => saleDeleteOpts.data.saleDelete.errors)
-                        );
 
                         const handleCategoriesUnassign = (ids: string[]) =>
                           saleCataloguesRemove({
@@ -222,7 +198,9 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
 
                         return (
                           <>
-                            <WindowTitle title={i18n.t("Sales")} />
+                            <WindowTitle
+                              title={intl.formatMessage(sectionNames.sales)}
+                            />
                             <SaleDetailsPage
                               defaultCurrency={maybe(
                                 () => shop.defaultCurrency
@@ -231,9 +209,9 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                               disabled={
                                 loading || saleCataloguesRemoveOpts.loading
                               }
-                              errors={maybe(
-                                () => saleUpdateOpts.data.saleUpdate.errors
-                              )}
+                              errors={
+                                saleUpdateOpts.data?.saleUpdate.errors || []
+                              }
                               pageInfo={pageInfo}
                               onNextPage={loadNextPage}
                               onPreviousPage={loadPreviousPage}
@@ -269,15 +247,17 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                                   variables: {
                                     id,
                                     input: {
-                                      endDate:
-                                        formData.endDate === ""
-                                          ? null
-                                          : formData.endDate,
+                                      endDate: formData.hasEndDate
+                                        ? joinDateTime(
+                                            formData.endDate,
+                                            formData.endTime
+                                          )
+                                        : null,
                                       name: formData.name,
-                                      startDate:
-                                        formData.startDate === ""
-                                          ? null
-                                          : formData.startDate,
+                                      startDate: joinDateTime(
+                                        formData.startDate,
+                                        formData.startTime
+                                      ),
                                       type: discountValueTypeEnum(
                                         formData.type
                                       ),
@@ -287,38 +267,53 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                                 })
                               }
                               onRemove={() => openModal("remove")}
-                              saveButtonBarState={formTransitionState}
+                              saveButtonBarState={saleUpdateOpts.status}
                               categoryListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal("unassign-category", listElements)
+                                    openModal("unassign-category", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign category from sale, button"
+                                    id="saleDetailsUnassignCategory"
+                                  />
                                 </Button>
                               }
                               collectionListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal(
-                                      "unassign-collection",
-                                      listElements
-                                    )
+                                    openModal("unassign-collection", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign collection from sale, button"
+                                    id="saleDetailsUnassignCollection"
+                                  />
                                 </Button>
                               }
                               productListToolbar={
                                 <Button
                                   color="primary"
                                   onClick={() =>
-                                    openModal("unassign-product", listElements)
+                                    openModal("unassign-product", {
+                                      ids: listElements
+                                    })
                                   }
                                 >
-                                  {i18n.t("Unassign")}
+                                  <FormattedMessage
+                                    defaultMessage="Unassign"
+                                    description="unassign product from sale, button"
+                                    id="saleDetailsUnassignProduct"
+                                  />
                                 </Button>
                               }
                               isChecked={isSelected}
@@ -326,189 +321,191 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                               toggle={toggle}
                               toggleAll={toggleAll}
                             />
-                            <SearchProducts
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchProducts,
-                                result: searchProductsOpts
-                              }) => (
-                                <AssignProductDialog
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-product"}
-                                  onFetch={searchProducts}
-                                  loading={searchProductsOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={products =>
-                                    saleCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          products: products.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
-                                  }
-                                  products={maybe(() =>
-                                    searchProductsOpts.data.products.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedProduct => suggestedProduct.id
+                            <AssignProductDialog
+                              confirmButtonState={saleCataloguesAddOpts.status}
+                              open={params.action === "assign-product"}
+                              onFetch={searchProducts}
+                              loading={searchProductsOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={products =>
+                                saleCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      products: products.map(
+                                        product => product.id
                                       )
-                                  )}
-                                />
-                              )}
-                            </SearchProducts>
-                            <SearchCategories
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchCategories,
-                                result: searchCategoriesOpts
-                              }) => (
-                                <AssignCategoriesDialog
-                                  categories={maybe(() =>
-                                    searchCategoriesOpts.data.categories.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedCategory =>
-                                          suggestedCategory.id
-                                      )
-                                  )}
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-category"}
-                                  onFetch={searchCategories}
-                                  loading={searchCategoriesOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={categories =>
-                                    saleCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          categories: categories.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
+                                    }
                                   }
-                                />
+                                })
+                              }
+                              products={maybe(() =>
+                                searchProductsOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedProduct => suggestedProduct.id
+                                  )
                               )}
-                            </SearchCategories>
-                            <SearchCollections
-                              variables={DEFAULT_INITIAL_SEARCH_DATA}
-                            >
-                              {({
-                                search: searchCollections,
-                                result: searchCollectionsOpts
-                              }) => (
-                                <AssignCollectionDialog
-                                  collections={maybe(() =>
-                                    searchCollectionsOpts.data.collections.edges
-                                      .map(edge => edge.node)
-                                      .filter(
-                                        suggestedCategory =>
-                                          suggestedCategory.id
+                            />
+                            <AssignCategoriesDialog
+                              categories={maybe(() =>
+                                searchCategoriesOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedCategory => suggestedCategory.id
+                                  )
+                              )}
+                              confirmButtonState={saleCataloguesAddOpts.status}
+                              open={params.action === "assign-category"}
+                              onFetch={searchCategories}
+                              loading={searchCategoriesOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={categories =>
+                                saleCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      categories: categories.map(
+                                        product => product.id
                                       )
-                                  )}
-                                  confirmButtonState={assignTransitionState}
-                                  open={params.action === "assign-collection"}
-                                  onFetch={searchCollections}
-                                  loading={searchCollectionsOpts.loading}
-                                  onClose={closeModal}
-                                  onSubmit={collections =>
-                                    saleCataloguesAdd({
-                                      variables: {
-                                        ...paginationState,
-                                        id,
-                                        input: {
-                                          collections: collections.map(
-                                            product => product.id
-                                          )
-                                        }
-                                      }
-                                    })
+                                    }
                                   }
-                                />
+                                })
+                              }
+                            />
+                            <AssignCollectionDialog
+                              collections={maybe(() =>
+                                searchCollectionsOpts.data.search.edges
+                                  .map(edge => edge.node)
+                                  .filter(
+                                    suggestedCategory => suggestedCategory.id
+                                  )
                               )}
-                            </SearchCollections>
+                              confirmButtonState={saleCataloguesAddOpts.status}
+                              open={params.action === "assign-collection"}
+                              onFetch={searchCollections}
+                              loading={searchCollectionsOpts.loading}
+                              onClose={closeModal}
+                              onSubmit={collections =>
+                                saleCataloguesAdd({
+                                  variables: {
+                                    ...paginationState,
+                                    id,
+                                    input: {
+                                      collections: collections.map(
+                                        product => product.id
+                                      )
+                                    }
+                                  }
+                                })
+                              }
+                            />
                             <ActionDialog
-                              open={params.action === "unassign-category"}
-                              title={i18n.t("Unassign Categories From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-category" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage: "Unassign Categories From Sale",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                saleCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleCategoriesUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> categories?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this category?} other{Are you sure you want to unassign {displayQuantity} categories?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
-                              open={params.action === "unassign-collection"}
-                              title={i18n.t("Unassign Collections From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-collection" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage:
+                                  "Unassign Collections From Sale",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                saleCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleCollectionsUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> collections?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this collection?} other{Are you sure you want to unassign {displayQuantity} collections?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
-                              open={params.action === "unassign-product"}
-                              title={i18n.t("Unassign Products From Sale")}
-                              confirmButtonState={unassignTransitionState}
+                              open={
+                                params.action === "unassign-product" &&
+                                canOpenBulkActionDialog
+                              }
+                              title={intl.formatMessage({
+                                defaultMessage: "Unassign Products From Sale",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={
+                                saleCataloguesRemoveOpts.status
+                              }
                               onClose={closeModal}
                               onConfirm={() =>
                                 handleProductsUnassign(params.ids)
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to unassign <strong>{{ saleName }}</strong> products?",
-                                    {
-                                      saleName: maybe(
-                                        () => params.ids.length.toString(),
-                                        "..."
+                              {canOpenBulkActionDialog && (
+                                <DialogContentText>
+                                  <FormattedMessage
+                                    defaultMessage="{counter,plural,one{Are you sure you want to unassign this product?} other{Are you sure you want to unassign {displayQuantity} products?}}"
+                                    description="dialog content"
+                                    values={{
+                                      counter: params.ids.length,
+                                      displayQuantity: (
+                                        <strong>{params.ids.length}</strong>
                                       )
-                                    }
-                                  )
-                                }}
-                              />
+                                    }}
+                                  />
+                                </DialogContentText>
+                              )}
                             </ActionDialog>
                             <ActionDialog
                               open={params.action === "remove"}
-                              title={i18n.t("Remove Sale")}
-                              confirmButtonState={removeTransitionState}
+                              title={intl.formatMessage({
+                                defaultMessage: "Delete Sale",
+                                description: "dialog header"
+                              })}
+                              confirmButtonState={saleDeleteOpts.status}
                               onClose={closeModal}
                               variant="delete"
                               onConfirm={() =>
@@ -517,19 +514,19 @@ export const SaleDetails: React.StatelessComponent<SaleDetailsProps> = ({
                                 })
                               }
                             >
-                              <DialogContentText
-                                dangerouslySetInnerHTML={{
-                                  __html: i18n.t(
-                                    "Are you sure you want to remove <strong>{{ saleName }}</strong>?",
-                                    {
-                                      saleName: maybe(
-                                        () => data.sale.name,
-                                        "..."
-                                      )
-                                    }
-                                  )
-                                }}
-                              />
+                              <DialogContentText>
+                                <FormattedMessage
+                                  defaultMessage="Are you sure you want to delete {saleName}?"
+                                  description="dialog content"
+                                  values={{
+                                    saleName: (
+                                      <strong>
+                                        {maybe(() => data.sale.name, "...")}
+                                      </strong>
+                                    )
+                                  }}
+                                />
+                              </DialogContentText>
                             </ActionDialog>
                           </>
                         );

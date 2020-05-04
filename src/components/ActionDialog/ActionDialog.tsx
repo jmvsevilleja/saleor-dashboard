@@ -3,22 +3,19 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import classNames from "classnames";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
-import i18n from "../../i18n";
+import { buttonMessages } from "@saleor/intl";
+import { DialogProps } from "@saleor/types";
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "../ConfirmButton/ConfirmButton";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     deleteButton: {
       "&:hover": {
         backgroundColor: theme.palette.error.main
@@ -26,37 +23,43 @@ const styles = (theme: Theme) =>
       backgroundColor: theme.palette.error.main,
       color: theme.palette.error.contrastText
     }
-  });
+  }),
+  { name: "ActionDialog" }
+);
 
-interface ActionDialogProps extends WithStyles<typeof styles> {
+interface ActionDialogProps extends DialogProps {
   children?: React.ReactNode;
   confirmButtonLabel?: string;
   confirmButtonState: ConfirmButtonTransitionState;
-  open: boolean;
+  maxWidth?: "xs" | "sm" | "md" | "lg" | "xl" | false;
   title: string;
   variant?: "default" | "delete";
-  onClose?();
   onConfirm();
 }
 
-const ActionDialog = withStyles(styles, { name: "ActionDialog" })(
-  ({
+const ActionDialog: React.FC<ActionDialogProps> = props => {
+  const {
     children,
-    classes,
     confirmButtonLabel,
     confirmButtonState,
     open,
     title,
     variant,
     onConfirm,
-    onClose
-  }: ActionDialogProps) => (
-    <Dialog onClose={onClose} open={open}>
+    onClose,
+    ...rest
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
+    <Dialog fullWidth onClose={onClose} open={open} {...rest}>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>{children}</DialogContent>
       <DialogActions>
         <Button onClick={onClose}>
-          {i18n.t("Cancel", { context: "button" })}
+          <FormattedMessage {...buttonMessages.back} />
         </Button>
         <ConfirmButton
           transitionState={confirmButtonState}
@@ -69,12 +72,17 @@ const ActionDialog = withStyles(styles, { name: "ActionDialog" })(
         >
           {confirmButtonLabel ||
             (variant === "delete"
-              ? i18n.t("Delete", { context: "button" })
-              : i18n.t("Confirm", { context: "button" }))}
+              ? intl.formatMessage(buttonMessages.delete)
+              : intl.formatMessage(buttonMessages.confirm))}
         </ConfirmButton>
       </DialogActions>
     </Dialog>
-  )
-);
+  );
+};
+
+ActionDialog.defaultProps = {
+  maxWidth: "xs",
+  variant: "default"
+};
 ActionDialog.displayName = "ActionDialog";
 export default ActionDialog;

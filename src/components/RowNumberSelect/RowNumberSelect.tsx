@@ -1,34 +1,32 @@
 import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
-import { Theme } from "@material-ui/core/styles";
-import { createStyles, makeStyles, useTheme } from "@material-ui/styles";
+import { makeStyles, useTheme } from "@material-ui/core/styles";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
-import i18n from "../../i18n";
 import { ListSettings } from "../../types";
 
 const useStyles = makeStyles(
-  (theme: Theme) =>
-    createStyles({
-      label: {
-        fontSize: 14
+  theme => ({
+    label: {
+      fontSize: 14
+    },
+    select: {
+      "& div": {
+        "&:focus": {
+          background: "none"
+        },
+        color: theme.palette.primary.main,
+        marginLeft: theme.spacing(1)
       },
-      select: {
-        "& div": {
-          "&:focus": {
-            background: "none"
-          },
-          color: theme.palette.primary.main,
-          padding: "0 10px 0 5px"
-        },
-        "& svg": {
-          color: theme.palette.primary.main
-        },
-        "&:after, &:before, &:hover": {
-          border: "none !important"
-        }
+      "& svg": {
+        color: theme.palette.primary.main
+      },
+      "&:after, &:before, &:hover": {
+        border: "none !important"
       }
-    }),
+    }
+  }),
   {
     name: "RowNumberSelect"
   }
@@ -51,7 +49,9 @@ const RowNumberSelect: React.FC<RowNumberSelectProps> = ({
   const classes = useStyles({ theme });
   return (
     <div className={className}>
-      <span className={classes.label}>{i18n.t("No of Rows:")}</span>
+      <span className={classes.label}>
+        <FormattedMessage defaultMessage="No of Rows:" />
+      </span>
       <Select
         className={classes.select}
         value={settings.rowNumber}

@@ -1,11 +1,7 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardMenu from "@saleor/components/CardMenu";
@@ -16,8 +12,9 @@ import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import Skeleton from "@saleor/components/Skeleton";
-import { SearchCustomers_customers_edges_node } from "../../../containers/SearchCustomers/types/SearchCustomers";
-import i18n from "../../../i18n";
+import { sectionNames } from "@saleor/intl";
+import { SearchCustomers_search_edges_node } from "@saleor/searches/types/SearchCustomers";
+import { FetchMoreProps, UserPermissionProps } from "@saleor/types";
 import { maybe } from "../../../misc";
 import { DraftOrderInput } from "../../../types/globalTypes";
 import { OrderDetails_order } from "../../types/OrderDetails";
@@ -26,21 +23,25 @@ import OrderDraftDetails from "../OrderDraftDetails/OrderDraftDetails";
 import { FormData as OrderDraftDetailsProductsFormData } from "../OrderDraftDetailsProducts";
 import OrderHistory, { FormData as HistoryFormData } from "../OrderHistory";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     date: {
-      marginBottom: theme.spacing.unit * 3,
-      marginLeft: theme.spacing.unit * 7
+      marginBottom: theme.spacing(3)
     },
     header: {
+      display: "flex",
       marginBottom: 0
     }
-  });
+  }),
+  { name: "OrderDraftPage" }
+);
 
-export interface OrderDraftPageProps extends WithStyles<typeof styles> {
+export interface OrderDraftPageProps
+  extends FetchMoreProps,
+    UserPermissionProps {
   disabled: boolean;
   order: OrderDetails_order;
-  users: SearchCustomers_customers_edges_node[];
+  users: SearchCustomers_search_edges_node[];
   usersLoading: boolean;
   countries: Array<{
     code: string;
@@ -66,17 +67,18 @@ export interface OrderDraftPageProps extends WithStyles<typeof styles> {
   onProfileView: () => void;
 }
 
-const OrderDraftPage = withStyles(styles, { name: "OrderDraftPage" })(
-  ({
-    classes,
+const OrderDraftPage: React.FC<OrderDraftPageProps> = props => {
+  const {
     disabled,
     fetchUsers,
+    hasMore,
     saveButtonBarState,
     onBack,
     onBillingAddressEdit,
     onCustomerEdit,
     onDraftFinalize,
     onDraftRemove,
+    onFetchMore,
     onNoteAdd,
     onOrderLineAdd,
     onOrderLineChange,
@@ -86,18 +88,30 @@ const OrderDraftPage = withStyles(styles, { name: "OrderDraftPage" })(
     onProfileView,
     order,
     users,
-    usersLoading
-  }: OrderDraftPageProps) => (
+    usersLoading,
+    userPermissions
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Container>
-      <AppHeader onBack={onBack}>{i18n.t("Orders")}</AppHeader>
+      <AppHeader onBack={onBack}>
+        {intl.formatMessage(sectionNames.draftOrders)}
+      </AppHeader>
       <PageHeader
         className={classes.header}
+        inline
         title={maybe(() => order.number) ? "#" + order.number : undefined}
       >
         <CardMenu
           menuItems={[
             {
-              label: i18n.t("Cancel order", { context: "button" }),
+              label: intl.formatMessage({
+                defaultMessage: "Cancel order",
+                description: "button"
+              }),
               onSelect: onDraftRemove
             }
           ]}
@@ -130,14 +144,17 @@ const OrderDraftPage = withStyles(styles, { name: "OrderDraftPage" })(
           <OrderCustomer
             canEditAddresses={true}
             canEditCustomer={true}
+            fetchUsers={fetchUsers}
+            hasMore={hasMore}
+            loading={usersLoading}
             order={order}
             users={users}
-            loading={usersLoading}
-            fetchUsers={fetchUsers}
+            userPermissions={userPermissions}
             onBillingAddressEdit={onBillingAddressEdit}
             onCustomerEdit={onCustomerEdit}
-            onShippingAddressEdit={onShippingAddressEdit}
+            onFetchMore={onFetchMore}
             onProfileView={onProfileView}
+            onShippingAddressEdit={onShippingAddressEdit}
           />
         </div>
       </Grid>
@@ -146,10 +163,15 @@ const OrderDraftPage = withStyles(styles, { name: "OrderDraftPage" })(
         disabled={disabled || !maybe(() => order.canFinalize)}
         onCancel={onBack}
         onSave={onDraftFinalize}
-        labels={{ save: i18n.t("Finalize", { context: "button" }) }}
+        labels={{
+          save: intl.formatMessage({
+            defaultMessage: "Finalize",
+            description: "button"
+          })
+        }}
       />
     </Container>
-  )
-);
+  );
+};
 OrderDraftPage.displayName = "OrderDraftPage";
 export default OrderDraftPage;

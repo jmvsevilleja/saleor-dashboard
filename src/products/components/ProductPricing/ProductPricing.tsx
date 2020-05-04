@@ -1,44 +1,58 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
 import PriceField from "@saleor/components/PriceField";
-import i18n from "../../../i18n";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
+import { getFormErrors, getProductErrorMessage } from "@saleor/utils/errors";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     root: {
       display: "grid",
-      gridColumnGap: theme.spacing.unit * 2 + "px",
+      gridColumnGap: theme.spacing(2),
       gridTemplateColumns: "1fr 1fr"
     }
-  });
+  }),
+  { name: "ProductPricing" }
+);
 
-interface ProductPricingProps extends WithStyles<typeof styles> {
+interface ProductPricingProps {
   currency?: string;
   data: {
     chargeTaxes: boolean;
     basePrice: number;
   };
   disabled: boolean;
+  errors: ProductErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const ProductPricing = withStyles(styles, { name: "ProductPricing" })(
-  ({ classes, currency, data, disabled, onChange }: ProductPricingProps) => (
+const ProductPricing: React.FC<ProductPricingProps> = props => {
+  const { currency, data, disabled, errors, onChange } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["basePrice"], errors);
+
+  return (
     <Card>
-      <CardTitle title={i18n.t("Pricing")}>
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Pricing",
+          description: "product pricing"
+        })}
+      >
         <ControlledCheckbox
           name="chargeTaxes"
-          label={i18n.t("Charge taxes for this item")}
+          label={intl.formatMessage({
+            defaultMessage: "Charge taxes for this item"
+          })}
           checked={data.chargeTaxes}
           onChange={onChange}
           disabled={disabled}
@@ -48,16 +62,26 @@ const ProductPricing = withStyles(styles, { name: "ProductPricing" })(
         <div className={classes.root}>
           <PriceField
             disabled={disabled}
-            label={i18n.t("Price")}
+            label={intl.formatMessage({
+              defaultMessage: "Price",
+              description: "product price"
+            })}
+            error={!!formErrors.basePrice}
+            hint={getProductErrorMessage(formErrors.basePrice, intl)}
             name="basePrice"
             value={data.basePrice}
             currencySymbol={currency}
             onChange={onChange}
+            InputProps={{
+              inputProps: {
+                min: 0
+              }
+            }}
           />
         </div>
       </CardContent>
     </Card>
-  )
-);
+  );
+};
 ProductPricing.displayName = "ProductPricing";
 export default ProductPricing;

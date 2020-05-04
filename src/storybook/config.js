@@ -1,7 +1,13 @@
 /* eslint-disable */
-const { configure } = require("@storybook/react");
+import requireContext from "require-context.macro";
+import { configure } from "@storybook/react";
+
+const req = requireContext("../", true, /.stories.tsx$/);
 
 function loadStories() {
+  // Story autodiscovery
+  req.keys().forEach((filename) => req(filename));
+
   // Components
   require("./stories/components/ActionDialog");
   require("./stories/components/AddressEdit");
@@ -23,7 +29,6 @@ function loadStories() {
   require("./stories/components/Filter");
   require("./stories/components/Money");
   require("./stories/components/MoneyRange");
-  require("./stories/components/MultiAutocompleteSelectField");
   require("./stories/components/MultiSelectField");
   require("./stories/components/NotFoundPage");
   require("./stories/components/PageHeader");
@@ -33,7 +38,6 @@ function loadStories() {
   require("./stories/components/RichTextEditor");
   require("./stories/components/SaveButtonBar");
   require("./stories/components/SaveFilterTabDialog");
-  require("./stories/components/SingleAutocompleteSelectField");
   require("./stories/components/SingleSelectField");
   require("./stories/components/Skeleton");
   require("./stories/components/StatusLabel");
@@ -93,13 +97,13 @@ function loadStories() {
   require("./stories/navigation/MenuItemDialog");
   require("./stories/navigation/MenuListPage");
 
-  // Staff
-  require("./stories/staff/StaffListPage");
-  require("./stories/staff/StaffDetailsPage");
-
   // Pages
   require("./stories/pages/PageDetailsPage");
   require("./stories/pages/PageListPage");
+
+  // Plugins
+  require("./stories/plugins/PluginDetailsPage");
+  require("./stories/plugins/PluginsListPage");
 
   // Products
   require("./stories/products/ProductCreatePage");
@@ -115,7 +119,6 @@ function loadStories() {
   require("./stories/orders/OrderBulkCancelDialog");
   require("./stories/orders/OrderCancelDialog");
   require("./stories/orders/OrderCustomer");
-  require("./stories/orders/OrderCustomerEditDialog");
   require("./stories/orders/OrderDetailsPage");
   require("./stories/orders/OrderDraftCancelDialog");
   require("./stories/orders/OrderDraftFinalizeDialog");

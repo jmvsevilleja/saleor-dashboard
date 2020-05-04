@@ -1,45 +1,51 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import Link from "@saleor/components/Link";
 import Money from "@saleor/components/Money";
 import Skeleton from "@saleor/components/Skeleton";
-import i18n from "../../../i18n";
 import { maybe } from "../../../misc";
 import { OrderDetails_order } from "../../types/OrderDetails";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     root: {
-      ...theme.typography.body2,
+      ...theme.typography.body1,
       lineHeight: 1.9,
       width: "100%"
     },
     textRight: {
       textAlign: "right"
     }
-  });
+  }),
+  { name: "OrderDraftDetailsSummary" }
+);
 
-interface OrderDraftDetailsSummaryProps extends WithStyles<typeof styles> {
+interface OrderDraftDetailsSummaryProps {
   order: OrderDetails_order;
   onShippingMethodEdit: () => void;
 }
 
-const OrderDraftDetailsSummary = withStyles(styles, {
-  name: "OrderDraftDetailsSummary"
-})(
-  ({ classes, order, onShippingMethodEdit }: OrderDraftDetailsSummaryProps) => (
+const OrderDraftDetailsSummary: React.FC<
+  OrderDraftDetailsSummaryProps
+> = props => {
+  const { order, onShippingMethodEdit } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <table className={classes.root}>
       <tbody>
         <tr>
           {maybe(() => order.subtotal) ? (
             <>
-              <td>{i18n.t("Subtotal")}</td>
+              <td>
+                <FormattedMessage
+                  defaultMessage="Subtotal"
+                  description="subtotal price or an order"
+                />
+              </td>
               <td className={classes.textRight}>
                 <Money money={order.subtotal.gross} />
               </td>
@@ -59,11 +65,16 @@ const OrderDraftDetailsSummary = withStyles(styles, {
               order.availableShippingMethods.length > 0 ? (
                 <td>
                   <Link onClick={onShippingMethodEdit}>
-                    {i18n.t("Add shipping carrier")}
+                    <FormattedMessage
+                      defaultMessage="Add shipping carrier"
+                      description="button"
+                    />
                   </Link>
                 </td>
               ) : (
-                <td>{i18n.t("No applicable shipping carriers")}</td>
+                <td>
+                  <FormattedMessage defaultMessage="No applicable shipping carriers" />
+                </td>
               )
             ) : (
               <>
@@ -90,7 +101,9 @@ const OrderDraftDetailsSummary = withStyles(styles, {
         <tr>
           {maybe(() => order.total.tax) !== undefined ? (
             <>
-              <td>{i18n.t("Taxes (VAT included)")}</td>
+              <td>
+                <FormattedMessage defaultMessage="Taxes (VAT included)" />
+              </td>
               <td className={classes.textRight}>
                 <Money money={order.total.tax} />
               </td>
@@ -104,7 +117,12 @@ const OrderDraftDetailsSummary = withStyles(styles, {
         <tr>
           {maybe(() => order.total.gross) !== undefined ? (
             <>
-              <td>{i18n.t("Total")}</td>
+              <td>
+                <FormattedMessage
+                  defaultMessage="Total"
+                  description="total price of an order"
+                />
+              </td>
               <td className={classes.textRight}>
                 <Money money={order.total.gross} />
               </td>
@@ -117,7 +135,7 @@ const OrderDraftDetailsSummary = withStyles(styles, {
         </tr>
       </tbody>
     </table>
-  )
-);
+  );
+};
 OrderDraftDetailsSummary.displayName = "OrderDraftDetailsSummary";
 export default OrderDraftDetailsSummary;

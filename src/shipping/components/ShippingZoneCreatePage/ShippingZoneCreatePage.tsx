@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -9,9 +10,9 @@ import Form from "@saleor/components/Form";
 import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
-import i18n from "../../../i18n";
+import { sectionNames } from "@saleor/intl";
+import { ShippingErrorFragment } from "@saleor/shipping/types/ShippingErrorFragment";
 import { CountryFragment } from "../../../taxes/types/CountryFragment";
-import { UserError } from "../../../types";
 import ShippingZoneCountriesAssignDialog from "../ShippingZoneCountriesAssignDialog";
 import ShippingZoneInfo from "../ShippingZoneInfo";
 
@@ -24,15 +25,21 @@ export interface FormData {
 export interface ShippingZoneCreatePageProps {
   countries: CountryFragment[];
   disabled: boolean;
-  errors: UserError[];
+  errors: ShippingErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
   onSubmit: (data: FormData) => void;
 }
 
-const ShippingZoneCreatePage: React.StatelessComponent<
-  ShippingZoneCreatePageProps
-> = ({ countries, disabled, errors, onBack, onSubmit, saveButtonBarState }) => {
+const ShippingZoneCreatePage: React.FC<ShippingZoneCreatePageProps> = ({
+  countries,
+  disabled,
+  errors,
+  onBack,
+  onSubmit,
+  saveButtonBarState
+}) => {
+  const intl = useIntl();
   const [isModalOpened, setModalStatus] = React.useState(false);
   const toggleModal = () => setModalStatus(!isModalOpened);
 
@@ -43,17 +50,25 @@ const ShippingZoneCreatePage: React.StatelessComponent<
   };
 
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
         <>
           <Container>
-            <AppHeader onBack={onBack}>{i18n.t("Shipping")}</AppHeader>
-            <PageHeader title={i18n.t("Create New Shipping Zone")} />
+            <AppHeader onBack={onBack}>
+              {intl.formatMessage(sectionNames.shipping)}
+            </AppHeader>
+            <PageHeader
+              title={intl.formatMessage({
+                defaultMessage: "Create New Shipping Zone",
+                description: "header"
+              })}
+            />
             <Grid>
               <div>
                 <ShippingZoneInfo
                   data={data}
-                  errors={formErrors}
+                  disabled={disabled}
+                  errors={errors}
                   onChange={change}
                 />
                 <CardSpacer />
@@ -64,12 +79,14 @@ const ShippingZoneCreatePage: React.StatelessComponent<
                   disabled={disabled}
                   emptyText={
                     data.default
-                      ? i18n.t(
-                          "This is default shipping zone, which means that it covers all of the countries which are not assigned to other shipping zones"
-                        )
-                      : i18n.t(
-                          "Currently, there are no countries assigned to this shipping zone"
-                        )
+                      ? intl.formatMessage({
+                          defaultMessage:
+                            "This is default shipping zone, which means that it covers all of the countries which are not assigned to other shipping zones"
+                        })
+                      : intl.formatMessage({
+                          defaultMessage:
+                            "Currently, there are no countries assigned to this shipping zone"
+                        })
                   }
                   onCountryAssign={toggleModal}
                   onCountryUnassign={countryCode =>
@@ -82,7 +99,9 @@ const ShippingZoneCreatePage: React.StatelessComponent<
                       }
                     } as any)
                   }
-                  title={i18n.t("Countries")}
+                  title={intl.formatMessage({
+                    defaultMessage: "Countries"
+                  })}
                 />
               </div>
             </Grid>
@@ -95,26 +114,15 @@ const ShippingZoneCreatePage: React.StatelessComponent<
           </Container>
           <ShippingZoneCountriesAssignDialog
             open={isModalOpened}
-            onConfirm={formData =>
-              change(
-                {
-                  target: {
-                    name: "default",
-                    value: formData.restOfTheWorld
-                  }
-                } as any,
-                () =>
-                  change(
-                    {
-                      target: {
-                        name: "countries",
-                        value: formData.restOfTheWorld ? [] : formData.countries
-                      }
-                    } as any,
-                    toggleModal
-                  )
-              )
-            }
+            onConfirm={formData => {
+              change({
+                target: {
+                  name: "countries",
+                  value: formData.restOfTheWorld ? [] : formData.countries
+                }
+              } as any);
+              toggleModal();
+            }}
             confirmButtonState="default"
             countries={countries}
             initial={data.countries}

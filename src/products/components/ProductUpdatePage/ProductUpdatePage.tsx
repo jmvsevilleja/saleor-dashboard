@@ -1,5 +1,6 @@
 import { convertFromRaw, RawDraftContentState } from "draft-js";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -11,15 +12,17 @@ import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import SeoForm from "@saleor/components/SeoForm";
 import VisibilityCard from "@saleor/components/VisibilityCard";
-import { SearchCategories_categories_edges_node } from "@saleor/containers/SearchCategories/types/SearchCategories";
-import { SearchCollections_collections_edges_node } from "@saleor/containers/SearchCollections/types/SearchCollections";
+import useDateLocalize from "@saleor/hooks/useDateLocalize";
 import useFormset from "@saleor/hooks/useFormset";
 import useStateFromProps from "@saleor/hooks/useStateFromProps";
-import i18n from "@saleor/i18n";
+import { sectionNames } from "@saleor/intl";
 import { maybe } from "@saleor/misc";
-import { ListActions, UserError } from "@saleor/types";
+import { SearchCategories_search_edges_node } from "@saleor/searches/types/SearchCategories";
+import { SearchCollections_search_edges_node } from "@saleor/searches/types/SearchCollections";
+import { FetchMoreProps, ListActions } from "@saleor/types";
 import createMultiAutocompleteSelectHandler from "@saleor/utils/handlers/multiAutocompleteSelectChangeHandler";
 import createSingleAutocompleteSelectHandler from "@saleor/utils/handlers/singleAutocompleteSelectChangeHandler";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
 import {
   ProductDetails_product,
   ProductDetails_product_images,
@@ -31,7 +34,8 @@ import {
   getProductUpdatePageFormData,
   getSelectedAttributesFromProduct,
   ProductAttributeValueChoices,
-  ProductUpdatePageFormData
+  ProductUpdatePageFormData,
+  getStockInputFromProduct
 } from "../../utils/data";
 import {
   createAttributeChangeHandler,
@@ -42,15 +46,17 @@ import ProductDetailsForm from "../ProductDetailsForm";
 import ProductImages from "../ProductImages";
 import ProductOrganization from "../ProductOrganization";
 import ProductPricing from "../ProductPricing";
-import ProductStock from "../ProductStock";
 import ProductVariants from "../ProductVariants";
+import ProductStocks, { ProductStockInput } from "../ProductStocks";
 
 export interface ProductUpdatePageProps extends ListActions {
-  errors: UserError[];
+  errors: ProductErrorFragment[];
   placeholderImage: string;
-  collections: SearchCollections_collections_edges_node[];
-  categories: SearchCategories_categories_edges_node[];
+  collections: SearchCollections_search_edges_node[];
+  categories: SearchCategories_search_edges_node[];
   disabled: boolean;
+  fetchMoreCategories: FetchMoreProps;
+  fetchMoreCollections: FetchMoreProps;
   variants: ProductDetails_product_variants[];
   images: ProductDetails_product_images[];
   product: ProductDetails_product;
@@ -58,15 +64,15 @@ export interface ProductUpdatePageProps extends ListActions {
   saveButtonBarState: ConfirmButtonTransitionState;
   fetchCategories: (query: string) => void;
   fetchCollections: (query: string) => void;
+  onWarehousesEdit: () => void;
+  onVariantsAdd: () => void;
   onVariantShow: (id: string) => () => void;
   onImageDelete: (id: string) => () => void;
-  onAttributesEdit: () => void;
   onBack?();
   onDelete();
   onImageEdit?(id: string);
   onImageReorder?(event: { oldIndex: number; newIndex: number });
   onImageUpload(file: File);
-  onProductShow?();
   onSeoClick?();
   onSubmit?(data: ProductUpdatePageSubmitData);
   onVariantAdd?();
@@ -75,22 +81,24 @@ export interface ProductUpdatePageProps extends ListActions {
 export interface ProductUpdatePageSubmitData extends ProductUpdatePageFormData {
   attributes: ProductAttributeInput[];
   collections: string[];
+  stocks: ProductStockInput[];
 }
 
 export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
   disabled,
   categories: categoryChoiceList,
   collections: collectionChoiceList,
-  errors: userErrors,
+  errors,
   fetchCategories,
   fetchCollections,
+  fetchMoreCategories,
+  fetchMoreCollections,
   images,
   header,
   placeholderImage,
   product,
   saveButtonBarState,
   variants,
-  onAttributesEdit,
   onBack,
   onDelete,
   onImageDelete,
@@ -100,20 +108,28 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
   onSeoClick,
   onSubmit,
   onVariantAdd,
+  onVariantsAdd,
   onVariantShow,
+  onWarehousesEdit,
   isChecked,
   selected,
   toggle,
   toggleAll,
   toolbar
 }) => {
+  const intl = useIntl();
+  const localizeDate = useDateLocalize();
   const attributeInput = React.useMemo(
     () => getAttributeInputFromProduct(product),
     [product]
   );
+  const stockInput = React.useMemo(() => getStockInputFromProduct(product), [
+    product
+  ]);
   const { change: changeAttributeData, data: attributes } = useFormset(
     attributeInput
   );
+  const { change: changeStockData, data: stocks } = useFormset(stockInput);
 
   const [selectedAttributes, setSelectedAttributes] = useStateFromProps<
     ProductAttributeValueChoices[]
@@ -140,25 +156,13 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
   const handleSubmit = (data: ProductUpdatePageFormData) =>
     onSubmit({
       attributes,
+      stocks,
       ...data
     });
 
   return (
-    <Form
-      onSubmit={handleSubmit}
-      errors={userErrors}
-      initial={initialData}
-      confirmLeave
-    >
-      {({
-        change,
-        data,
-        errors,
-        hasChanged,
-        submit,
-        triggerChange,
-        toggleValue
-      }) => {
+    <Form onSubmit={handleSubmit} initial={initialData} confirmLeave>
+      {({ change, data, hasChanged, submit, triggerChange, toggleValue }) => {
         const handleCollectionSelect = createMultiAutocompleteSelectHandler(
           toggleValue,
           setSelectedCollections,
@@ -188,7 +192,9 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
         return (
           <>
             <Container>
-              <AppHeader onBack={onBack}>{i18n.t("Products")}</AppHeader>
+              <AppHeader onBack={onBack}>
+                {intl.formatMessage(sectionNames.products)}
+              </AppHeader>
               <PageHeader title={header} />
               <Grid>
                 <div>
@@ -209,17 +215,20 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                     onImageUpload={onImageUpload}
                   />
                   <CardSpacer />
-                  <ProductAttributes
-                    attributes={attributes}
-                    disabled={disabled}
-                    onChange={handleAttributeChange}
-                    onMultiChange={handleAttributeMultiChange}
-                  />
+                  {attributes.length > 0 && (
+                    <ProductAttributes
+                      attributes={attributes}
+                      disabled={disabled}
+                      onChange={handleAttributeChange}
+                      onMultiChange={handleAttributeMultiChange}
+                    />
+                  )}
                   <CardSpacer />
                   <ProductPricing
                     currency={currency}
                     data={data}
                     disabled={disabled}
+                    errors={errors}
                     onChange={change}
                   />
                   <CardSpacer />
@@ -228,9 +237,9 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                       disabled={disabled}
                       variants={variants}
                       fallbackPrice={product ? product.basePrice : undefined}
-                      onAttributesEdit={onAttributesEdit}
                       onRowClick={onVariantShow}
                       onVariantAdd={onVariantAdd}
+                      onVariantsAdd={onVariantsAdd}
                       toolbar={toolbar}
                       isChecked={isChecked}
                       selected={selected}
@@ -238,12 +247,17 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                       toggleAll={toggleAll}
                     />
                   ) : (
-                    <ProductStock
+                    <ProductStocks
                       data={data}
                       disabled={disabled}
-                      product={product}
-                      onChange={change}
                       errors={errors}
+                      stocks={stocks}
+                      onChange={(id, value) => {
+                        triggerChange();
+                        changeStockData(id, value);
+                      }}
+                      onFormDataChange={change}
+                      onWarehousesEdit={onWarehousesEdit}
                     />
                   )}
                   <CardSpacer />
@@ -259,6 +273,10 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                     loading={disabled}
                     onClick={onSeoClick}
                     onChange={change}
+                    helperText={intl.formatMessage({
+                      defaultMessage:
+                        "Add search engine title and description to make this product easier to find"
+                    })}
                   />
                 </div>
                 <div>
@@ -273,6 +291,8 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                     errors={errors}
                     fetchCategories={fetchCategories}
                     fetchCollections={fetchCollections}
+                    fetchMoreCategories={fetchMoreCategories}
+                    fetchMoreCollections={fetchMoreCollections}
                     productType={maybe(() => product.productType)}
                     onCategoryChange={handleCategorySelect}
                     onCollectionChange={handleCollectionSelect}
@@ -282,7 +302,25 @@ export const ProductUpdatePage: React.FC<ProductUpdatePageProps> = ({
                     data={data}
                     errors={errors}
                     disabled={disabled}
+                    hiddenMessage={intl.formatMessage(
+                      {
+                        defaultMessage: "will be visible from {date}",
+                        description: "product"
+                      },
+                      {
+                        date: localizeDate(data.publicationDate)
+                      }
+                    )}
                     onChange={change}
+                    visibleMessage={intl.formatMessage(
+                      {
+                        defaultMessage: "since {date}",
+                        description: "product"
+                      },
+                      {
+                        date: localizeDate(data.publicationDate)
+                      }
+                    )}
                   />
                 </div>
               </Grid>

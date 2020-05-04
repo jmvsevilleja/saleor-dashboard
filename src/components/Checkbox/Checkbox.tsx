@@ -1,12 +1,7 @@
-import { Omit } from "@material-ui/core";
 import ButtonBase from "@material-ui/core/ButtonBase";
 import { CheckboxProps as MuiCheckboxProps } from "@material-ui/core/Checkbox";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
+import { fade } from "@material-ui/core/styles/colorManipulator";
 import classNames from "classnames";
 import React from "react";
 
@@ -24,12 +19,16 @@ export type CheckboxProps = Omit<
   onChange?: (event: React.ChangeEvent<any>) => void;
 };
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     box: {
       "&$checked": {
         "&:before": {
-          background: theme.palette.primary.main
+          background: theme.palette.primary.main,
+          color: theme.palette.background.paper,
+          content: '"\\2713"',
+          fontWeight: "bold",
+          textAlign: "center"
         },
         borderColor: theme.palette.primary.main
       },
@@ -47,15 +46,16 @@ const styles = (theme: Theme) =>
       "&:before": {
         background: "rgba(0, 0, 0, 0)",
         content: '""',
-        height: 8,
-        left: 2,
+        height: 14,
+        left: -1,
         position: "absolute",
-        top: 2,
+        top: -1,
         transition: theme.transitions.duration.short + "ms",
-        width: 8
+        width: 14
       },
+
       WebkitAppearance: "none",
-      border: `1px solid ${theme.palette.grey[500]}`,
+      border: `1px solid ${theme.palette.action.active}`,
       boxSizing: "border-box",
       cursor: "pointer",
       height: 14,
@@ -68,63 +68,70 @@ const styles = (theme: Theme) =>
     disabled: {},
     indeterminate: {},
     root: {
-      alignItems: "center",
+      "&:hover": {
+        background: fade(theme.palette.primary.main, 0.1)
+      },
+      alignSelf: "start",
       borderRadius: "100%",
       cursor: "pointer",
       display: "flex",
-      height: 48,
+      height: 30,
       justifyContent: "center",
-      width: 48
+      margin: "5px 9px",
+      width: 30
     }
-  });
-const Checkbox = withStyles(styles, { name: "Checkbox" })(
-  ({
+  }),
+  { name: "Checkbox" }
+);
+const Checkbox: React.FC<CheckboxProps> = props => {
+  const {
     checked,
     className,
-    classes,
+
     disabled,
     disableClickPropagation,
     indeterminate,
     onChange,
     value,
     name,
-    ...props
-  }: CheckboxProps & WithStyles<typeof styles>) => {
-    const inputRef = React.useRef<HTMLInputElement>(null);
-    const handleClick = React.useCallback(
-      disableClickPropagation
-        ? event => {
-            event.stopPropagation();
-            inputRef.current.click();
-          }
-        : () => inputRef.current.click(),
-      []
-    );
+    ...rest
+  } = props;
+  const classes = useStyles(props);
 
-    return (
-      <ButtonBase
-        {...props}
-        centerRipple
-        className={classNames(classes.root, className)}
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const handleClick = React.useCallback(
+    disableClickPropagation
+      ? event => {
+          event.stopPropagation();
+          inputRef.current.click();
+        }
+      : () => inputRef.current.click(),
+    []
+  );
+
+  return (
+    <ButtonBase
+      {...rest}
+      centerRipple
+      className={classNames(classes.root, className)}
+      disabled={disabled}
+      onClick={handleClick}
+    >
+      <input
+        className={classNames(classes.box, {
+          [classes.checked]: checked,
+          [classes.disabled]: disabled,
+          [classes.indeterminate]: indeterminate
+        })}
         disabled={disabled}
-        onClick={handleClick}
-      >
-        <input
-          className={classNames(classes.box, {
-            [classes.checked]: checked,
-            [classes.disabled]: disabled,
-            [classes.indeterminate]: indeterminate
-          })}
-          disabled={disabled}
-          type="checkbox"
-          name={name}
-          value={checked !== undefined && checked.toString()}
-          ref={inputRef}
-          onChange={onChange}
-        />
-      </ButtonBase>
-    );
-  }
-);
+        type="checkbox"
+        name={name}
+        value={checked !== undefined && checked.toString()}
+        ref={inputRef}
+        onChange={onChange}
+      />
+    </ButtonBase>
+  );
+};
 Checkbox.displayName = "Checkbox";
 export default Checkbox;

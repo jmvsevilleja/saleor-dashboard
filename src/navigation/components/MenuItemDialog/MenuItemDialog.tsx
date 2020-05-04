@@ -7,21 +7,24 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import isUrl from "is-url";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import AutocompleteSelectMenu from "@saleor/components/AutocompleteSelectMenu";
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
 import FormSpacer from "@saleor/components/FormSpacer";
-import { SearchCategories_categories_edges_node } from "@saleor/containers/SearchCategories/types/SearchCategories";
-import { SearchCollections_collections_edges_node } from "@saleor/containers/SearchCollections/types/SearchCollections";
-import { SearchPages_pages_edges_node } from "@saleor/containers/SearchPages/types/SearchPages";
 import useModalDialogErrors from "@saleor/hooks/useModalDialogErrors";
+import useModalDialogOpen from "@saleor/hooks/useModalDialogOpen";
 import useStateFromProps from "@saleor/hooks/useStateFromProps";
-import i18n from "@saleor/i18n";
-import { UserError } from "@saleor/types";
-import { getErrors, getFieldError } from "@saleor/utils/errors";
+import { buttonMessages, sectionNames } from "@saleor/intl";
+import { SearchCategories_search_edges_node } from "@saleor/searches/types/SearchCategories";
+import { SearchCollections_search_edges_node } from "@saleor/searches/types/SearchCollections";
+import { SearchPages_search_edges_node } from "@saleor/searches/types/SearchPages";
 import { getMenuItemByValue, IMenu } from "@saleor/utils/menu";
+import { MenuErrorFragment } from "@saleor/navigation/types/MenuErrorFragment";
+import { getFieldError, getFormErrors } from "@saleor/utils/errors";
+import getMenuErrorMessage from "@saleor/utils/errors/menu";
 
 export type MenuItemType = "category" | "collection" | "link" | "page";
 export interface MenuItemData {
@@ -36,14 +39,14 @@ export interface MenuItemDialogFormData extends MenuItemData {
 export interface MenuItemDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
   disabled: boolean;
-  errors: UserError[];
+  errors: MenuErrorFragment[];
   initial?: MenuItemDialogFormData;
   initialDisplayValue?: string;
   loading: boolean;
   open: boolean;
-  collections: SearchCollections_collections_edges_node[];
-  categories: SearchCategories_categories_edges_node[];
-  pages: SearchPages_pages_edges_node[];
+  collections: SearchCollections_search_edges_node[];
+  categories: SearchCategories_search_edges_node[];
+  pages: SearchPages_search_edges_node[];
   onClose: () => void;
   onSubmit: (data: MenuItemDialogFormData) => void;
   onQueryChange: (query: string) => void;
@@ -71,7 +74,7 @@ function getDisplayValue(menu: IMenu, value: string): string {
   return getMenuItemByValue(menu, value).label.toString();
 }
 
-const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
+const MenuItemDialog: React.FC<MenuItemDialogProps> = ({
   confirmButtonState,
   disabled,
   errors: apiErrors,
@@ -86,6 +89,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
   collections,
   pages
 }) => {
+  const intl = useIntl();
   const errors = useModalDialogErrors(apiErrors, open);
   const [displayValue, setDisplayValue] = React.useState(
     initialDisplayValue || ""
@@ -95,18 +99,25 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
   );
   const [url, setUrl] = React.useState<string>(undefined);
 
+  // Reset input state after closing dialog
+  useModalDialogOpen(open, {
+    onClose: () => {
+      setData(initial || defaultInitial);
+      setDisplayValue(initialDisplayValue);
+      setUrl(undefined);
+    }
+  });
+
   // Refresh initial display value if changed
   React.useEffect(() => setDisplayValue(initialDisplayValue), [
     initialDisplayValue
   ]);
 
-  // Reset input state after closing dialog
-  React.useEffect(() => {
-    setDisplayValue(initialDisplayValue);
-    setUrl(undefined);
-  }, [open]);
-
-  const mutationErrors = getErrors(errors);
+  const mutationErrors = errors.filter(err => err.field === null);
+  const formErrors = getFormErrors(["name"], errors);
+  const idError = ["category", "collection", "page", "url"]
+    .map(field => getFieldError(errors, field))
+    .reduce((acc, err) => acc || err);
 
   let options: IMenu = [];
 
@@ -121,7 +132,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
           value: "category:" + category.id
         })),
         data: {},
-        label: i18n.t("Categories")
+        label: intl.formatMessage(sectionNames.categories)
       }
     ];
   }
@@ -137,7 +148,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
           value: "collection:" + collection.id
         })),
         data: {},
-        label: i18n.t("Collections")
+        label: intl.formatMessage(sectionNames.collections)
       }
     ];
   }
@@ -153,7 +164,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
           value: "page:" + page.id
         })),
         data: {},
-        label: i18n.t("Pages")
+        label: intl.formatMessage(sectionNames.pages)
       }
     ];
   }
@@ -164,12 +175,12 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
         children: [],
         data: {},
         label: (
-          <div
-            dangerouslySetInnerHTML={{
-              __html: i18n.t("Link to: <strong>{{ url }}</strong>", {
-                context: "add link to navigation",
-                url
-              })
+          <FormattedMessage
+            defaultMessage="Link to: {url}"
+            description="add link to navigation"
+            id="menuItemDialogAddLink"
+            values={{
+              url: <strong>{url}</strong>
             }}
           />
         ),
@@ -202,10 +213,6 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
 
   const handleSubmit = () => onSubmit(data);
 
-  const idError = ["category", "collection", "page", "url"]
-    .map(field => getFieldError(errors, field))
-    .reduce((acc, err) => acc || err);
-
   return (
     <Dialog
       onClose={onClose}
@@ -218,17 +225,25 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
     >
       <DialogTitle>
         {!!initial
-          ? i18n.t("Edit Item", {
-              context: "edit menu item"
+          ? intl.formatMessage({
+              defaultMessage: "Edit Item",
+              description: "edit menu item, header",
+              id: "menuItemDialogEditItem"
             })
-          : i18n.t("Add Item", {
-              context: "create new menu item"
+          : intl.formatMessage({
+              defaultMessage: "Add Item",
+              description: "create new menu item, header",
+              id: "menuItemDialogAddItem"
             })}
       </DialogTitle>
       <DialogContent style={{ overflowY: "visible" }}>
         <TextField
           disabled={disabled}
-          label={i18n.t("Name")}
+          label={intl.formatMessage({
+            defaultMessage: "Name",
+            description: "menu item name",
+            id: "menuItemDialogNameLabel"
+          })}
           fullWidth
           value={data.name}
           onChange={event =>
@@ -238,29 +253,36 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
             }))
           }
           name="name"
-          error={!!getFieldError(errors, "name")}
-          helperText={getFieldError(errors, "name")}
+          error={!!formErrors.name}
+          helperText={getMenuErrorMessage(formErrors.name, intl)}
         />
         <FormSpacer />
         <AutocompleteSelectMenu
           disabled={disabled}
           onChange={handleSelectChange}
           name="id"
-          label={i18n.t("Link")}
+          label={intl.formatMessage({
+            defaultMessage: "Link",
+            description: "label",
+            id: "menuItemDialogLinkLabel"
+          })}
           displayValue={displayValue}
           loading={loading}
           options={options}
           error={!!idError}
-          helperText={idError}
-          placeholder={i18n.t("Start typing to begin search...")}
+          helperText={getMenuErrorMessage(idError, intl)}
+          placeholder={intl.formatMessage({
+            defaultMessage: "Start typing to begin search...",
+            id: "menuItemDialogLinkPlaceholder"
+          })}
           onInputChange={handleQueryChange}
         />
         {mutationErrors.length > 0 && (
           <>
             <FormSpacer />
             {mutationErrors.map(err => (
-              <Typography key={err} color="error">
-                {err}
+              <Typography key={err.code} color="error">
+                {getMenuErrorMessage(err, intl)}
               </Typography>
             ))}
           </>
@@ -268,7 +290,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>
-          {i18n.t("Cancel", { context: "button" })}
+          <FormattedMessage {...buttonMessages.back} />
         </Button>
         <ConfirmButton
           transitionState={confirmButtonState}
@@ -276,7 +298,7 @@ const MenuItemDialog: React.StatelessComponent<MenuItemDialogProps> = ({
           variant="contained"
           onClick={handleSubmit}
         >
-          {i18n.t("Submit", { context: "button" })}
+          <FormattedMessage {...buttonMessages.confirm} />
         </ConfirmButton>
       </DialogActions>
     </Dialog>

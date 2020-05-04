@@ -1,4 +1,3 @@
-import { Omit } from "@material-ui/core";
 import Button from "@material-ui/core/Button";
 import {
   createStyles,
@@ -8,7 +7,8 @@ import {
 } from "@material-ui/core/styles";
 import TextField, { StandardTextFieldProps } from "@material-ui/core/TextField";
 import React from "react";
-import i18n from "../../i18n";
+import { FormattedMessage } from "react-intl";
+
 import Chip from "../Chip";
 
 interface ListFieldState {
@@ -19,10 +19,10 @@ interface ListFieldState {
 const styles = (theme: Theme) =>
   createStyles({
     chip: {
-      marginBottom: theme.spacing.unit
+      marginBottom: theme.spacing(1)
     },
     chipContainer: {
-      marginTop: theme.spacing.unit * 2,
+      marginTop: theme.spacing(2),
       width: 552
     }
   });
@@ -36,7 +36,7 @@ interface ListFieldProps
   }>;
 }
 
-const ListField = withStyles(styles)(
+const ListField = withStyles(styles, { name: "ListField" })(
   class ListFieldComponent extends React.Component<
     ListFieldProps,
     ListFieldState
@@ -105,7 +105,7 @@ const ListField = withStyles(styles)(
                   color="primary"
                   onClick={this.handleValueAdd}
                 >
-                  {i18n.t("Add", { context: "button" })}
+                  <FormattedMessage defaultMessage="Add" description="button" />
                 </Button>
               )
             }}

@@ -1,34 +1,38 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { asSortParams } from "@saleor/utils/sort";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   productTypeAddPath,
   productTypeListPath,
   ProductTypeListUrlQueryParams,
   productTypePath,
-  ProductTypeUrlQueryParams
+  ProductTypeUrlQueryParams,
+  ProductTypeListUrlSortField
 } from "./urls";
 import ProductTypeCreate from "./views/ProductTypeCreate";
 import ProductTypeListComponent from "./views/ProductTypeList";
 import ProductTypeUpdateComponent from "./views/ProductTypeUpdate";
 
-const ProductTypeList: React.StatelessComponent<RouteComponentProps<{}>> = ({
-  location
-}) => {
+const ProductTypeList: React.FC<RouteComponentProps<{}>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: ProductTypeListUrlQueryParams = qs;
+  const params: ProductTypeListUrlQueryParams = asSortParams(
+    qs,
+    ProductTypeListUrlSortField
+  );
   return <ProductTypeListComponent params={params} />;
 };
 
 interface ProductTypeUpdateRouteParams {
   id: string;
 }
-const ProductTypeUpdate: React.StatelessComponent<
-  RouteComponentProps<ProductTypeUpdateRouteParams>
-> = ({ match }) => {
+const ProductTypeUpdate: React.FC<RouteComponentProps<
+  ProductTypeUpdateRouteParams
+>> = ({ match }) => {
   const qs = parseQs(location.search.substr(1));
   const params: ProductTypeUrlQueryParams = qs;
 
@@ -40,17 +44,19 @@ const ProductTypeUpdate: React.StatelessComponent<
   );
 };
 
-export const ProductTypeRouter: React.StatelessComponent<
-  RouteComponentProps<any>
-> = () => (
-  <>
-    <WindowTitle title={i18n.t("Product types")} />
-    <Switch>
-      <Route exact path={productTypeListPath} component={ProductTypeList} />
-      <Route exact path={productTypeAddPath} component={ProductTypeCreate} />
-      <Route path={productTypePath(":id")} component={ProductTypeUpdate} />
-    </Switch>
-  </>
-);
+export const ProductTypeRouter: React.FC = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.productTypes)} />
+      <Switch>
+        <Route exact path={productTypeListPath} component={ProductTypeList} />
+        <Route exact path={productTypeAddPath} component={ProductTypeCreate} />
+        <Route path={productTypePath(":id")} component={ProductTypeUpdate} />
+      </Switch>
+    </>
+  );
+};
 ProductTypeRouter.displayName = "ProductTypeRouter";
 export default ProductTypeRouter;

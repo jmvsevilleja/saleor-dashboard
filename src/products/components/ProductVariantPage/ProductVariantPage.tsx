@@ -12,12 +12,12 @@ import useFormset, {
   FormsetChange,
   FormsetData
 } from "@saleor/hooks/useFormset";
+import { VariantUpdate_productVariantUpdate_errors } from "@saleor/products/types/VariantUpdate";
 import {
   getAttributeInputFromVariant,
-  getVariantAttributeErrors
+  getStockInputFromVariant
 } from "@saleor/products/utils/data";
 import { maybe } from "../../../misc";
-import { UserError } from "../../../types";
 import { ProductVariant } from "../../types/ProductVariant";
 import ProductVariantAttributes, {
   VariantAttributeInputData
@@ -26,27 +26,29 @@ import ProductVariantImages from "../ProductVariantImages";
 import ProductVariantImageSelectDialog from "../ProductVariantImageSelectDialog";
 import ProductVariantNavigation from "../ProductVariantNavigation";
 import ProductVariantPrice from "../ProductVariantPrice";
-import ProductVariantStock from "../ProductVariantStock";
+import ProductStocks, { ProductStockInput } from "../ProductStocks";
 
 export interface ProductVariantPageFormData {
   costPrice: string;
   priceOverride: string;
-  quantity: number;
   sku: string;
+  trackInventory: boolean;
 }
 
 export interface ProductVariantPageSubmitData
   extends ProductVariantPageFormData {
   attributes: FormsetData<VariantAttributeInputData, string>;
+  stocks: ProductStockInput[];
 }
 
 interface ProductVariantPageProps {
   variant?: ProductVariant;
-  errors: UserError[];
+  errors: VariantUpdate_productVariantUpdate_errors[];
   saveButtonBarState: ConfirmButtonTransitionState;
   loading?: boolean;
   placeholderImage?: string;
   header: string;
+  onWarehousesEdit: () => void;
   onAdd();
   onBack();
   onDelete();
@@ -56,7 +58,7 @@ interface ProductVariantPageProps {
 }
 
 const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
-  errors: formErrors,
+  errors,
   loading,
   header,
   placeholderImage,
@@ -67,15 +69,20 @@ const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
   onDelete,
   onImageSelect,
   onSubmit,
+  onWarehousesEdit,
   onVariantClick
 }) => {
   const attributeInput = React.useMemo(
     () => getAttributeInputFromVariant(variant),
     [variant]
   );
+  const stockInput = React.useMemo(() => getStockInputFromVariant(variant), [
+    variant
+  ]);
   const { change: changeAttributeData, data: attributes } = useFormset(
     attributeInput
   );
+  const { change: changeStockData, data: stocks } = useFormset(stockInput);
 
   const [isModalOpened, setModalStatus] = React.useState(false);
   const toggleModal = () => setModalStatus(!isModalOpened);
@@ -95,14 +102,15 @@ const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
   const initialForm: ProductVariantPageFormData = {
     costPrice: maybe(() => variant.costPrice.amount.toString(), ""),
     priceOverride: maybe(() => variant.priceOverride.amount.toString(), ""),
-    quantity: maybe(() => variant.quantity, 0),
-    sku: maybe(() => variant.sku, "")
+    sku: maybe(() => variant.sku, ""),
+    trackInventory: variant?.trackInventory
   };
 
   const handleSubmit = (data: ProductVariantPageFormData) =>
     onSubmit({
       ...data,
-      attributes
+      attributes,
+      stocks
     });
 
   return (
@@ -112,13 +120,8 @@ const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
           {maybe(() => variant.product.name)}
         </AppHeader>
         <PageHeader title={header} />
-        <Form
-          initial={initialForm}
-          errors={formErrors}
-          onSubmit={handleSubmit}
-          confirmLeave
-        >
-          {({ change, data, errors, hasChanged, submit, triggerChange }) => {
+        <Form initial={initialForm} onSubmit={handleSubmit} confirmLeave>
+          {({ change, data, hasChanged, submit, triggerChange }) => {
             const handleAttributeChange: FormsetChange = (id, value) => {
               changeAttributeData(id, value);
               triggerChange();
@@ -146,14 +149,7 @@ const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
                     <ProductVariantAttributes
                       attributes={attributes}
                       disabled={loading}
-                      errors={getVariantAttributeErrors(
-                        formErrors,
-                        maybe(() =>
-                          variant.attributes.map(
-                            attribute => attribute.attribute
-                          )
-                        )
-                      )}
+                      errors={errors}
                       onChange={handleAttributeChange}
                     />
                     <CardSpacer />
@@ -179,15 +175,17 @@ const ProductVariantPage: React.FC<ProductVariantPageProps> = ({
                       onChange={change}
                     />
                     <CardSpacer />
-                    <ProductVariantStock
+                    <ProductStocks
+                      data={data}
+                      disabled={loading}
                       errors={errors}
-                      sku={data.sku}
-                      quantity={data.quantity}
-                      stockAllocated={
-                        variant ? variant.quantityAllocated : undefined
-                      }
-                      loading={loading}
-                      onChange={change}
+                      stocks={stocks}
+                      onChange={(id, value) => {
+                        triggerChange();
+                        changeStockData(id, value);
+                      }}
+                      onFormDataChange={change}
+                      onWarehousesEdit={onWarehousesEdit}
                     />
                   </div>
                 </Grid>

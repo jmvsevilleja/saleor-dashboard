@@ -1,32 +1,32 @@
 import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import Typography from "@material-ui/core/Typography";
 import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
+import RequirePermissions from "@saleor/components/RequirePermissions";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
-import i18n from "../../../i18n";
+import { UserPermissionProps } from "@saleor/types";
+import { PermissionEnum } from "@saleor/types/globalTypes";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     arrowIcon: {
-      width: theme.spacing.unit * 4
+      width: theme.spacing(4)
     },
     tableRow: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "HomeNotificationTable" }
+);
 
-interface HomeNotificationTableProps extends WithStyles<typeof styles> {
+interface HomeNotificationTableProps extends UserPermissionProps {
   ordersToCapture: number;
   ordersToFulfill: number;
   productsOutOfStock: number;
@@ -35,39 +35,48 @@ interface HomeNotificationTableProps extends WithStyles<typeof styles> {
   onProductsOutOfStockClick: () => void;
 }
 
-const HomeNotificationTable = withStyles(styles, {
-  name: "HomeNotificationTable"
-})(
-  ({
-    classes,
+const HomeNotificationTable: React.FC<HomeNotificationTableProps> = props => {
+  const {
     onOrdersToCaptureClick,
     onOrdersToFulfillClick,
     onProductsOutOfStockClick,
     ordersToCapture,
     ordersToFulfill,
-    productsOutOfStock
-  }: HomeNotificationTableProps) => {
-    return (
-      <Card>
-        <Table>
-          <TableBody className={classes.tableRow}>
+    productsOutOfStock,
+    userPermissions
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
+    <Card>
+      <ResponsiveTable>
+        <TableBody className={classes.tableRow}>
+          <RequirePermissions
+            userPermissions={userPermissions}
+            requiredPermissions={[PermissionEnum.MANAGE_ORDERS]}
+          >
             <TableRow hover={true} onClick={onOrdersToFulfillClick}>
               <TableCell>
                 {ordersToFulfill === undefined ? (
                   <Skeleton />
                 ) : ordersToFulfill === 0 ? (
                   <Typography>
-                    {i18n.t("No orders ready to fulfill")}
+                    <FormattedMessage
+                      defaultMessage="No orders ready to fulfill"
+                      id="homeNotificationTableNoOrders"
+                    />
                   </Typography>
                 ) : (
-                  <Typography
-                    dangerouslySetInnerHTML={{
-                      __html: i18n.t(
-                        "<b>{{ amount }} Orders</b> are ready to fulfill",
-                        { amount: ordersToFulfill }
-                      )
-                    }}
-                  />
+                  <Typography>
+                    <FormattedMessage
+                      defaultMessage="{amount, plural,one {One order is ready to fulfill} other {{amount} Orders are ready to fulfill}}"
+                      id="homeNotificationTableOrders"
+                      values={{
+                        amount: <strong>{ordersToFulfill}</strong>
+                      }}
+                    />
+                  </Typography>
                 )}
               </TableCell>
               <TableCell className={classes.arrowIcon}>
@@ -80,49 +89,64 @@ const HomeNotificationTable = withStyles(styles, {
                   <Skeleton />
                 ) : ordersToCapture === 0 ? (
                   <Typography>
-                    {i18n.t("No payments waiting for capture")}
+                    <FormattedMessage
+                      defaultMessage="No payments waiting for capture"
+                      id="homeNotificationsNoPayments"
+                    />
                   </Typography>
                 ) : (
-                  <Typography
-                    dangerouslySetInnerHTML={{
-                      __html: i18n.t(
-                        "<b>{{ amount }} Payments</b> to capture",
-                        { amount: ordersToCapture }
-                      )
-                    }}
-                  />
+                  <Typography>
+                    <FormattedMessage
+                      defaultMessage="{amount, plural,one {One payment to capture}other {{amount} Payments to capture}}"
+                      id="homeNotificationTablePayments"
+                      values={{
+                        amount: <strong>{ordersToCapture}</strong>
+                      }}
+                    />
+                  </Typography>
                 )}
               </TableCell>
               <TableCell className={classes.arrowIcon}>
                 <KeyboardArrowRight />
               </TableCell>
             </TableRow>
+          </RequirePermissions>
+          <RequirePermissions
+            userPermissions={userPermissions}
+            requiredPermissions={[PermissionEnum.MANAGE_PRODUCTS]}
+          >
             <TableRow hover={true} onClick={onProductsOutOfStockClick}>
               <TableCell>
                 {productsOutOfStock === undefined ? (
                   <Skeleton />
                 ) : productsOutOfStock === 0 ? (
-                  <Typography>{i18n.t("No products out of stock")}</Typography>
+                  <Typography>
+                    <FormattedMessage
+                      defaultMessage="No products out of stock"
+                      id="homeNotificationsTableNoProducts"
+                    />
+                  </Typography>
                 ) : (
-                  <Typography
-                    dangerouslySetInnerHTML={{
-                      __html: i18n.t(
-                        "<b>{{ amount }} Products</b> out of stock",
-                        { amount: productsOutOfStock }
-                      )
-                    }}
-                  />
+                  <Typography>
+                    <FormattedMessage
+                      defaultMessage="{amount, plural,one {One product out of stock}other {{amount} Products out of stock}}"
+                      id="homeNotificationTableProducts"
+                      values={{
+                        amount: <strong>{productsOutOfStock}</strong>
+                      }}
+                    />
+                  </Typography>
                 )}
               </TableCell>
               <TableCell className={classes.arrowIcon}>
                 <KeyboardArrowRight />
               </TableCell>
             </TableRow>
-          </TableBody>
-        </Table>
-      </Card>
-    );
-  }
-);
+          </RequirePermissions>
+        </TableBody>
+      </ResponsiveTable>
+    </Card>
+  );
+};
 HomeNotificationTable.displayName = "HomeNotificationTable";
 export default HomeNotificationTable;

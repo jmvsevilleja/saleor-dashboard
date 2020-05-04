@@ -1,16 +1,16 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import SingleAutocompleteSelectField from "@saleor/components/SingleAutocompleteSelectField";
 import { ProductTypeDetails_taxTypes } from "@saleor/productTypes/types/ProductTypeDetails";
-import i18n from "../../../i18n";
 import { maybe } from "../../../misc";
 import { ProductTypeForm } from "../ProductTypeDetailsPage/ProductTypeDetailsPage";
 
-interface ProductTypeTaxesProps extends WithStyles<typeof styles> {
+interface ProductTypeTaxesProps {
   data: {
     taxType: string;
   };
@@ -20,28 +20,38 @@ interface ProductTypeTaxesProps extends WithStyles<typeof styles> {
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const styles = createStyles({
-  root: {
-    overflow: "visible"
-  }
-});
+const useStyles = makeStyles(
+  {
+    root: {
+      overflow: "visible"
+    }
+  },
+  { name: "ProductTypeTaxes" }
+);
 
-const ProductTypeTaxes = withStyles(styles, { name: "ProductTypeTaxes" })(
-  ({
-    classes,
-    data,
-    disabled,
-    taxTypes,
-    taxTypeDisplayName,
-    onChange
-  }: ProductTypeTaxesProps) => (
+const ProductTypeTaxes: React.FC<ProductTypeTaxesProps> = props => {
+  const { data, disabled, taxTypes, taxTypeDisplayName, onChange } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card className={classes.root}>
-      <CardTitle title={i18n.t("Taxes")} />
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Taxes",
+          description: "section header",
+          id: "productTypeTaxesHeader"
+        })}
+      />
       <CardContent>
         <SingleAutocompleteSelectField
           disabled={disabled}
           displayValue={taxTypeDisplayName}
-          label={i18n.t("Taxes")}
+          label={intl.formatMessage({
+            defaultMessage: "Taxes",
+            id: "productTypeTaxesInputLabel"
+          })}
           name={"taxType" as keyof ProductTypeForm}
           onChange={onChange}
           value={data.taxType}
@@ -56,7 +66,7 @@ const ProductTypeTaxes = withStyles(styles, { name: "ProductTypeTaxes" })(
         />
       </CardContent>
     </Card>
-  )
-);
+  );
+};
 ProductTypeTaxes.displayName = "ProductTypeTaxes";
 export default ProductTypeTaxes;

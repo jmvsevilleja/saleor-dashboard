@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
 
+import makeQuery from "@saleor/hooks/makeQuery";
 import { TypedQuery } from "../queries";
 import {
   CollectionDetails,
@@ -60,8 +61,17 @@ export const collectionList = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: CollectionFilterInput
+    $sort: CollectionSortingInput
   ) {
-    collections(first: $first, after: $after, before: $before, last: $last) {
+    collections(
+      first: $first
+      after: $after
+      before: $before
+      last: $last
+      filter: $filter
+      sortBy: $sort
+    ) {
       edges {
         node {
           ...CollectionFragment
@@ -79,7 +89,7 @@ export const collectionList = gql`
     }
   }
 `;
-export const TypedCollectionListQuery = TypedQuery<
+export const useCollectionListQuery = makeQuery<
   CollectionList,
   CollectionListVariables
 >(collectionList);

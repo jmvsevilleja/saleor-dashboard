@@ -1,79 +1,92 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import i18n from "../../../i18n";
-import { FormErrors } from "../../../types";
+import { commonMessages } from "@saleor/intl";
+import { getFormErrors } from "@saleor/utils/errors";
+import { AccountErrorFragment } from "@saleor/customers/types/AccountErrorFragment";
+import getAccountErrorMessage from "@saleor/utils/errors/account";
 import { CustomerCreatePageFormData } from "../CustomerCreatePage";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     root: {
       display: "grid",
-      gridColumnGap: theme.spacing.unit * 2 + "px",
-      gridRowGap: theme.spacing.unit * 3 + "px",
+      gridColumnGap: theme.spacing(2),
+      gridRowGap: theme.spacing(3),
       gridTemplateColumns: "1fr 1fr"
     }
-  });
+  }),
+  { name: "CustomerCreateDetails" }
+);
 
-export interface CustomerCreateDetailsProps extends WithStyles<typeof styles> {
+export interface CustomerCreateDetailsProps {
   data: CustomerCreatePageFormData;
   disabled: boolean;
-  errors: FormErrors<"customerFirstName" | "customerLastName" | "email">;
+  errors: AccountErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const CustomerCreateDetails = withStyles(styles, {
-  name: "CustomerCreateDetails"
-})(
-  ({
-    classes,
-    data,
-    disabled,
-    errors,
-    onChange
-  }: CustomerCreateDetailsProps) => (
+const CustomerCreateDetails: React.FC<CustomerCreateDetailsProps> = props => {
+  const { data, disabled, errors, onChange } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(
+    ["customerFirstName", "customerLastName", "email"],
+    errors
+  );
+
+  return (
     <Card>
-      <CardTitle title={i18n.t("Customer overview")} />
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Customer Overview",
+          description: "header"
+        })}
+      />
       <CardContent>
         <div className={classes.root}>
           <TextField
             disabled={disabled}
-            error={!!errors.customerFirstName}
+            error={!!formErrors.customerFirstName}
             fullWidth
             name="customerFirstName"
-            label={i18n.t("First Name")}
-            helperText={errors.customerFirstName}
+            label={intl.formatMessage(commonMessages.firstName)}
+            helperText={getAccountErrorMessage(
+              formErrors.customerFirstName,
+              intl
+            )}
             type="text"
             value={data.customerFirstName}
             onChange={onChange}
           />
           <TextField
             disabled={disabled}
-            error={!!errors.customerLastName}
+            error={!!formErrors.customerLastName}
             fullWidth
             name="customerLastName"
-            label={i18n.t("Last Name")}
-            helperText={errors.customerLastName}
+            label={intl.formatMessage(commonMessages.lastName)}
+            helperText={getAccountErrorMessage(
+              formErrors.customerLastName,
+              intl
+            )}
             type="text"
             value={data.customerLastName}
             onChange={onChange}
           />
           <TextField
             disabled={disabled}
-            error={!!errors.email}
+            error={!!formErrors.email}
             fullWidth
             name="email"
-            label={i18n.t("Email address")}
-            helperText={errors.email}
+            label={intl.formatMessage(commonMessages.email)}
+            helperText={getAccountErrorMessage(formErrors.email, intl)}
             type="email"
             value={data.email}
             onChange={onChange}
@@ -81,7 +94,8 @@ const CustomerCreateDetails = withStyles(styles, {
         </div>
       </CardContent>
     </Card>
-  )
-);
+  );
+};
+
 CustomerCreateDetails.displayName = "CustomerCreateDetails";
 export default CustomerCreateDetails;

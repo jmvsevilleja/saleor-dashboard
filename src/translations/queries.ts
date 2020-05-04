@@ -179,6 +179,27 @@ export const pageTranslationFragment = gql`
     }
   }
 `;
+export const pageTranslatableFragment = gql`
+  fragment PageTranslatableFragment on PageTranslatableContent {
+    id
+    contentJson
+    seoDescription
+    seoTitle
+    title
+
+    translation(languageCode: $language) {
+      id
+      contentJson
+      seoDescription
+      seoTitle
+      title
+      language {
+        code
+        language
+      }
+    }
+  }
+`;
 export const productTypeTranslationFragment = gql`
   fragment AttributeTranslationFragment on Attribute {
     id
@@ -217,8 +238,15 @@ const categoryTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: CategoryFilterInput
   ) {
-    categories(before: $before, after: $after, first: $first, last: $last) {
+    categories(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...CategoryTranslationFragment
@@ -244,8 +272,15 @@ const collectionTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: CollectionFilterInput
   ) {
-    collections(before: $before, after: $after, first: $first, last: $last) {
+    collections(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...CollectionTranslationFragment
@@ -271,8 +306,15 @@ const productTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: ProductFilterInput
   ) {
-    products(before: $before, after: $after, first: $first, last: $last) {
+    products(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...ProductTranslationFragment
@@ -298,8 +340,15 @@ const pageTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: PageFilterInput
   ) {
-    pages(before: $before, after: $after, first: $first, last: $last) {
+    pages(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...PageTranslationFragment
@@ -325,8 +374,15 @@ const voucherTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: VoucherFilterInput
   ) {
-    vouchers(before: $before, after: $after, first: $first, last: $last) {
+    vouchers(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...VoucherTranslationFragment
@@ -352,8 +408,15 @@ const saleTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: SaleFilterInput
   ) {
-    sales(before: $before, after: $after, first: $first, last: $last) {
+    sales(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...SaleTranslationFragment
@@ -379,8 +442,15 @@ const productTypeTranslations = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: ProductTypeFilterInput
   ) {
-    productTypes(before: $before, after: $after, first: $first, last: $last) {
+    productTypes(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+    ) {
       edges {
         node {
           ...ProductTypeTranslationFragment

@@ -2,16 +2,16 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { AttributeValueInput } from "./../../types/globalTypes";
+import { ProductVariantCreateInput, ProductErrorCode } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL mutation operation: VariantCreate
 // ====================================================
 
 export interface VariantCreate_productVariantCreate_errors {
-  __typename: "Error";
+  __typename: "ProductError";
+  code: ProductErrorCode;
   field: string | null;
-  message: string | null;
 }
 
 export interface VariantCreate_productVariantCreate_productVariant_attributes_attribute_values {
@@ -30,7 +30,7 @@ export interface VariantCreate_productVariantCreate_productVariant_attributes_at
   values: (VariantCreate_productVariantCreate_productVariant_attributes_attribute_values | null)[] | null;
 }
 
-export interface VariantCreate_productVariantCreate_productVariant_attributes_value {
+export interface VariantCreate_productVariantCreate_productVariant_attributes_values {
   __typename: "AttributeValue";
   id: string;
   name: string | null;
@@ -40,7 +40,7 @@ export interface VariantCreate_productVariantCreate_productVariant_attributes_va
 export interface VariantCreate_productVariantCreate_productVariant_attributes {
   __typename: "SelectedAttribute";
   attribute: VariantCreate_productVariantCreate_productVariant_attributes_attribute;
-  value: VariantCreate_productVariantCreate_productVariant_attributes_value | null;
+  values: (VariantCreate_productVariantCreate_productVariant_attributes_values | null)[];
 }
 
 export interface VariantCreate_productVariantCreate_productVariant_costPrice {
@@ -97,6 +97,20 @@ export interface VariantCreate_productVariantCreate_productVariant_product {
   variants: (VariantCreate_productVariantCreate_productVariant_product_variants | null)[] | null;
 }
 
+export interface VariantCreate_productVariantCreate_productVariant_stocks_warehouse {
+  __typename: "Warehouse";
+  id: string;
+  name: string;
+}
+
+export interface VariantCreate_productVariantCreate_productVariant_stocks {
+  __typename: "Stock";
+  id: string;
+  quantity: number;
+  quantityAllocated: number;
+  warehouse: VariantCreate_productVariantCreate_productVariant_stocks_warehouse;
+}
+
 export interface VariantCreate_productVariantCreate_productVariant {
   __typename: "ProductVariant";
   id: string;
@@ -107,13 +121,13 @@ export interface VariantCreate_productVariantCreate_productVariant {
   priceOverride: VariantCreate_productVariantCreate_productVariant_priceOverride | null;
   product: VariantCreate_productVariantCreate_productVariant_product;
   sku: string;
-  quantity: number;
-  quantityAllocated: number;
+  stocks: (VariantCreate_productVariantCreate_productVariant_stocks | null)[] | null;
+  trackInventory: boolean;
 }
 
 export interface VariantCreate_productVariantCreate {
   __typename: "ProductVariantCreate";
-  errors: VariantCreate_productVariantCreate_errors[] | null;
+  errors: VariantCreate_productVariantCreate_errors[];
   productVariant: VariantCreate_productVariantCreate_productVariant | null;
 }
 
@@ -122,11 +136,5 @@ export interface VariantCreate {
 }
 
 export interface VariantCreateVariables {
-  attributes: (AttributeValueInput | null)[];
-  costPrice?: any | null;
-  priceOverride?: any | null;
-  product: string;
-  sku?: string | null;
-  quantity?: number | null;
-  trackInventory: boolean;
+  input: ProductVariantCreateInput;
 }

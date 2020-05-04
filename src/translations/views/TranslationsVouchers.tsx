@@ -1,11 +1,12 @@
 import { stringify as stringifyQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
 import useShop from "@saleor/hooks/useShop";
-import i18n from "../../i18n";
-import { getMutationState, maybe } from "../../misc";
+import { commonMessages } from "@saleor/intl";
+import { maybe } from "../../misc";
 import {
   LanguageCodeEnum,
   NameTranslationInput
@@ -39,6 +40,7 @@ const TranslationsVouchers: React.FC<TranslationsVouchersProps> = ({
   const navigate = useNavigator();
   const notify = useNotifier();
   const shop = useShop();
+  const intl = useIntl();
 
   const onEdit = (field: string) =>
     navigate(
@@ -51,7 +53,7 @@ const TranslationsVouchers: React.FC<TranslationsVouchersProps> = ({
   const onUpdate = (data: UpdateVoucherTranslations) => {
     if (data.voucherTranslate.errors.length === 0) {
       notify({
-        text: i18n.t("Translation Saved")
+        text: intl.formatMessage(commonMessages.savedChanges)
       });
       navigate("?", true);
     }
@@ -79,15 +81,6 @@ const TranslationsVouchers: React.FC<TranslationsVouchersProps> = ({
               });
             };
 
-            const saveButtonState = getMutationState(
-              updateTranslationsOpts.called,
-              updateTranslationsOpts.loading,
-              maybe(
-                () => updateTranslationsOpts.data.voucherTranslate.errors,
-                []
-              )
-            );
-
             return (
               <TranslationsVouchersPage
                 activeField={params.activeField}
@@ -96,13 +89,12 @@ const TranslationsVouchers: React.FC<TranslationsVouchersProps> = ({
                 }
                 languages={maybe(() => shop.languages, [])}
                 languageCode={languageCode}
-                saveButtonState={saveButtonState}
+                saveButtonState={updateTranslationsOpts.status}
                 onBack={() =>
                   navigate(
-                    languageEntitiesUrl(
-                      languageCode,
-                      TranslatableEntities.vouchers
-                    )
+                    languageEntitiesUrl(languageCode, {
+                      tab: TranslatableEntities.vouchers
+                    })
                   )
                 }
                 onEdit={onEdit}

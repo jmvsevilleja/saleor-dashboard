@@ -1,16 +1,19 @@
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import ControlledSwitch from "@saleor/components/ControlledSwitch";
+import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
 import { FormSpacer } from "@saleor/components/FormSpacer";
 import Hr from "@saleor/components/Hr";
 import RadioGroupField from "@saleor/components/RadioGroupField";
 import TextFieldWithChoice from "@saleor/components/TextFieldWithChoice";
-import i18n from "../../../i18n";
-import { FormErrors } from "../../../types";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import { getFormErrors } from "@saleor/utils/errors";
+import getDiscountErrorMessage from "@saleor/utils/errors/discounts";
 import { DiscountValueTypeEnum } from "../../../types/globalTypes";
 import { translateVoucherTypes } from "../../translations";
 import { FormData } from "../VoucherDetailsPage";
@@ -18,7 +21,7 @@ import { FormData } from "../VoucherDetailsPage";
 interface VoucherValueProps {
   data: FormData;
   defaultCurrency: string;
-  errors: FormErrors<"discountValue" | "type">;
+  errors: DiscountErrorFragment[];
   disabled: boolean;
   variant: string;
   onChange: (event: React.ChangeEvent<any>) => void;
@@ -29,15 +32,26 @@ export enum VoucherType {
   SPECIFIC_PRODUCT = "SPECIFIC_PRODUCT"
 }
 
-const VoucherValue = ({
-  data,
-  defaultCurrency,
-  disabled,
-  errors,
-  variant,
-  onChange
-}: VoucherValueProps) => {
-  const translatedVoucherTypes = translateVoucherTypes();
+const useStyles = makeStyles(
+  theme => ({
+    hr: {
+      margin: theme.spacing(2, 0)
+    }
+  }),
+  {
+    name: "VoucherValue"
+  }
+);
+
+const VoucherValue: React.FC<VoucherValueProps> = props => {
+  const { data, defaultCurrency, disabled, errors, variant, onChange } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["discountValue", "type"], errors);
+
+  const translatedVoucherTypes = translateVoucherTypes(intl);
   const voucherTypeChoices = Object.values(VoucherType).map(type => ({
     label: translatedVoucherTypes[type],
     value: type
@@ -45,11 +59,16 @@ const VoucherValue = ({
 
   return (
     <Card>
-      <CardTitle title={i18n.t("Value")} />
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Value",
+          description: "section header"
+        })}
+      />
       <CardContent>
         <TextFieldWithChoice
           disabled={disabled}
-          error={!!errors.discountValue}
+          error={!!formErrors.discountValue}
           ChoiceProps={{
             label:
               data.discountType === DiscountValueTypeEnum.FIXED
@@ -58,10 +77,12 @@ const VoucherValue = ({
             name: "discountType" as keyof FormData,
             values: null
           }}
-          helperText={errors.discountValue}
+          helperText={getDiscountErrorMessage(formErrors.discountValue, intl)}
           name={"value" as keyof FormData}
           onChange={onChange}
-          label={i18n.t("Discount Value")}
+          label={intl.formatMessage({
+            defaultMessage: "Discount Value"
+          })}
           value={data.value}
           type="number"
           fullWidth
@@ -72,37 +93,38 @@ const VoucherValue = ({
         <FormSpacer />
         {variant === "update" && (
           <>
+            <Hr className={classes.hr} />
             <RadioGroupField
               choices={voucherTypeChoices}
               disabled={disabled}
-              error={!!errors.type}
-              hint={errors.type}
-              label={i18n.t("Discount Specific Information")}
+              error={!!formErrors.type}
+              hint={getDiscountErrorMessage(formErrors.type, intl)}
+              label={intl.formatMessage({
+                defaultMessage: "Voucher Specific Information"
+              })}
               name={"type" as keyof FormData}
               value={data.type}
               onChange={onChange}
             />
-            <FormSpacer />
           </>
         )}
-        <Hr />
+        <Hr className={classes.hr} />
         <FormSpacer />
-        <ControlledSwitch
-          checked={data.applyOncePerOrder}
+        <ControlledCheckbox
+          name={"applyOncePerOrder" as keyof FormData}
           label={
             <>
-              {i18n.t("Only once per order", {
-                context: "voucher application"
-              })}
+              <FormattedMessage
+                defaultMessage="Only once per order"
+                description="voucher application, switch button"
+              />
               <Typography variant="caption">
-                {i18n.t(
-                  "If this option is disabled, discount will be counted for every eligible product"
-                )}
+                <FormattedMessage defaultMessage="If this option is disabled, discount will be counted for every eligible product" />
               </Typography>
             </>
           }
+          checked={data.applyOncePerOrder}
           onChange={onChange}
-          name={"applyOncePerOrder" as keyof FormData}
           disabled={disabled}
         />
       </CardContent>

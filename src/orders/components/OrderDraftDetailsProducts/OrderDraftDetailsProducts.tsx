@@ -1,11 +1,5 @@
 import IconButton from "@material-ui/core/IconButton";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
@@ -14,15 +8,16 @@ import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import { DebounceForm } from "@saleor/components/DebounceForm";
 import Form from "@saleor/components/Form";
 import Money from "@saleor/components/Money";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TableCellAvatar, {
   AVATAR_MARGIN
 } from "@saleor/components/TableCellAvatar";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { OrderDetails_order_lines } from "../../types/OrderDetails";
 
@@ -30,13 +25,13 @@ export interface FormData {
   quantity: number;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     colAction: {
       "&:last-child": {
         paddingRight: 0
       },
-      width: 48 + theme.spacing.unit / 2
+      width: 76 + theme.spacing(0.5)
     },
     colName: {
       width: "auto"
@@ -66,40 +61,50 @@ const styles = (theme: Theme) =>
     table: {
       tableLayout: "fixed"
     }
-  });
+  }),
+  { name: "OrderDraftDetailsProducts" }
+);
 
-interface OrderDraftDetailsProductsProps extends WithStyles<typeof styles> {
+interface OrderDraftDetailsProductsProps {
   lines: OrderDetails_order_lines[];
   onOrderLineChange: (id: string, data: FormData) => void;
   onOrderLineRemove: (id: string) => void;
 }
 
-const OrderDraftDetailsProducts = withStyles(styles, {
-  name: "OrderDraftDetailsProducts"
-})(
-  ({
-    classes,
-    lines,
-    onOrderLineChange,
-    onOrderLineRemove
-  }: OrderDraftDetailsProductsProps) => (
-    <Table className={classes.table}>
+const OrderDraftDetailsProducts: React.FC<
+  OrderDraftDetailsProductsProps
+> = props => {
+  const { lines, onOrderLineChange, onOrderLineRemove } = props;
+
+  const classes = useStyles(props);
+
+  return (
+    <ResponsiveTable className={classes.table}>
       {maybe(() => !!lines.length) && (
         <TableHead>
           <TableRow>
             <TableCell className={classes.colName}>
               <span className={classes.colNameLabel}>
-                {i18n.t("Product", { context: "table header" })}
+                <FormattedMessage defaultMessage="Product" />
               </span>
             </TableCell>
             <TableCell className={classes.colQuantity}>
-              {i18n.t("Quantity", { context: "table header" })}
+              <FormattedMessage
+                defaultMessage="Quantity"
+                description="quantity of ordered products"
+              />
             </TableCell>
             <TableCell className={classes.colPrice}>
-              {i18n.t("Price", { context: "table header" })}
+              <FormattedMessage
+                defaultMessage="Price"
+                description="price or ordered products"
+              />
             </TableCell>
             <TableCell className={classes.colTotal}>
-              {i18n.t("Total", { context: "table header" })}
+              <FormattedMessage
+                defaultMessage="Total"
+                description="total price of ordered products"
+              />
             </TableCell>
             <TableCell className={classes.colAction} />
           </TableRow>
@@ -109,7 +114,7 @@ const OrderDraftDetailsProducts = withStyles(styles, {
         {maybe(() => lines.length) === 0 ? (
           <TableRow>
             <TableCell colSpan={5}>
-              {i18n.t("No Products added to Order")}
+              <FormattedMessage defaultMessage="No Products added to Order" />
             </TableCell>
           </TableRow>
         ) : (
@@ -185,8 +190,8 @@ const OrderDraftDetailsProducts = withStyles(styles, {
           ))
         )}
       </TableBody>
-    </Table>
-  )
-);
+    </ResponsiveTable>
+  );
+};
 OrderDraftDetailsProducts.displayName = "OrderDraftDetailsProducts";
 export default OrderDraftDetailsProducts;

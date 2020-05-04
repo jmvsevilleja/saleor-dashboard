@@ -1,19 +1,22 @@
 import Button from "@material-ui/core/Button";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ActionDialog from "@saleor/components/ActionDialog";
 import AssignProductDialog from "@saleor/components/AssignProductDialog";
 import { WindowTitle } from "@saleor/components/WindowTitle";
+import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "@saleor/config";
 import useBulkActions from "@saleor/hooks/useBulkActions";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
 import usePaginator, {
   createPaginationState
 } from "@saleor/hooks/usePaginator";
-import { DEFAULT_INITIAL_SEARCH_DATA, PAGINATE_BY } from "../../config";
-import SearchProducts from "../../containers/SearchProducts";
-import i18n from "../../i18n";
+import { commonMessages } from "@saleor/intl";
+import useProductSearch from "@saleor/searches/useProductSearch";
+import createDialogActionHandlers from "@saleor/utils/handlers/dialogActionHandlers";
+import NotFoundPage from "@saleor/components/NotFoundPage";
 import { getMutationState, maybe } from "../../misc";
 import { productUrl } from "../../products/urls";
 import { CollectionInput } from "../../types/globalTypes";
@@ -29,57 +32,54 @@ import { UnassignCollectionProduct } from "../types/UnassignCollectionProduct";
 import {
   collectionListUrl,
   collectionUrl,
-  CollectionUrlDialog,
-  CollectionUrlQueryParams
+  CollectionUrlQueryParams,
+  CollectionUrlDialog
 } from "../urls";
+import { CollectionUpdateWithHomepage } from "../types/CollectionUpdateWithHomepage";
 
 interface CollectionDetailsProps {
   id: string;
   params: CollectionUrlQueryParams;
 }
 
-export const CollectionDetails: React.StatelessComponent<
-  CollectionDetailsProps
-> = ({ id, params }) => {
+export const CollectionDetails: React.FC<CollectionDetailsProps> = ({
+  id,
+  params
+}) => {
   const navigate = useNavigator();
   const notify = useNotifier();
   const { isSelected, listElements, reset, toggle, toggleAll } = useBulkActions(
     params.ids
   );
   const paginate = usePaginator();
+  const intl = useIntl();
+  const { search, result } = useProductSearch({
+    variables: DEFAULT_INITIAL_SEARCH_DATA
+  });
 
-  const closeModal = () =>
-    navigate(
-      collectionUrl(id, {
-        ...params,
-        action: undefined
-      }),
-      true
-    );
-  const openModal = (action: CollectionUrlDialog) =>
-    navigate(
-      collectionUrl(id, {
-        ...params,
-        action
-      }),
-      false
-    );
+  const [openModal, closeModal] = createDialogActionHandlers<
+    CollectionUrlDialog,
+    CollectionUrlQueryParams
+  >(navigate, params => collectionUrl(id, params), params);
 
   const paginationState = createPaginationState(PAGINATE_BY, params);
+  const handleBack = () => navigate(collectionListUrl());
 
   return (
     <TypedCollectionDetailsQuery
       displayLoader
       variables={{ id, ...paginationState }}
-      require={["collection"]}
     >
       {({ data, loading }) => {
+        const collection = data?.collection;
+
+        if (collection === null) {
+          return <NotFoundPage onBack={handleBack} />;
+        }
         const handleCollectionUpdate = (data: CollectionUpdate) => {
           if (data.collectionUpdate.errors.length === 0) {
             notify({
-              text: i18n.t("Updated collection", {
-                context: "notification"
-              })
+              text: intl.formatMessage(commonMessages.savedChanges)
             });
             navigate(collectionUrl(id));
           } else {
@@ -89,17 +89,24 @@ export const CollectionDetails: React.StatelessComponent<
             );
             if (backgroundImageError) {
               notify({
-                text: backgroundImageError.message
+                text: intl.formatMessage(commonMessages.somethingWentWrong)
               });
             }
+          }
+        };
+        const handleCollectioUpdateWithHomepage = (
+          data: CollectionUpdateWithHomepage
+        ) => {
+          if (data.homepageCollectionUpdate.errors.length === 0) {
+            handleCollectionUpdate(data);
           }
         };
 
         const handleProductAssign = (data: CollectionAssignProduct) => {
           if (data.collectionAddProducts.errors.length === 0) {
             notify({
-              text: i18n.t("Added product to collection", {
-                context: "notification"
+              text: intl.formatMessage({
+                defaultMessage: "Added product to collection"
               })
             });
             navigate(collectionUrl(id), true);
@@ -109,8 +116,8 @@ export const CollectionDetails: React.StatelessComponent<
         const handleProductUnassign = (data: UnassignCollectionProduct) => {
           if (data.collectionRemoveProducts.errors.length === 0) {
             notify({
-              text: i18n.t("Removed product from collection", {
-                context: "notification"
+              text: intl.formatMessage({
+                defaultMessage: "Deleted product from collection"
               })
             });
             reset();
@@ -121,8 +128,8 @@ export const CollectionDetails: React.StatelessComponent<
         const handleCollectionRemove = (data: RemoveCollection) => {
           if (data.collectionDelete.errors.length === 0) {
             notify({
-              text: i18n.t("Removed collection", {
-                context: "notification"
+              text: intl.formatMessage({
+                defaultMessage: "Deleted collection"
               })
             });
             navigate(collectionListUrl());
@@ -131,6 +138,7 @@ export const CollectionDetails: React.StatelessComponent<
         return (
           <CollectionOperations
             onUpdate={handleCollectionUpdate}
+            onUpdateWithCollection={handleCollectioUpdateWithHomepage}
             onProductAssign={handleProductAssign}
             onProductUnassign={handleProductUnassign}
             onRemove={handleCollectionRemove}
@@ -191,31 +199,6 @@ export const CollectionDetails: React.StatelessComponent<
                       .homepageCollectionUpdate.errors
                 )
               );
-              const assignTransitionState = getMutationState(
-                assignProduct.opts.called,
-                assignProduct.opts.loading,
-                maybe(
-                  () => assignProduct.opts.data.collectionAddProducts.errors
-                )
-              );
-              const unassignTransitionState = getMutationState(
-                unassignProduct.opts.called,
-                unassignProduct.opts.loading,
-                maybe(
-                  () =>
-                    unassignProduct.opts.data.collectionRemoveProducts.errors
-                )
-              );
-              const removeTransitionState = getMutationState(
-                removeCollection.opts.called,
-                removeCollection.opts.loading,
-                maybe(() => removeCollection.opts.data.collectionDelete.errors)
-              );
-              const imageRemoveTransitionState = getMutationState(
-                updateCollection.opts.called,
-                updateCollection.opts.loading,
-                maybe(() => updateCollection.opts.data.collectionUpdate.errors)
-              );
 
               const { loadNextPage, loadPreviousPage, pageInfo } = paginate(
                 maybe(() => data.collection.products.pageInfo),
@@ -228,9 +211,12 @@ export const CollectionDetails: React.StatelessComponent<
                   <WindowTitle title={maybe(() => data.collection.name)} />
                   <CollectionDetailsPage
                     onAdd={() => openModal("assign")}
-                    onBack={() => navigate(collectionListUrl())}
+                    onBack={handleBack}
                     disabled={loading}
-                    collection={data.collection}
+                    collection={data?.collection}
+                    errors={
+                      updateCollection.opts?.data?.collectionUpdate.errors || []
+                    }
                     isFeatured={maybe(
                       () =>
                         data.shop.homepageCollection.id === data.collection.id,
@@ -264,15 +250,15 @@ export const CollectionDetails: React.StatelessComponent<
                       <Button
                         color="primary"
                         onClick={() =>
-                          navigate(
-                            collectionUrl(id, {
-                              action: "unassign",
-                              ids: listElements
-                            })
-                          )
+                          openModal("unassign", {
+                            ids: listElements
+                          })
                         }
                       >
-                        {i18n.t("Unassign")}
+                        <FormattedMessage
+                          defaultMessage="Unassign"
+                          description="unassign product from collection, button"
+                        />
                       </Button>
                     }
                     isChecked={isSelected}
@@ -280,56 +266,51 @@ export const CollectionDetails: React.StatelessComponent<
                     toggle={toggle}
                     toggleAll={toggleAll}
                   />
-                  <SearchProducts variables={DEFAULT_INITIAL_SEARCH_DATA}>
-                    {({ search, result }) => (
-                      <AssignProductDialog
-                        confirmButtonState={assignTransitionState}
-                        open={params.action === "assign"}
-                        onFetch={search}
-                        loading={result.loading}
-                        onClose={closeModal}
-                        onSubmit={products =>
-                          assignProduct.mutate({
-                            ...paginationState,
-                            collectionId: id,
-                            productIds: products.map(product => product.id)
-                          })
-                        }
-                        products={maybe(() =>
-                          result.data.products.edges
-                            .map(edge => edge.node)
-                            .filter(suggestedProduct => suggestedProduct.id)
-                        )}
-                      />
+                  <AssignProductDialog
+                    confirmButtonState={assignProduct.opts.status}
+                    open={params.action === "assign"}
+                    onFetch={search}
+                    loading={result.loading}
+                    onClose={closeModal}
+                    onSubmit={products =>
+                      assignProduct.mutate({
+                        ...paginationState,
+                        collectionId: id,
+                        productIds: products.map(product => product.id)
+                      })
+                    }
+                    products={maybe(() =>
+                      result.data.search.edges
+                        .map(edge => edge.node)
+                        .filter(suggestedProduct => suggestedProduct.id)
                     )}
-                  </SearchProducts>
+                  />
                   <ActionDialog
-                    confirmButtonState={removeTransitionState}
+                    confirmButtonState={removeCollection.opts.status}
                     onClose={closeModal}
                     onConfirm={() => removeCollection.mutate({ id })}
                     open={params.action === "remove"}
-                    title={i18n.t("Remove collection", {
-                      context: "modal title"
+                    title={intl.formatMessage({
+                      defaultMessage: "Delete Collection",
+                      description: "dialog title"
                     })}
                     variant="delete"
                   >
-                    <DialogContentText
-                      dangerouslySetInnerHTML={{
-                        __html: i18n.t(
-                          "Are you sure you want to remove <strong>{{ collectionName }}</strong>?",
-                          {
-                            collectionName: maybe(
-                              () => data.collection.name,
-                              "..."
-                            ),
-                            context: "modal"
-                          }
-                        )
-                      }}
-                    />
+                    <DialogContentText>
+                      <FormattedMessage
+                        defaultMessage="Are you sure you want to delete {collectionName}?"
+                        values={{
+                          collectionName: (
+                            <strong>
+                              {maybe(() => data.collection.name, "...")}
+                            </strong>
+                          )
+                        }}
+                      />
+                    </DialogContentText>
                   </ActionDialog>
                   <ActionDialog
-                    confirmButtonState={unassignTransitionState}
+                    confirmButtonState={unassignProduct.opts.status}
                     onClose={closeModal}
                     onConfirm={() =>
                       unassignProduct.mutate({
@@ -339,27 +320,25 @@ export const CollectionDetails: React.StatelessComponent<
                       })
                     }
                     open={params.action === "unassign"}
-                    title={i18n.t("Unassign products from collection", {
-                      context: "modal title"
+                    title={intl.formatMessage({
+                      defaultMessage: "Unassign products from collection",
+                      description: "dialog title"
                     })}
                   >
-                    <DialogContentText
-                      dangerouslySetInnerHTML={{
-                        __html: i18n.t(
-                          "Are you sure you want to unassign <strong>{{ number }}</strong> products?",
-                          {
-                            context: "modal",
-                            number: maybe(
-                              () => params.ids.length.toString(),
-                              "..."
-                            )
-                          }
-                        )
-                      }}
-                    />
+                    <DialogContentText>
+                      <FormattedMessage
+                        defaultMessage="{counter,plural,one{Are you sure you want to unassign this product?} other{Are you sure you want to unassign {displayQuantity} products?}}"
+                        values={{
+                          counter: maybe(() => params.ids.length),
+                          displayQuantity: (
+                            <strong>{maybe(() => params.ids.length)}</strong>
+                          )
+                        }}
+                      />
+                    </DialogContentText>
                   </ActionDialog>
                   <ActionDialog
-                    confirmButtonState={imageRemoveTransitionState}
+                    confirmButtonState={updateCollection.opts.status}
                     onClose={closeModal}
                     onConfirm={() =>
                       updateCollection.mutate({
@@ -370,15 +349,14 @@ export const CollectionDetails: React.StatelessComponent<
                       })
                     }
                     open={params.action === "removeImage"}
-                    title={i18n.t("Remove image", {
-                      context: "modal title"
+                    title={intl.formatMessage({
+                      defaultMessage: "Delete image",
+                      description: "dialog title"
                     })}
                     variant="delete"
                   >
                     <DialogContentText>
-                      {i18n.t(
-                        "Are you sure you want to remove collection's image?"
-                      )}
+                      <FormattedMessage defaultMessage="Are you sure you want to delete collection's image?" />
                     </DialogContentText>
                   </ActionDialog>
                 </>

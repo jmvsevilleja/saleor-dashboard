@@ -1,11 +1,14 @@
+import { ProductDetails_product_productType_variantAttributes } from "@saleor/products/types/ProductDetails";
 import {
   AttributeInputTypeEnum,
   AttributeValueType
 } from "@saleor/types/globalTypes";
+import { AttributeDetailsFragment } from "./types/AttributeDetailsFragment";
 import { AttributeList_attributes_edges_node } from "./types/AttributeList";
 
-export const attribute = {
+export const attribute: AttributeDetailsFragment = {
   __typename: "Attribute" as "Attribute",
+  availableInGrid: true,
   filterableInDashboard: false,
   filterableInStorefront: true,
   id: "UHJvZHVjdEF0dHJpYnV0ZTo5",
@@ -20,24 +23,23 @@ export const attribute = {
       id: "UHJvZHVjdEF0dHJpYnV0ZVZhbHVlOjI0",
       name: "John Doe",
       slug: "john-doe",
-      sortOrder: 0,
-      type: AttributeValueType.STRING,
-      value: ""
+      type: AttributeValueType.STRING
     },
     {
       __typename: "AttributeValue" as "AttributeValue",
       id: "UHJvZHVjdEF0dHJpYnV0ZVZhbHVlOjI1",
       name: "Milionare Pirate",
       slug: "milionare-pirate",
-      sortOrder: 1,
-      type: AttributeValueType.STRING,
-      value: ""
+      type: AttributeValueType.STRING
     }
   ],
   visibleInStorefront: true
 };
 
-export const attributes: AttributeList_attributes_edges_node[] = [
+export const attributes: Array<
+  AttributeList_attributes_edges_node &
+    ProductDetails_product_productType_variantAttributes
+> = [
   {
     node: {
       __typename: "Attribute" as "Attribute",

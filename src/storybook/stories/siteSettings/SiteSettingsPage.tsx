@@ -2,12 +2,12 @@ import { Omit } from "@material-ui/core";
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { ShopErrorCode } from "@saleor/types/globalTypes";
 import SiteSettingsPage, {
   SiteSettingsPageProps
 } from "../../../siteSettings/components/SiteSettingsPage";
 import { shop } from "../../../siteSettings/fixtures";
 import Decorator from "../../Decorator";
-import { formError } from "../../misc";
 
 const props: Omit<SiteSettingsPageProps, "classes"> = {
   disabled: false,
@@ -29,6 +29,17 @@ storiesOf("Views / Site settings / Page", module)
   .add("form errors", () => (
     <SiteSettingsPage
       {...props}
-      errors={["description", "domain", "name"].map(field => formError(field))}
+      errors={[
+        "description",
+        "domain",
+        "name",
+        "defaultMailSenderAddress",
+        "defaultMailSenderName",
+        "customerSetPasswordUrl"
+      ].map(field => ({
+        __typename: "ShopError",
+        code: ShopErrorCode.INVALID,
+        field
+      }))}
     />
   ));

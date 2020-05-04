@@ -1,7 +1,15 @@
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
-import { listActionsProps, pageListProps } from "../../../fixtures";
+import { OrderDraftListUrlSortField } from "@saleor/orders/urls";
+import {
+  listActionsProps,
+  pageListProps,
+  searchPageProps,
+  tabPageProps,
+  sortPageProps,
+  filterPageProps
+} from "../../../fixtures";
 import OrderDraftListPage, {
   OrderDraftListPageProps
 } from "../../../orders/components/OrderDraftListPage";
@@ -11,8 +19,29 @@ import Decorator from "../../Decorator";
 const props: OrderDraftListPageProps = {
   ...listActionsProps,
   ...pageListProps.default,
+  ...searchPageProps,
+  ...sortPageProps,
+  ...tabPageProps,
+  ...filterPageProps,
+  filterOpts: {
+    created: {
+      active: false,
+      value: {
+        max: undefined,
+        min: undefined
+      }
+    },
+    customer: {
+      active: false,
+      value: undefined
+    }
+  },
   onAdd: () => undefined,
-  orders
+  orders,
+  sort: {
+    ...sortPageProps.sort,
+    sort: OrderDraftListUrlSortField.number
+  }
 };
 
 storiesOf("Views / Orders / Draft order list", module)

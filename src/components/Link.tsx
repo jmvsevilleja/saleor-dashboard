@@ -1,15 +1,10 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography, { TypographyProps } from "@material-ui/core/Typography";
 import classNames from "classnames";
 import React from "react";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     primary: {
       color: theme.palette.primary.main
     },
@@ -23,30 +18,33 @@ const styles = (theme: Theme) =>
     underline: {
       textDecoration: "underline"
     }
-  });
+  }),
+  { name: "Link" }
+);
 
-interface LinkProps
-  extends React.AnchorHTMLAttributes<HTMLAnchorElement>,
-    WithStyles<typeof styles> {
+interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   color?: "primary" | "secondary";
   underline?: boolean;
   typographyProps?: TypographyProps;
   onClick: () => void;
 }
 
-const Link = withStyles(styles, { name: "Link" })(
-  ({
-    classes,
+const Link: React.FC<LinkProps> = props => {
+  const {
     className,
     children,
     color = "primary",
     underline = false,
     onClick,
     ...linkProps
-  }: LinkProps) => (
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Typography
       component="a"
-      className={classNames({
+      className={classNames(className, {
         [classes.root]: true,
         [classes[color]]: true,
         [classes.underline]: underline
@@ -59,7 +57,7 @@ const Link = withStyles(styles, { name: "Link" })(
     >
       {children}
     </Typography>
-  )
-);
+  );
+};
 Link.displayName = "Link";
 export default Link;

@@ -3,48 +3,63 @@ import CardContent from "@material-ui/core/CardContent";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import { FormSpacer } from "@saleor/components/FormSpacer";
-import i18n from "../../../i18n";
+import { getFormErrors } from "@saleor/utils/errors";
+import getAccountErrorMessage from "@saleor/utils/errors/account";
+import { AccountErrorFragment } from "@saleor/customers/types/AccountErrorFragment";
 
 export interface CustomerCreateNoteProps {
   data: {
     note: string;
   };
   disabled: boolean;
-  errors: Partial<{
-    note: string;
-  }>;
+  errors: AccountErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const CustomerCreateNote: React.StatelessComponent<CustomerCreateNoteProps> = ({
+const CustomerCreateNote: React.FC<CustomerCreateNoteProps> = ({
   data,
   disabled,
   errors,
   onChange
-}) => (
-  <Card>
-    <CardTitle title={i18n.t("Notes")} />
-    <CardContent>
-      <Typography>
-        {i18n.t("Enter any extra infotmation regarding this customer.")}
-      </Typography>
-      <FormSpacer />
-      <TextField
-        disabled={disabled}
-        error={!!errors.note}
-        fullWidth
-        multiline
-        name="note"
-        helperText={errors.note}
-        label={i18n.t("Note")}
-        value={data.note}
-        onChange={onChange}
+}) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["note"], errors);
+
+  return (
+    <Card>
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Notes",
+          description: "notes about customer header"
+        })}
       />
-    </CardContent>
-  </Card>
-);
+      <CardContent>
+        <Typography>
+          <FormattedMessage defaultMessage="Enter any extra infotmation regarding this customer." />
+        </Typography>
+        <FormSpacer />
+        <TextField
+          disabled={disabled}
+          error={!!formErrors.note}
+          fullWidth
+          multiline
+          name="note"
+          helperText={getAccountErrorMessage(formErrors.note, intl)}
+          label={intl.formatMessage({
+            defaultMessage: "Note",
+            description: "note about customer"
+          })}
+          value={data.note}
+          onChange={onChange}
+        />
+      </CardContent>
+    </Card>
+  );
+};
 CustomerCreateNote.displayName = "CustomerCreateNote";
 export default CustomerCreateNote;

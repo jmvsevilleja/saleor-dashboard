@@ -1,37 +1,50 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
+import { asSortParams } from "@saleor/utils/sort";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   orderDraftListPath,
   OrderDraftListUrlQueryParams,
   orderListPath,
   OrderListUrlQueryParams,
   orderPath,
-  OrderUrlQueryParams
+  OrderUrlQueryParams,
+  OrderDraftListUrlSortField,
+  OrderListUrlSortField,
+  orderFulfillPath
 } from "./urls";
 import OrderDetailsComponent from "./views/OrderDetails";
+import OrderFulfillComponent from "./views/OrderFulfill";
 import OrderDraftListComponent from "./views/OrderDraftList";
 import OrderListComponent from "./views/OrderList";
 
-const OrderList: React.StatelessComponent<RouteComponentProps<any>> = ({
-  location
-}) => {
+const OrderList: React.FC<RouteComponentProps<any>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: OrderListUrlQueryParams = qs;
+  const params: OrderListUrlQueryParams = asSortParams(
+    qs,
+    OrderListUrlSortField,
+    OrderListUrlSortField.number,
+    false
+  );
   return <OrderListComponent params={params} />;
 };
-const OrderDraftList: React.StatelessComponent<RouteComponentProps<any>> = ({
-  location
-}) => {
+const OrderDraftList: React.FC<RouteComponentProps<any>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
-  const params: OrderDraftListUrlQueryParams = qs;
+  const params: OrderDraftListUrlQueryParams = asSortParams(
+    qs,
+    OrderDraftListUrlSortField,
+    OrderDraftListUrlSortField.number,
+    false
+  );
+
   return <OrderDraftListComponent params={params} />;
 };
 
-const OrderDetails: React.StatelessComponent<RouteComponentProps<any>> = ({
+const OrderDetails: React.FC<RouteComponentProps<any>> = ({
   location,
   match
 }) => {
@@ -46,15 +59,24 @@ const OrderDetails: React.StatelessComponent<RouteComponentProps<any>> = ({
   );
 };
 
-const Component = () => (
-  <>
-    <WindowTitle title={i18n.t("Orders")} />
-    <Switch>
-      <Route exact path={orderDraftListPath} component={OrderDraftList} />
-      <Route exact path={orderListPath} component={OrderList} />
-      <Route path={orderPath(":id")} component={OrderDetails} />
-    </Switch>
-  </>
+const OrderFulfill: React.FC<RouteComponentProps<any>> = ({ match }) => (
+  <OrderFulfillComponent orderId={decodeURIComponent(match.params.id)} />
 );
+
+const Component = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.orders)} />
+      <Switch>
+        <Route exact path={orderDraftListPath} component={OrderDraftList} />
+        <Route exact path={orderListPath} component={OrderList} />
+        <Route path={orderFulfillPath(":id")} component={OrderFulfill} />
+        <Route path={orderPath(":id")} component={OrderDetails} />
+      </Switch>
+    </>
+  );
+};
 
 export default Component;

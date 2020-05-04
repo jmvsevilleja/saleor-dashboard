@@ -14,7 +14,6 @@ export interface AttributeDetailsFragment_values {
   name: string | null;
   slug: string | null;
   type: AttributeValueType | null;
-  value: string | null;
 }
 
 export interface AttributeDetailsFragment {
@@ -25,6 +24,7 @@ export interface AttributeDetailsFragment {
   visibleInStorefront: boolean;
   filterableInDashboard: boolean;
   filterableInStorefront: boolean;
+  availableInGrid: boolean;
   inputType: AttributeInputTypeEnum | null;
   storefrontSearchPosition: number;
   valueRequired: boolean;

@@ -2,14 +2,15 @@ import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
-import ControlledSwitch from "@saleor/components/ControlledSwitch";
+import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
 import FormSpacer from "@saleor/components/FormSpacer";
 import Hr from "@saleor/components/Hr";
-import i18n from "../../../i18n";
+import { sectionNames } from "@saleor/intl";
 import { FormData } from "../CountryListPage";
 
 interface TaxConfigurationProps {
@@ -19,55 +20,63 @@ interface TaxConfigurationProps {
   onTaxFetch: () => void;
 }
 
-const styles = createStyles({
-  content: {
-    paddingBottom: 0
-  }
-});
+const useStyles = makeStyles(
+  {
+    content: {
+      paddingBottom: 0
+    }
+  },
+  { name: "TaxConfiguration" }
+);
 
-export const TaxConfiguration = withStyles(styles, {
-  name: "TaxConfiguration"
-})(
-  ({
-    classes,
-    data,
-    disabled,
-    onChange,
-    onTaxFetch
-  }: TaxConfigurationProps & WithStyles<typeof styles>) => (
+export const TaxConfiguration: React.FC<TaxConfigurationProps> = props => {
+  const { data, disabled, onChange, onTaxFetch } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
     <Card>
-      <CardTitle title={i18n.t("Configuration")} />
+      <CardTitle title={intl.formatMessage(sectionNames.configuration)} />
       <CardContent className={classes.content}>
-        <ControlledSwitch
-          disabled={disabled}
+        <ControlledCheckbox
           name={"includeTax" as keyof FormData}
-          label={i18n.t("All products prices are entered with tax included")}
-          onChange={onChange}
+          label={intl.formatMessage({
+            defaultMessage: "All products prices are entered with tax included"
+          })}
           checked={data.includeTax}
-        />
-        <ControlledSwitch
+          onChange={onChange}
           disabled={disabled}
+        />
+        <FormSpacer />
+        <ControlledCheckbox
           name={"showGross" as keyof FormData}
-          label={i18n.t("Show gross prices to customers in the storefront")}
-          onChange={onChange}
+          label={intl.formatMessage({
+            defaultMessage: "Show gross prices to customers in the storefront"
+          })}
           checked={data.showGross}
-        />
-        <ControlledSwitch
-          disabled={disabled}
-          name={"chargeTaxesOnShipping" as keyof FormData}
-          label={i18n.t("Charge taxes on shipping rates")}
           onChange={onChange}
+          disabled={disabled}
+        />
+        <FormSpacer />
+        <ControlledCheckbox
+          name={"chargeTaxesOnShipping" as keyof FormData}
+          label={intl.formatMessage({
+            defaultMessage: "Charge taxes on shipping rates"
+          })}
           checked={data.chargeTaxesOnShipping}
+          onChange={onChange}
+          disabled={disabled}
         />
         <FormSpacer />
       </CardContent>
       <Hr />
       <CardActions>
         <Button disabled={disabled} onClick={onTaxFetch} color="primary">
-          {i18n.t("Fetch taxes")}
+          <FormattedMessage defaultMessage="Fetch taxes" description="button" />
         </Button>
       </CardActions>
     </Card>
-  )
-);
+  );
+};
 export default TaxConfiguration;

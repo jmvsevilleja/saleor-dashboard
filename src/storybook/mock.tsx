@@ -1,73 +1,99 @@
 import React from "react";
 
+import { SingleAutocompleteChoiceType } from "@saleor/components/SingleAutocompleteSelectField/SingleAutocompleteSelectFieldContent";
+import { FetchMoreProps } from "@saleor/types";
+
 interface ChoiceProviderProps {
-  children: ((
-    props: {
-      choices: Array<{
-        label: string;
-        value: string;
-      }>;
-      loading: boolean;
-      fetchChoices(value: string);
+  children: (
+    props: FetchMoreProps & {
+      choices: SingleAutocompleteChoiceType[];
+      fetchChoices: (value: string) => void;
     }
-  ) => React.ReactElement<any>);
-  choices: Array<{
-    label: string;
-    value: string;
-  }>;
-}
-interface ChoiceProviderState {
-  choices: Array<{
-    label: string;
-    value: string;
-  }>;
-  loading: boolean;
-  timeout: any;
+  ) => React.ReactElement;
+  choices: SingleAutocompleteChoiceType[];
 }
 
-export class ChoiceProvider extends React.Component<
-  ChoiceProviderProps,
-  ChoiceProviderState
-> {
-  state = { choices: [], loading: false, timeout: null };
+const step = 5;
+const loadingTime = 400;
 
-  handleChange = inputValue => {
-    if (this.state.loading) {
-      clearTimeout(this.state.timeout);
+export interface UseMockChoiceProviderOpts extends FetchMoreProps {
+  fetchChoices: (value: string) => void;
+}
+export type UseMockChoiceProvider = [
+  SingleAutocompleteChoiceType[],
+  UseMockChoiceProviderOpts
+];
+export function useMockChoiceProvider(
+  choices: SingleAutocompleteChoiceType[]
+): UseMockChoiceProvider {
+  const [filteredChoices, setFilteredChoices] = React.useState(
+    choices.slice(0, step)
+  );
+  const [loading, setLoading] = React.useState(false);
+  const [first, setFirst] = React.useState(step);
+  const timeout = React.useRef(null);
+
+  React.useEffect(
+    () => () => {
+      if (timeout.current) {
+        clearTimeout(timeout.current);
+      }
+    },
+    []
+  );
+
+  const handleChange = (value: string) => {
+    if (!!timeout.current) {
+      clearTimeout(timeout.current);
     }
-    const timeout = setTimeout(() => this.fetchChoices(inputValue), 500);
-    this.setState({
-      loading: true,
-      timeout
-    });
+    timeout.current = setTimeout(() => fetchChoices(value), loadingTime);
   };
 
-  fetchChoices = inputValue => {
-    let count = 0;
-    this.setState({
-      choices: this.props.choices.filter(suggestion => {
-        const keep =
-          (!inputValue ||
-            suggestion.label.toLowerCase().indexOf(inputValue.toLowerCase()) !==
-              -1) &&
-          count < 5;
+  const fetchChoices = (value: string) => {
+    const filteredChoices = choices.filter(
+      suggestion =>
+        !value ||
+        suggestion.label.toLowerCase().indexOf(value.toLowerCase()) !== -1
+    );
 
-        if (keep) {
-          count += 1;
-        }
+    setLoading(true);
 
-        return keep;
-      }),
-      loading: false,
-      timeout: null
-    });
+    timeout.current = setTimeout(() => {
+      setFilteredChoices(filteredChoices);
+      setLoading(false);
+      setFirst(step);
+    }, loadingTime);
   };
 
-  render() {
-    return this.props.children({
-      choices: this.state.choices,
-      fetchChoices: this.handleChange,
-      loading: this.state.loading
-    });
-  }
+  const handleFetchMore = () => {
+    setLoading(true);
+
+    timeout.current = setTimeout(() => {
+      setFilteredChoices(choices.slice(0, first + step));
+      setLoading(false);
+      setFirst(first + step);
+    }, loadingTime);
+  };
+
+  return [
+    filteredChoices,
+    {
+      fetchChoices: handleChange,
+      hasMore: choices.length > filteredChoices.length,
+      loading,
+      onFetchMore: handleFetchMore
+    }
+  ];
 }
+
+export const ChoiceProvider: React.FC<ChoiceProviderProps> = ({
+  children,
+  choices
+}) => {
+  const [filteredChoices, opts] = useMockChoiceProvider(choices);
+
+  return children({
+    choices: filteredChoices,
+    ...opts
+  });
+};

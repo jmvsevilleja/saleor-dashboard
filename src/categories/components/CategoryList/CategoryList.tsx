@@ -1,29 +1,25 @@
-import Button from "@material-ui/core/Button";
-import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
-import CardTitle from "@saleor/components/CardTitle";
+import { CategoryFragment } from "@saleor/categories/types/CategoryFragment";
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
-import { renderCollection } from "@saleor/misc";
-import { ListActions, ListProps } from "@saleor/types";
+import { maybe, renderCollection } from "@saleor/misc";
+import { ListActions, ListProps, SortPage } from "@saleor/types";
+import { CategoryListUrlSortField } from "@saleor/categories/urls";
+import TableCellHeader from "@saleor/components/TableCellHeader";
+import { getArrowDirection } from "@saleor/utils/sort";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     [theme.breakpoints.up("lg")]: {
       colName: {
         width: 840
@@ -36,7 +32,7 @@ const styles = (theme: Theme) =>
       }
     },
     colName: {
-      paddingLeft: "0 !important"
+      paddingLeft: 0
     },
     colProducts: {
       textAlign: "center"
@@ -47,152 +43,180 @@ const styles = (theme: Theme) =>
     tableRow: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "CategoryList" }
+);
 
 interface CategoryListProps
   extends ListProps,
     ListActions,
-    WithStyles<typeof styles> {
-  categories?: Array<{
-    id: string;
-    name: string;
-    children: {
-      totalCount: number;
-    };
-    products: {
-      totalCount: number;
-    };
-  }>;
+    SortPage<CategoryListUrlSortField> {
+  categories?: CategoryFragment[];
   isRoot: boolean;
   onAdd?();
 }
 
 const numberOfColumns = 4;
 
-const CategoryList = withStyles(styles, { name: "CategoryList" })(
-  ({
+const CategoryList: React.FC<CategoryListProps> = props => {
+  const {
     categories,
-    classes,
     disabled,
     settings,
-    isRoot,
+    sort,
     pageInfo,
     isChecked,
+    isRoot,
     selected,
     toggle,
     toggleAll,
     toolbar,
-    onAdd,
     onNextPage,
     onPreviousPage,
     onUpdateListSettings,
-    onRowClick
-  }: CategoryListProps) => (
-    <Card>
-      {!isRoot && (
-        <CardTitle
-          title={i18n.t("All Subcategories")}
-          toolbar={
-            <Button color="primary" variant="text" onClick={onAdd}>
-              {i18n.t("Add subcategory")}
-            </Button>
-          }
-        />
-      )}
-      <Table>
-        <TableHead
-          colSpan={numberOfColumns}
-          selected={selected}
-          disabled={disabled}
-          items={categories}
-          toggleAll={toggleAll}
-          toolbar={toolbar}
-        >
-          <TableCell className={classes.colName}>
-            {i18n.t("Category Name", { context: "object" })}
-          </TableCell>
-          <TableCell className={classes.colSubcategories}>
-            {i18n.t("Subcategories", { context: "object" })}
-          </TableCell>
-          <TableCell className={classes.colProducts}>
-            {i18n.t("No. Products", { context: "object" }).replace(" ", "\xa0")}
-          </TableCell>
-        </TableHead>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-              colSpan={numberOfColumns}
-              settings={settings}
-              hasNextPage={pageInfo && !disabled ? pageInfo.hasNextPage : false}
-              onNextPage={onNextPage}
-              onUpdateListSettings={onUpdateListSettings}
-              hasPreviousPage={
-                pageInfo && !disabled ? pageInfo.hasPreviousPage : false
-              }
-              onPreviousPage={onPreviousPage}
-            />
-          </TableRow>
-        </TableFooter>
-        <TableBody>
-          {renderCollection(
-            categories,
-            category => {
-              const isSelected = category ? isChecked(category.id) : false;
+    onRowClick,
+    onSort
+  } = props;
 
-              return (
-                <TableRow
-                  className={classes.tableRow}
-                  hover={!!category}
-                  onClick={category ? onRowClick(category.id) : undefined}
-                  key={category ? category.id : "skeleton"}
-                  selected={isSelected}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isSelected}
-                      disabled={disabled}
-                      disableClickPropagation
-                      onChange={() => toggle(category.id)}
-                    />
-                  </TableCell>
-                  <TableCell className={classes.colName}>
-                    {category && category.name ? category.name : <Skeleton />}
-                  </TableCell>
-                  <TableCell className={classes.colSubcategories}>
-                    {category &&
-                    category.children &&
-                    category.children.totalCount !== undefined ? (
-                      category.children.totalCount
-                    ) : (
-                      <Skeleton />
-                    )}
-                  </TableCell>
-                  <TableCell className={classes.colProducts}>
-                    {category &&
-                    category.products &&
-                    category.products.totalCount !== undefined ? (
-                      category.products.totalCount
-                    ) : (
-                      <Skeleton />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            },
-            () => (
-              <TableRow>
-                <TableCell colSpan={numberOfColumns}>
-                  {isRoot
-                    ? i18n.t("No categories found")
-                    : i18n.t("No subcategories found")}
+  const classes = useStyles(props);
+
+  return (
+    <ResponsiveTable>
+      <TableHead
+        colSpan={numberOfColumns}
+        selected={selected}
+        disabled={disabled}
+        items={categories}
+        toggleAll={toggleAll}
+        toolbar={toolbar}
+      >
+        <TableCellHeader
+          direction={
+            isRoot && sort.sort === CategoryListUrlSortField.name
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          arrowPosition="right"
+          className={classes.colName}
+          disableClick={!isRoot}
+          onClick={() => isRoot && onSort(CategoryListUrlSortField.name)}
+        >
+          <FormattedMessage defaultMessage="Category Name" />
+        </TableCellHeader>
+        <TableCellHeader
+          direction={
+            isRoot && sort.sort === CategoryListUrlSortField.subcategoryCount
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          className={classes.colSubcategories}
+          disableClick={!isRoot}
+          onClick={() =>
+            isRoot && onSort(CategoryListUrlSortField.subcategoryCount)
+          }
+        >
+          <FormattedMessage
+            defaultMessage="Subcategories"
+            description="number of subcategories"
+          />
+        </TableCellHeader>
+        <TableCellHeader
+          direction={
+            isRoot && sort.sort === CategoryListUrlSortField.productCount
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          className={classes.colProducts}
+          disableClick={!isRoot}
+          onClick={() =>
+            isRoot && onSort(CategoryListUrlSortField.productCount)
+          }
+        >
+          <FormattedMessage
+            defaultMessage="No. of Products"
+            description="number of products"
+          />
+        </TableCellHeader>
+      </TableHead>
+      <TableFooter>
+        <TableRow>
+          <TablePagination
+            colSpan={numberOfColumns}
+            settings={settings}
+            hasNextPage={pageInfo && !disabled ? pageInfo.hasNextPage : false}
+            onNextPage={onNextPage}
+            onUpdateListSettings={onUpdateListSettings}
+            hasPreviousPage={
+              pageInfo && !disabled ? pageInfo.hasPreviousPage : false
+            }
+            onPreviousPage={onPreviousPage}
+          />
+        </TableRow>
+      </TableFooter>
+      <TableBody>
+        {renderCollection(
+          categories,
+          category => {
+            const isSelected = category ? isChecked(category.id) : false;
+
+            return (
+              <TableRow
+                className={classes.tableRow}
+                hover={!!category}
+                onClick={category ? onRowClick(category.id) : undefined}
+                key={category ? category.id : "skeleton"}
+                selected={isSelected}
+                data-tc="id"
+                data-tc-id={maybe(() => category.id)}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={isSelected}
+                    disabled={disabled}
+                    disableClickPropagation
+                    onChange={() => toggle(category.id)}
+                  />
+                </TableCell>
+                <TableCell className={classes.colName} data-tc="name">
+                  {category && category.name ? category.name : <Skeleton />}
+                </TableCell>
+                <TableCell className={classes.colSubcategories}>
+                  {category &&
+                  category.children &&
+                  category.children.totalCount !== undefined ? (
+                    category.children.totalCount
+                  ) : (
+                    <Skeleton />
+                  )}
+                </TableCell>
+                <TableCell className={classes.colProducts}>
+                  {category &&
+                  category.products &&
+                  category.products.totalCount !== undefined ? (
+                    category.products.totalCount
+                  ) : (
+                    <Skeleton />
+                  )}
                 </TableCell>
               </TableRow>
-            )
-          )}
-        </TableBody>
-      </Table>
-    </Card>
-  )
-);
+            );
+          },
+          () => (
+            <TableRow>
+              <TableCell colSpan={numberOfColumns}>
+                {isRoot ? (
+                  <FormattedMessage defaultMessage="No categories found" />
+                ) : (
+                  <FormattedMessage defaultMessage="No subcategories found" />
+                )}
+              </TableCell>
+            </TableRow>
+          )
+        )}
+      </TableBody>
+    </ResponsiveTable>
+  );
+};
+
 CategoryList.displayName = "CategoryList";
 export default CategoryList;

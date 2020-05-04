@@ -1,10 +1,5 @@
 import Portal from "@material-ui/core/Portal";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import React from "react";
@@ -16,48 +11,60 @@ export interface AppHeaderProps {
   onBack();
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
+    backArrow: {
+      fontSize: 30
+    },
     menuButton: {
       flex: "0 0 auto",
-      marginLeft: theme.spacing.unit * -2,
-      marginRight: theme.spacing.unit,
-      marginTop: -theme.spacing.unit * 2
+      marginLeft: -theme.spacing(2),
+      marginRight: theme.spacing(),
+      marginTop: -theme.spacing(2)
     },
     root: {
       "&:hover": {
-        color: theme.typography.body2.color
+        color: theme.typography.body1.color
       },
       alignItems: "center",
       color: theme.palette.grey[500],
       cursor: "pointer",
       display: "flex",
-      marginTop: theme.spacing.unit / 2,
-      transition: theme.transitions.duration.standard + "ms"
+      marginTop: theme.spacing(0.5),
+      transition: theme.transitions.duration.standard + "ms",
+      [theme.breakpoints.down("sm")]: {
+        display: "none"
+      }
     },
     skeleton: {
-      marginBottom: theme.spacing.unit * 2,
+      marginBottom: theme.spacing(2),
       width: "10rem"
     },
     title: {
       color: "inherit",
       flex: 1,
-      marginLeft: theme.spacing.unit,
-      textTransform: "uppercase"
+      marginLeft: theme.spacing(),
+      textTransform: "uppercase",
+      [theme.breakpoints.down("sm")]: {
+        display: "none"
+      }
     }
-  });
-const AppHeader = withStyles(styles, { name: "AppHeader" })(
-  ({
-    children,
-    classes,
-    onBack
-  }: AppHeaderProps & WithStyles<typeof styles>) => (
+  }),
+  { name: "AppHeader" }
+);
+
+const AppHeader: React.FC<AppHeaderProps> = props => {
+  const { children, onBack } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <AppHeaderContext.Consumer>
       {anchor =>
         anchor ? (
           <Portal container={anchor.current}>
             <div className={classes.root} onClick={onBack}>
-              <ArrowBackIcon />
+              <ArrowBackIcon className={classes.backArrow} />
               {children ? (
                 <Typography className={classes.title}>{children}</Typography>
               ) : (
@@ -68,7 +75,7 @@ const AppHeader = withStyles(styles, { name: "AppHeader" })(
         ) : null
       }
     </AppHeaderContext.Consumer>
-  )
-);
+  );
+};
 AppHeader.displayName = "AppHeader";
 export default AppHeader;

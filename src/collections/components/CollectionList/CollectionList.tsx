@@ -1,34 +1,33 @@
-import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import StatusLabel from "@saleor/components/StatusLabel";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection } from "@saleor/misc";
-import { ListActions, ListProps } from "@saleor/types";
+import { ListActions, ListProps, SortPage } from "@saleor/types";
+import { CollectionListUrlSortField } from "@saleor/collections/urls";
+import TableCellHeader from "@saleor/components/TableCellHeader";
+import { getArrowDirection } from "@saleor/utils/sort";
 import { CollectionList_collections_edges_node } from "../../types/CollectionList";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     [theme.breakpoints.up("lg")]: {
       colAvailability: {
         width: 240
       },
-      colName: {},
+      colName: {
+        paddingLeft: 0
+      },
       colProducts: {
         width: 240
       }
@@ -41,134 +40,176 @@ const styles = (theme: Theme) =>
     tableRow: {
       cursor: "pointer" as "pointer"
     }
-  });
+  }),
+  { name: "CollectionList" }
+);
 
 interface CollectionListProps
   extends ListProps,
     ListActions,
-    WithStyles<typeof styles> {
+    SortPage<CollectionListUrlSortField> {
   collections: CollectionList_collections_edges_node[];
 }
 
 const numberOfColumns = 5;
 
-const CollectionList = withStyles(styles, { name: "CollectionList" })(
-  ({
-    classes,
+const CollectionList: React.FC<CollectionListProps> = props => {
+  const {
     collections,
     disabled,
     settings,
+    sort,
     onNextPage,
     onPreviousPage,
     onUpdateListSettings,
     onRowClick,
+    onSort,
     pageInfo,
     isChecked,
     selected,
     toggle,
     toggleAll,
     toolbar
-  }: CollectionListProps) => (
-    <Card>
-      <Table>
-        <TableHead
-          colSpan={numberOfColumns}
-          selected={selected}
-          disabled={disabled}
-          items={collections}
-          toggleAll={toggleAll}
-          toolbar={toolbar}
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
+    <ResponsiveTable>
+      <TableHead
+        colSpan={numberOfColumns}
+        selected={selected}
+        disabled={disabled}
+        items={collections}
+        toggleAll={toggleAll}
+        toolbar={toolbar}
+      >
+        <TableCellHeader
+          direction={
+            sort.sort === CollectionListUrlSortField.name
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          arrowPosition="right"
+          onClick={() => onSort(CollectionListUrlSortField.name)}
+          className={classes.colName}
         >
-          <TableCell className={classes.colName}>
-            {i18n.t("Category Name", { context: "table cell" })}
-          </TableCell>
-          <TableCell className={classes.colProducts}>
-            {i18n
-              .t("No. Products", { context: "table cell" })
-              .replace(" ", "\xa0")}
-          </TableCell>
-          <TableCell className={classes.colAvailability}>
-            {i18n.t("Availability", { context: "table cell" })}
-          </TableCell>
-        </TableHead>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-              colSpan={numberOfColumns}
-              settings={settings}
-              hasNextPage={pageInfo && !disabled ? pageInfo.hasNextPage : false}
-              onNextPage={onNextPage}
-              onUpdateListSettings={onUpdateListSettings}
-              hasPreviousPage={
-                pageInfo && !disabled ? pageInfo.hasPreviousPage : false
-              }
-              onPreviousPage={onPreviousPage}
-            />
-          </TableRow>
-        </TableFooter>
-        <TableBody>
-          {renderCollection(
-            collections,
-            collection => {
-              const isSelected = collection ? isChecked(collection.id) : false;
-              return (
-                <TableRow
-                  className={classes.tableRow}
-                  hover={!!collection}
-                  onClick={collection ? onRowClick(collection.id) : undefined}
-                  key={collection ? collection.id : "skeleton"}
-                  selected={isSelected}
+          <FormattedMessage defaultMessage="Collection Name" />
+        </TableCellHeader>
+        <TableCellHeader
+          direction={
+            sort.sort === CollectionListUrlSortField.productCount
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          onClick={() => onSort(CollectionListUrlSortField.productCount)}
+          className={classes.colProducts}
+        >
+          <FormattedMessage defaultMessage="No. of Products" />
+        </TableCellHeader>
+        <TableCellHeader
+          direction={
+            sort.sort === CollectionListUrlSortField.available
+              ? getArrowDirection(sort.asc)
+              : undefined
+          }
+          onClick={() => onSort(CollectionListUrlSortField.available)}
+          className={classes.colAvailability}
+        >
+          <FormattedMessage
+            defaultMessage="Availability"
+            description="collection availability"
+          />
+        </TableCellHeader>
+      </TableHead>
+      <TableFooter>
+        <TableRow>
+          <TablePagination
+            colSpan={numberOfColumns}
+            settings={settings}
+            hasNextPage={pageInfo && !disabled ? pageInfo.hasNextPage : false}
+            onNextPage={onNextPage}
+            onUpdateListSettings={onUpdateListSettings}
+            hasPreviousPage={
+              pageInfo && !disabled ? pageInfo.hasPreviousPage : false
+            }
+            onPreviousPage={onPreviousPage}
+          />
+        </TableRow>
+      </TableFooter>
+      <TableBody>
+        {renderCollection(
+          collections,
+          collection => {
+            const isSelected = collection ? isChecked(collection.id) : false;
+            return (
+              <TableRow
+                className={classes.tableRow}
+                hover={!!collection}
+                onClick={collection ? onRowClick(collection.id) : undefined}
+                key={collection ? collection.id : "skeleton"}
+                selected={isSelected}
+                data-tc="id"
+                data-tc-id={maybe(() => collection.id)}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={isSelected}
+                    disabled={disabled}
+                    disableClickPropagation
+                    onChange={() => toggle(collection.id)}
+                  />
+                </TableCell>
+                <TableCell className={classes.colName} data-tc="name">
+                  {maybe<React.ReactNode>(() => collection.name, <Skeleton />)}
+                </TableCell>
+                <TableCell className={classes.colProducts}>
+                  {maybe<React.ReactNode>(
+                    () => collection.products.totalCount,
+                    <Skeleton />
+                  )}
+                </TableCell>
+                <TableCell
+                  className={classes.colAvailability}
+                  data-tc="published"
+                  data-tc-published={maybe(() => collection.isPublished)}
                 >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={isSelected}
-                      disabled={disabled}
-                      disableClickPropagation
-                      onChange={() => toggle(collection.id)}
-                    />
-                  </TableCell>
-                  <TableCell className={classes.colName}>
-                    {maybe<React.ReactNode>(
-                      () => collection.name,
-                      <Skeleton />
-                    )}
-                  </TableCell>
-                  <TableCell className={classes.colProducts}>
-                    {maybe<React.ReactNode>(
-                      () => collection.products.totalCount,
-                      <Skeleton />
-                    )}
-                  </TableCell>
-                  <TableCell className={classes.colAvailability}>
-                    {maybe(
-                      () => (
-                        <StatusLabel
-                          status={collection.isPublished ? "success" : "error"}
-                          label={
-                            collection.isPublished
-                              ? i18n.t("Published")
-                              : i18n.t("Not published")
-                          }
-                        />
-                      ),
-                      <Skeleton />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            },
-            () => (
-              <TableRow>
-                <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No collections found")}
+                  {maybe(
+                    () => (
+                      <StatusLabel
+                        status={collection.isPublished ? "success" : "error"}
+                        label={
+                          collection.isPublished
+                            ? intl.formatMessage({
+                                defaultMessage: "Published",
+                                description: "collection is published"
+                              })
+                            : intl.formatMessage({
+                                defaultMessage: "Not published",
+                                description: "collection is not published"
+                              })
+                        }
+                      />
+                    ),
+                    <Skeleton />
+                  )}
                 </TableCell>
               </TableRow>
-            )
-          )}
-        </TableBody>
-      </Table>
-    </Card>
-  )
-);
+            );
+          },
+          () => (
+            <TableRow>
+              <TableCell colSpan={numberOfColumns}>
+                <FormattedMessage defaultMessage="No collections found" />
+              </TableCell>
+            </TableRow>
+          )
+        )}
+      </TableBody>
+    </ResponsiveTable>
+  );
+};
+
 CollectionList.displayName = "CollectionList";
 export default CollectionList;

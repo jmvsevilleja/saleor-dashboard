@@ -2,7 +2,7 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { WeightUnitsEnum, LanguageCodeEnum } from "./../../../types/globalTypes";
+import { WeightUnitsEnum, LanguageCodeEnum, PermissionEnum } from "./../../../types/globalTypes";
 
 // ====================================================
 // GraphQL query operation: ShopInfo
@@ -32,6 +32,12 @@ export interface ShopInfo_shop_languages {
   language: string;
 }
 
+export interface ShopInfo_shop_permissions {
+  __typename: "Permission";
+  code: PermissionEnum;
+  name: string;
+}
+
 export interface ShopInfo_shop {
   __typename: "Shop";
   countries: (ShopInfo_shop_countries | null)[];
@@ -44,8 +50,9 @@ export interface ShopInfo_shop {
   includeTaxesInPrices: boolean;
   name: string;
   trackInventoryByDefault: boolean | null;
+  permissions: (ShopInfo_shop_permissions | null)[];
 }
 
 export interface ShopInfo {
-  shop: ShopInfo_shop | null;
+  shop: ShopInfo_shop;
 }

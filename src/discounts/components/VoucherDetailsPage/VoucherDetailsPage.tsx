@@ -1,5 +1,6 @@
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -12,9 +13,10 @@ import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import { Tab, TabContainer } from "@saleor/components/Tab";
 import { RequirementsPicker } from "@saleor/discounts/types";
-import i18n from "../../../i18n";
+import { sectionNames } from "@saleor/intl";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
 import { maybe, splitDateTime } from "../../../misc";
-import { ListProps, TabListActions, UserError } from "../../../types";
+import { ListProps, TabListActions } from "../../../types";
 import {
   DiscountValueTypeEnum,
   VoucherTypeEnum
@@ -22,8 +24,8 @@ import {
 import { VoucherDetails_voucher } from "../../types/VoucherDetails";
 import DiscountCategories from "../DiscountCategories";
 import DiscountCollections from "../DiscountCollections";
+import DiscountDates from "../DiscountDates";
 import DiscountProducts from "../DiscountProducts";
-import VoucherDates from "../VoucherDates";
 import VoucherInfo from "../VoucherInfo";
 import VoucherLimits from "../VoucherLimits";
 import VoucherRequirements from "../VoucherRequirements";
@@ -54,7 +56,7 @@ export interface FormData {
   endTime: string;
   hasEndDate: boolean;
   hasUsageLimit: boolean;
-  minAmountSpent: string;
+  minSpent: string;
   minCheckoutItemsQuantity: string;
   requirementsPicker: RequirementsPicker;
   startDate: string;
@@ -71,7 +73,7 @@ export interface VoucherDetailsPageProps
     > {
   activeTab: VoucherDetailsPageTab;
   defaultCurrency: string;
-  errors: UserError[];
+  errors: DiscountErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   voucher: VoucherDetails_voucher;
   onBack: () => void;
@@ -95,7 +97,7 @@ const CategoriesTab = Tab(VoucherDetailsPageTab.categories);
 const CollectionsTab = Tab(VoucherDetailsPageTab.collections);
 const ProductsTab = Tab(VoucherDetailsPageTab.products);
 
-const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
+const VoucherDetailsPage: React.FC<VoucherDetailsPageProps> = ({
   activeTab,
   defaultCurrency,
   disabled,
@@ -128,8 +130,10 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
   collectionListToolbar,
   productListToolbar
 }) => {
+  const intl = useIntl();
+
   let requirementsPickerInitValue;
-  if (maybe(() => voucher.minAmountSpent.amount) > 0) {
+  if (maybe(() => voucher.minSpent.amount) > 0) {
     requirementsPickerInitValue = RequirementsPicker.ORDER;
   } else if (maybe(() => voucher.minCheckoutItemsQuantity) > 0) {
     requirementsPickerInitValue = RequirementsPicker.ITEM;
@@ -149,11 +153,11 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
     endTime: splitDateTime(maybe(() => voucher.endDate, "")).time,
     hasEndDate: maybe(() => !!voucher.endDate),
     hasUsageLimit: maybe(() => !!voucher.usageLimit),
-    minAmountSpent: maybe(() => voucher.minAmountSpent.amount.toString(), "0"),
     minCheckoutItemsQuantity: maybe(
       () => voucher.minCheckoutItemsQuantity.toString(),
       "0"
     ),
+    minSpent: maybe(() => voucher.minSpent.amount.toString(), "0"),
     requirementsPicker: requirementsPickerInitValue,
     startDate: splitDateTime(maybe(() => voucher.startDate, "")).date,
     startTime: splitDateTime(maybe(() => voucher.startDate, "")).time,
@@ -163,17 +167,19 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
   };
 
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Vouchers")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.vouchers)}
+          </AppHeader>
           <PageHeader title={maybe(() => voucher.code)} />
           <Grid>
             <div>
               <VoucherInfo
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
                 variant="update"
               />
@@ -181,7 +187,7 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
               <VoucherTypes
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -190,7 +196,7 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
                   data={data}
                   disabled={disabled}
                   defaultCurrency={defaultCurrency}
-                  errors={formErrors}
+                  errors={errors}
                   onChange={change}
                   variant="update"
                 />
@@ -204,34 +210,52 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
                       isActive={activeTab === VoucherDetailsPageTab.categories}
                       changeTab={onTabClick}
                     >
-                      {i18n.t("Categories ({{ number }})", {
-                        number: maybe(
-                          () => voucher.categories.totalCount.toString(),
-                          "…"
-                        )
-                      })}
+                      {intl.formatMessage(
+                        {
+                          defaultMessage: "Categories ({quantity})",
+                          description: "number of categories"
+                        },
+                        {
+                          quantity: maybe(
+                            () => voucher.categories.totalCount.toString(),
+                            "…"
+                          )
+                        }
+                      )}
                     </CategoriesTab>
                     <CollectionsTab
                       isActive={activeTab === VoucherDetailsPageTab.collections}
                       changeTab={onTabClick}
                     >
-                      {i18n.t("Collections ({{ number }})", {
-                        number: maybe(
-                          () => voucher.collections.totalCount.toString(),
-                          "…"
-                        )
-                      })}
+                      {intl.formatMessage(
+                        {
+                          defaultMessage: "Collections ({quantity})",
+                          description: "number of collections"
+                        },
+                        {
+                          quantity: maybe(
+                            () => voucher.collections.totalCount.toString(),
+                            "…"
+                          )
+                        }
+                      )}
                     </CollectionsTab>
                     <ProductsTab
                       isActive={activeTab === VoucherDetailsPageTab.products}
                       changeTab={onTabClick}
                     >
-                      {i18n.t("Products ({{ number }})", {
-                        number: maybe(
-                          () => voucher.products.totalCount.toString(),
-                          "…"
-                        )
-                      })}
+                      {intl.formatMessage(
+                        {
+                          defaultMessage: "Products ({quantity})",
+                          description: "number of products"
+                        },
+                        {
+                          quantity: maybe(
+                            () => voucher.products.totalCount.toString(),
+                            "…"
+                          )
+                        }
+                      )}
                     </ProductsTab>
                   </TabContainer>
                   <CardSpacer />
@@ -291,12 +315,17 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
                 <CountryList
                   countries={maybe(() => voucher.countries)}
                   disabled={disabled}
-                  emptyText={i18n.t("Voucher applies to all countries")}
+                  emptyText={intl.formatMessage({
+                    defaultMessage: "Voucher applies to all countries"
+                  })}
                   title={
                     <>
-                      {i18n.t("Countries")}
+                      {intl.formatMessage({
+                        defaultMessage: "Countries",
+                        description: "voucher country range"
+                      })}
                       <Typography variant="caption">
-                        {i18n.t("Vouchers limited to these countries")}
+                        <FormattedMessage defaultMessage="Voucher is limited to these countries" />
                       </Typography>
                     </>
                   }
@@ -309,7 +338,7 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -317,15 +346,15 @@ const VoucherDetailsPage: React.StatelessComponent<VoucherDetailsPageProps> = ({
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
-              <VoucherDates
+              <DiscountDates
                 data={data}
                 disabled={disabled}
                 defaultCurrency={defaultCurrency}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
             </div>

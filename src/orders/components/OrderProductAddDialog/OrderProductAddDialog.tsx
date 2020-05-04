@@ -3,40 +3,48 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
+import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableRow from "@material-ui/core/TableRow";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
 import InfiniteScroll from "react-infinite-scroller";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Checkbox from "@saleor/components/Checkbox";
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
 import Money from "@saleor/components/Money";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import TableCellAvatar from "@saleor/components/TableCellAvatar";
 import useSearchQuery from "@saleor/hooks/useSearchQuery";
-import i18n from "@saleor/i18n";
+import { buttonMessages } from "@saleor/intl";
 import { maybe, renderCollection } from "@saleor/misc";
 import { FetchMoreProps } from "@saleor/types";
+import { OrderErrorFragment } from "@saleor/orders/types/OrderErrorFragment";
+import getOrderErrorMessage from "@saleor/utils/errors/order";
+import useModalDialogErrors from "@saleor/hooks/useModalDialogErrors";
+import FormSpacer from "@saleor/components/FormSpacer";
+import useModalDialogOpen from "@saleor/hooks/useModalDialogOpen";
 import {
-  SearchOrderVariant_products_edges_node,
-  SearchOrderVariant_products_edges_node_variants
+  SearchOrderVariant_search_edges_node,
+  SearchOrderVariant_search_edges_node_variants
 } from "../../types/SearchOrderVariant";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     avatar: {
       paddingLeft: 0
+    },
+    colName: {
+      paddingLeft: 0
+    },
+    colVariantCheckbox: {
+      padding: 0
     },
     content: {
       overflowY: "scroll"
@@ -47,8 +55,9 @@ const styles = (theme: Theme) =>
     loadMoreLoaderContainer: {
       alignItems: "center",
       display: "flex",
-      height: theme.spacing.unit * 3,
-      justifyContent: "center"
+      height: theme.spacing(3),
+      justifyContent: "center",
+      marginTop: theme.spacing(3)
     },
     overflow: {
       overflowY: "visible"
@@ -63,29 +72,33 @@ const styles = (theme: Theme) =>
       textAlign: "right"
     },
     variantCheckbox: {
-      left: theme.spacing.unit,
+      left: theme.spacing(),
       position: "relative"
     },
     wideCell: {
       width: "100%"
     }
-  });
+  }),
+  { name: "OrderProductAddDialog" }
+);
 
 type SetVariantsAction = (
-  data: SearchOrderVariant_products_edges_node_variants[]
+  data: SearchOrderVariant_search_edges_node_variants[]
 ) => void;
 
-interface OrderProductAddDialogProps extends FetchMoreProps {
+export interface OrderProductAddDialogProps extends FetchMoreProps {
   confirmButtonState: ConfirmButtonTransitionState;
+  errors: OrderErrorFragment[];
   open: boolean;
-  products: SearchOrderVariant_products_edges_node[];
+  products: SearchOrderVariant_search_edges_node[];
   onClose: () => void;
-  onSubmit: (data: SearchOrderVariant_products_edges_node_variants[]) => void;
+  onFetch: (query: string) => void;
+  onSubmit: (data: SearchOrderVariant_search_edges_node_variants[]) => void;
 }
 
 function hasAllVariantsSelected(
-  productVariants: SearchOrderVariant_products_edges_node_variants[],
-  selectedVariantsToProductsMap: SearchOrderVariant_products_edges_node_variants[]
+  productVariants: SearchOrderVariant_search_edges_node_variants[],
+  selectedVariantsToProductsMap: SearchOrderVariant_search_edges_node_variants[]
 ): boolean {
   return productVariants.reduce(
     (acc, productVariant) =>
@@ -98,8 +111,8 @@ function hasAllVariantsSelected(
 }
 
 function isVariantSelected(
-  variant: SearchOrderVariant_products_edges_node_variants,
-  selectedVariantsToProductsMap: SearchOrderVariant_products_edges_node_variants[]
+  variant: SearchOrderVariant_search_edges_node_variants,
+  selectedVariantsToProductsMap: SearchOrderVariant_search_edges_node_variants[]
 ): boolean {
   return !!selectedVariantsToProductsMap.find(
     selectedVariant => selectedVariant.id === variant.id
@@ -107,10 +120,10 @@ function isVariantSelected(
 }
 
 const onProductAdd = (
-  product: SearchOrderVariant_products_edges_node,
+  product: SearchOrderVariant_search_edges_node,
   productIndex: number,
   productsWithAllVariantsSelected: boolean[],
-  variants: SearchOrderVariant_products_edges_node_variants[],
+  variants: SearchOrderVariant_search_edges_node_variants[],
   setVariants: SetVariantsAction
 ) =>
   productsWithAllVariantsSelected[productIndex]
@@ -133,10 +146,10 @@ const onProductAdd = (
       ]);
 
 const onVariantAdd = (
-  variant: SearchOrderVariant_products_edges_node_variants,
+  variant: SearchOrderVariant_search_edges_node_variants,
   variantIndex: number,
   productIndex: number,
-  variants: SearchOrderVariant_products_edges_node_variants[],
+  variants: SearchOrderVariant_search_edges_node_variants[],
   selectedVariantsToProductsMap: boolean[][],
   setVariants: SetVariantsAction
 ) =>
@@ -146,12 +159,10 @@ const onVariantAdd = (
       )
     : setVariants([...variants, variant]);
 
-const OrderProductAddDialog = withStyles(styles, {
-  name: "OrderProductAddDialog"
-})(
-  ({
-    classes,
+const OrderProductAddDialog: React.FC<OrderProductAddDialogProps> = props => {
+  const {
     confirmButtonState,
+    errors: apiErrors,
     open,
     loading,
     hasMore,
@@ -160,173 +171,199 @@ const OrderProductAddDialog = withStyles(styles, {
     onFetchMore,
     onClose,
     onSubmit
-  }: OrderProductAddDialogProps & WithStyles<typeof styles>) => {
-    const [query, onQueryChange] = useSearchQuery(onFetch);
-    const [variants, setVariants] = React.useState<
-      SearchOrderVariant_products_edges_node_variants[]
-    >([]);
+  } = props;
 
-    const selectedVariantsToProductsMap = products
-      ? products.map(product =>
-          product.variants.map(variant => isVariantSelected(variant, variants))
-        )
-      : [];
-    const productsWithAllVariantsSelected = products
-      ? products.map(product =>
-          hasAllVariantsSelected(product.variants, variants)
-        )
-      : [];
+  const classes = useStyles(props);
+  const intl = useIntl();
+  const [query, onQueryChange] = useSearchQuery(onFetch);
+  const [variants, setVariants] = React.useState<
+    SearchOrderVariant_search_edges_node_variants[]
+  >([]);
+  const errors = useModalDialogErrors(apiErrors, open);
 
-    const handleSubmit = () => onSubmit(variants);
+  useModalDialogOpen(open, {
+    onClose: () => setVariants([])
+  });
 
-    return (
-      <Dialog
-        onClose={onClose}
-        open={open}
-        classes={{ paper: classes.overflow }}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>{i18n.t("Add product")}</DialogTitle>
-        <DialogContent className={classes.overflow}>
-          <TextField
-            name="query"
-            value={query}
-            onChange={onQueryChange}
-            label={i18n.t("Search Products", {
-              context: "product search input label"
-            })}
-            placeholder={i18n.t(
-              "Search by product name, attribute, product type etc...",
-              {
-                context: "product search input placeholder"
-              }
-            )}
-            fullWidth
-            InputProps={{
-              autoComplete: "off",
-              endAdornment: loading && <CircularProgress size={16} />
-            }}
-          />
-        </DialogContent>
-        <DialogContent className={classes.content}>
-          <InfiniteScroll
-            pageStart={0}
-            loadMore={onFetchMore}
-            hasMore={hasMore}
-            useWindow={false}
-            loader={
-              <div className={classes.loadMoreLoaderContainer}>
-                <CircularProgress size={16} />
-              </div>
-            }
-            threshold={10}
-          >
-            <Table key="table">
-              <TableBody>
-                {renderCollection(
-                  products,
-                  (product, productIndex) => (
-                    <React.Fragment key={product ? product.id : "skeleton"}>
-                      <TableRow>
-                        <TableCell
-                          padding="checkbox"
-                          className={classes.productCheckboxCell}
-                        >
-                          <Checkbox
-                            checked={
-                              productsWithAllVariantsSelected[productIndex]
-                            }
-                            disabled={loading}
-                            onChange={() =>
-                              onProductAdd(
-                                product,
-                                productIndex,
-                                productsWithAllVariantsSelected,
-                                variants,
-                                setVariants
-                              )
-                            }
-                          />
-                        </TableCell>
-                        <TableCellAvatar
-                          className={classes.avatar}
-                          thumbnail={maybe(() => product.thumbnail.url)}
-                        />
-                        <TableCell className={classes.wideCell} colSpan={2}>
-                          {maybe(() => product.name)}
-                        </TableCell>
-                      </TableRow>
-                      {maybe(() => product.variants, []).map(
-                        (variant, variantIndex) => (
-                          <TableRow key={variant.id}>
-                            <TableCell />
-                            <TableCell>
-                              <Checkbox
-                                className={classes.variantCheckbox}
-                                checked={
-                                  selectedVariantsToProductsMap[productIndex][
-                                    variantIndex
-                                  ]
-                                }
-                                disabled={loading}
-                                onChange={() =>
-                                  onVariantAdd(
-                                    variant,
-                                    variantIndex,
-                                    productIndex,
-                                    variants,
-                                    selectedVariantsToProductsMap,
-                                    setVariants
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div>{variant.name}</div>
-                              <div className={classes.grayText}>
-                                {i18n.t("SKU {{ sku }}", {
-                                  sku: variant.sku
-                                })}
-                              </div>
-                            </TableCell>
-                            <TableCell className={classes.textRight}>
-                              <Money money={variant.price} />
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                    </React.Fragment>
-                  ),
-                  () => (
+  const selectedVariantsToProductsMap = products
+    ? products.map(product =>
+        product.variants.map(variant => isVariantSelected(variant, variants))
+      )
+    : [];
+  const productsWithAllVariantsSelected = products
+    ? products.map(product =>
+        hasAllVariantsSelected(product.variants, variants)
+      )
+    : [];
+
+  const handleSubmit = () => onSubmit(variants);
+
+  return (
+    <Dialog
+      onClose={onClose}
+      open={open}
+      classes={{ paper: classes.overflow }}
+      fullWidth
+      maxWidth="sm"
+    >
+      <DialogTitle>
+        <FormattedMessage
+          defaultMessage="Create Product"
+          description="dialog header"
+        />
+      </DialogTitle>
+      <DialogContent className={classes.overflow}>
+        <TextField
+          name="query"
+          value={query}
+          onChange={onQueryChange}
+          label={intl.formatMessage({
+            defaultMessage: "Search Products"
+          })}
+          placeholder={intl.formatMessage({
+            defaultMessage:
+              "Search by product name, attribute, product type etc..."
+          })}
+          fullWidth
+          InputProps={{
+            autoComplete: "off",
+            endAdornment: loading && <CircularProgress size={16} />
+          }}
+        />
+      </DialogContent>
+      <DialogContent className={classes.content}>
+        <InfiniteScroll
+          pageStart={0}
+          loadMore={onFetchMore}
+          hasMore={hasMore}
+          useWindow={false}
+          loader={
+            <div className={classes.loadMoreLoaderContainer}>
+              <CircularProgress size={16} />
+            </div>
+          }
+          threshold={10}
+        >
+          <ResponsiveTable key="table">
+            <TableBody>
+              {renderCollection(
+                products,
+                (product, productIndex) => (
+                  <React.Fragment key={product ? product.id : "skeleton"}>
                     <TableRow>
-                      <TableCell colSpan={4}>
-                        {i18n.t("No products matching given query")}
+                      <TableCell
+                        padding="checkbox"
+                        className={classes.productCheckboxCell}
+                      >
+                        <Checkbox
+                          checked={
+                            productsWithAllVariantsSelected[productIndex]
+                          }
+                          disabled={loading}
+                          onChange={() =>
+                            onProductAdd(
+                              product,
+                              productIndex,
+                              productsWithAllVariantsSelected,
+                              variants,
+                              setVariants
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCellAvatar
+                        className={classes.avatar}
+                        thumbnail={maybe(() => product.thumbnail.url)}
+                      />
+                      <TableCell className={classes.colName} colSpan={2}>
+                        {maybe(() => product.name)}
                       </TableCell>
                     </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </InfiniteScroll>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>
-            {i18n.t("Cancel", { context: "button" })}
-          </Button>
-          <ConfirmButton
-            transitionState={confirmButtonState}
-            color="primary"
-            variant="contained"
-            type="submit"
-            onClick={handleSubmit}
-          >
-            {i18n.t("Confirm", { context: "button" })}
-          </ConfirmButton>
-        </DialogActions>
-      </Dialog>
-    );
-  }
-);
+                    {maybe(() => product.variants, []).map(
+                      (variant, variantIndex) => (
+                        <TableRow key={variant.id}>
+                          <TableCell />
+                          <TableCell className={classes.colVariantCheckbox}>
+                            <Checkbox
+                              className={classes.variantCheckbox}
+                              checked={
+                                selectedVariantsToProductsMap[productIndex][
+                                  variantIndex
+                                ]
+                              }
+                              disabled={loading}
+                              onChange={() =>
+                                onVariantAdd(
+                                  variant,
+                                  variantIndex,
+                                  productIndex,
+                                  variants,
+                                  selectedVariantsToProductsMap,
+                                  setVariants
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell className={classes.colName}>
+                            <div>{variant.name}</div>
+                            <div className={classes.grayText}>
+                              <FormattedMessage
+                                defaultMessage="SKU {sku}"
+                                description="variant sku"
+                                values={{
+                                  sku: variant.sku
+                                }}
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className={classes.textRight}>
+                            <Money
+                              money={variant.pricing.priceUndiscounted.net}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
+                  </React.Fragment>
+                ),
+                () => (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <FormattedMessage defaultMessage="No products matching given query" />
+                    </TableCell>
+                  </TableRow>
+                )
+              )}
+            </TableBody>
+          </ResponsiveTable>
+        </InfiniteScroll>
+        {errors.length > 0 && (
+          <>
+            <FormSpacer />
+            {errors.map(err => (
+              <DialogContentText color="error">
+                {getOrderErrorMessage(err, intl)}
+              </DialogContentText>
+            ))}
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>
+          <FormattedMessage {...buttonMessages.back} />
+        </Button>
+        <ConfirmButton
+          transitionState={confirmButtonState}
+          color="primary"
+          variant="contained"
+          type="submit"
+          onClick={handleSubmit}
+        >
+          <FormattedMessage {...buttonMessages.confirm} />
+        </ConfirmButton>
+      </DialogActions>
+    </Dialog>
+  );
+};
 OrderProductAddDialog.displayName = "OrderProductAddDialog";
 export default OrderProductAddDialog;

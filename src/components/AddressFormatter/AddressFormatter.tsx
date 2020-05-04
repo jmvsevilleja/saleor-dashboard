@@ -8,9 +8,7 @@ interface AddressFormatterProps {
   address?: AddressType;
 }
 
-const AddressFormatter: React.StatelessComponent<AddressFormatterProps> = ({
-  address
-}) => {
+const AddressFormatter: React.FC<AddressFormatterProps> = ({ address }) => {
   if (!address) {
     return <Skeleton />;
   }
@@ -20,23 +18,23 @@ const AddressFormatter: React.StatelessComponent<AddressFormatterProps> = ({
         fontStyle: "inherit"
       }}
     >
-      <Typography component="span">
+      <Typography component="p">
         {address.firstName} {address.lastName}
       </Typography>
       {address.companyName && (
-        <Typography component="span">{address.companyName}</Typography>
+        <Typography component="p">{address.companyName}</Typography>
       )}
-      <Typography component="span">
+      <Typography component="p">
         {address.streetAddress1}
         <br />
         {address.streetAddress2}
       </Typography>
-      <Typography component="span">
+      <Typography component="p">
         {" "}
         {address.postalCode} {address.city}
         {address.cityArea ? ", " + address.cityArea : ""}
       </Typography>
-      <Typography component="span">
+      <Typography component="p">
         {address.countryArea
           ? address.countryArea + ", " + address.country.country
           : address.country.country}

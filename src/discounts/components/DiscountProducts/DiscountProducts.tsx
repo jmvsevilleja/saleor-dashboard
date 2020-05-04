@@ -1,22 +1,18 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import IconButton from "@material-ui/core/IconButton";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import StatusLabel from "@saleor/components/StatusLabel";
 import TableCellAvatar, {
@@ -24,7 +20,6 @@ import TableCellAvatar, {
 } from "@saleor/components/TableCellAvatar";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { ListActions, ListProps } from "../../../types";
 import { SaleDetails_sale } from "../../types/SaleDetails";
@@ -36,15 +31,16 @@ export interface SaleProductsProps extends ListProps, ListActions {
   onProductUnassign: (id: string) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     colActions: {
       "&:last-child": {
         paddingRight: 0
       },
-      width: 48 + theme.spacing.unit / 2
+      width: 76 + theme.spacing(0.5)
     },
     colName: {
+      paddingLeft: 0,
       width: "auto"
     },
     colNameLabel: {
@@ -62,16 +58,16 @@ const styles = (theme: Theme) =>
     tableRow: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "DiscountProducts" }
+);
 
 const numberOfColumns = 5;
 
-const DiscountProducts = withStyles(styles, {
-  name: "DiscountProducts"
-})(
-  ({
+const DiscountProducts: React.FC<SaleProductsProps> = props => {
+  const {
     discount: sale,
-    classes,
+
     disabled,
     pageInfo,
     onRowClick,
@@ -84,17 +80,28 @@ const DiscountProducts = withStyles(styles, {
     toggle,
     toggleAll,
     toolbar
-  }: SaleProductsProps & WithStyles<typeof styles>) => (
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card>
       <CardTitle
-        title={i18n.t("Eligible Products")}
+        title={intl.formatMessage({
+          defaultMessage: "Eligible Products",
+          description: "section header"
+        })}
         toolbar={
           <Button color="primary" onClick={onProductAssign}>
-            {i18n.t("Assign products")}
+            <FormattedMessage
+              defaultMessage="Assign products"
+              description="button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           selected={selected}
@@ -105,14 +112,17 @@ const DiscountProducts = withStyles(styles, {
         >
           <TableCell className={classes.colName}>
             <span className={classes.colNameLabel}>
-              {i18n.t("Product name")}
+              <FormattedMessage defaultMessage="Product Name" />
             </span>
           </TableCell>
           <TableCell className={classes.colType}>
-            {i18n.t("Product Type")}
+            <FormattedMessage defaultMessage="Product Type" />
           </TableCell>
           <TableCell className={classes.colPublished}>
-            {i18n.t("Published")}
+            <FormattedMessage
+              defaultMessage="Published"
+              description="product is published"
+            />
           </TableCell>
           <TableCell />
         </TableHead>
@@ -167,9 +177,13 @@ const DiscountProducts = withStyles(styles, {
                       <StatusLabel
                         label={
                           product.isPublished
-                            ? i18n.t("Published", { context: "product status" })
-                            : i18n.t("Not published", {
-                                context: "product status"
+                            ? intl.formatMessage({
+                                defaultMessage: "Published",
+                                description: "product is published"
+                              })
+                            : intl.formatMessage({
+                                defaultMessage: "Not published",
+                                description: "product is not published"
                               })
                         }
                         status={product.isPublished ? "success" : "error"}
@@ -195,15 +209,15 @@ const DiscountProducts = withStyles(styles, {
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No products found")}
+                  <FormattedMessage defaultMessage="No products found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 DiscountProducts.displayName = "DiscountProducts";
 export default DiscountProducts;

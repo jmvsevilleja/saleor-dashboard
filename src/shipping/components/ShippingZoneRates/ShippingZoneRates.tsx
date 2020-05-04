@@ -1,12 +1,6 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
@@ -14,14 +8,15 @@ import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
 import EditIcon from "@material-ui/icons/Edit";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import IconButtonTableCell from "@saleor/components/IconButtonTableCell";
 import Money from "@saleor/components/Money";
 import MoneyRange from "@saleor/components/MoneyRange";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import WeightRange from "@saleor/components/WeightRange";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { ICONBUTTON_SIZE } from "../../../theme";
 import { ShippingZoneDetailsFragment_shippingMethods } from "../../types/ShippingZoneDetailsFragment";
@@ -35,14 +30,14 @@ export interface ShippingZoneRatesProps {
   onRateRemove: (id: string) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     alignRight: {
       "&:last-child": {
         paddingRight: 0
       },
       paddingRight: 0,
-      width: ICONBUTTON_SIZE + theme.spacing.unit / 2
+      width: ICONBUTTON_SIZE + theme.spacing(0.5)
     },
     nameColumn: {
       width: 300
@@ -50,46 +45,71 @@ const styles = (theme: Theme) =>
     valueColumn: {
       width: 300
     }
-  });
-const ShippingZoneRates = withStyles(styles, { name: "ShippingZoneRates" })(
-  ({
-    classes,
+  }),
+  { name: "ShippingZoneRates" }
+);
+const ShippingZoneRates: React.FC<ShippingZoneRatesProps> = props => {
+  const {
     disabled,
     onRateAdd,
     onRateEdit,
     onRateRemove,
     rates,
     variant
-  }: ShippingZoneRatesProps & WithStyles<typeof styles>) => (
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
     <Card>
       <CardTitle
         height="const"
         title={
           variant === "price"
-            ? i18n.t("Price Based Rates")
-            : i18n.t("Weight Based Rates")
+            ? intl.formatMessage({
+                defaultMessage: "Price Based Rates",
+                description: "price based shipping methods, section header"
+              })
+            : intl.formatMessage({
+                defaultMessage: "Weight Based Rates",
+                description: "weight based shipping methods, section header"
+              })
         }
         toolbar={
-          <Button color="primary" onClick={onRateAdd}>
-            {i18n.t("Add rate", {
-              context: "button"
-            })}
+          <Button color="primary" disabled={disabled} onClick={onRateAdd}>
+            <FormattedMessage
+              defaultMessage="Create rate"
+              description="button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead>
           <TableRow>
             <TableCell className={classes.nameColumn}>
-              {i18n.t("Name", { context: "object" })}
+              <FormattedMessage
+                defaultMessage="Name"
+                description="shipping method name"
+              />
             </TableCell>
             <TableCell className={classes.valueColumn}>
               {variant === "price"
-                ? i18n.t("Value Range", { context: "object" })
-                : i18n.t("Weight Range", { context: "object" })}
+                ? intl.formatMessage({
+                    defaultMessage: "Value Range",
+                    description: "shipping method price range"
+                  })
+                : intl.formatMessage({
+                    defaultMessage: "Weight Range",
+                    description: "shipping method weight range"
+                  })}
             </TableCell>
             <TableCell className={classes.nameColumn}>
-              {i18n.t("Price", { context: "object" })}
+              <FormattedMessage
+                defaultMessage="Price"
+                description="shipping method price"
+              />
             </TableCell>
             <TableCell />
             <TableCell />
@@ -149,15 +169,15 @@ const ShippingZoneRates = withStyles(styles, { name: "ShippingZoneRates" })(
             () => (
               <TableRow>
                 <TableCell colSpan={5}>
-                  {i18n.t("No shipping rates found")}
+                  <FormattedMessage defaultMessage="No shipping rates found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 ShippingZoneRates.displayName = "ShippingZoneRates";
 export default ShippingZoneRates;

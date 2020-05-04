@@ -6,25 +6,42 @@ import {
   BulkAction,
   Dialog,
   Filters,
+  FiltersWithMultipleValues,
   Pagination,
-  SingleAction
+  SingleAction,
+  TabActionDialog,
+  Sort
 } from "../types";
 
 const orderSectionUrl = "/orders";
 
 export const orderListPath = orderSectionUrl;
 export enum OrderListUrlFiltersEnum {
-  dateFrom = "dateFrom",
-  dateTo = "dateTo",
-  status = "status",
-  email = "email",
-  payment = "payment"
+  createdFrom = "createdFrom",
+  createdTo = "createdTo",
+  customer = "customer",
+  payment = "payment",
+  query = "query"
 }
-export type OrderListUrlFilters = Filters<OrderListUrlFiltersEnum>;
-export type OrderListUrlDialog = "cancel" | "save-search" | "delete-search";
+export enum OrderListUrlFiltersWithMultipleValuesEnum {
+  status = "status"
+}
+export type OrderListUrlFilters = Filters<OrderListUrlFiltersEnum> &
+  FiltersWithMultipleValues<OrderListUrlFiltersWithMultipleValuesEnum>;
+export type OrderListUrlDialog = "cancel" | TabActionDialog;
+export enum OrderListUrlSortField {
+  number = "number",
+  customer = "customer",
+  date = "date",
+  fulfillment = "status",
+  payment = "payment",
+  total = "total"
+}
+export type OrderListUrlSort = Sort<OrderListUrlSortField>;
 export type OrderListUrlQueryParams = BulkAction &
   Dialog<OrderListUrlDialog> &
   OrderListUrlFilters &
+  OrderListUrlSort &
   Pagination &
   ActiveTab;
 export const orderListUrl = (params?: OrderListUrlQueryParams): string => {
@@ -37,9 +54,26 @@ export const orderListUrl = (params?: OrderListUrlQueryParams): string => {
 };
 
 export const orderDraftListPath = urlJoin(orderSectionUrl, "drafts");
-export type OrderDraftListUrlDialog = "remove";
-export type OrderDraftListUrlQueryParams = BulkAction &
+export enum OrderDraftListUrlFiltersEnum {
+  createdFrom = "createdFrom",
+  createdTo = "createdTo",
+  customer = "customer",
+  query = "query"
+}
+export type OrderDraftListUrlFilters = Filters<OrderDraftListUrlFiltersEnum>;
+export type OrderDraftListUrlDialog = "remove" | TabActionDialog;
+export enum OrderDraftListUrlSortField {
+  number = "number",
+  customer = "customer",
+  date = "date",
+  total = "total"
+}
+export type OrderDraftListUrlSort = Sort<OrderDraftListUrlSortField>;
+export type OrderDraftListUrlQueryParams = ActiveTab &
+  BulkAction &
   Dialog<OrderDraftListUrlDialog> &
+  OrderDraftListUrlFilters &
+  OrderDraftListUrlSort &
   Pagination;
 export const orderDraftListUrl = (
   params?: OrderDraftListUrlQueryParams
@@ -63,10 +97,14 @@ export type OrderUrlDialog =
   | "edit-shipping"
   | "edit-shipping-address"
   | "finalize"
-  | "fulfill"
   | "mark-paid"
   | "refund"
   | "void";
 export type OrderUrlQueryParams = Dialog<OrderUrlDialog> & SingleAction;
 export const orderUrl = (id: string, params?: OrderUrlQueryParams) =>
   orderPath(encodeURIComponent(id)) + "?" + stringifyQs(params);
+
+export const orderFulfillPath = (id: string) =>
+  urlJoin(orderPath(id), "fulfill");
+export const orderFulfillUrl = (id: string) =>
+  orderFulfillPath(encodeURIComponent(id));

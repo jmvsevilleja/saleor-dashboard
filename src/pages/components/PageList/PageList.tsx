@@ -1,33 +1,34 @@
 import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
 import TableRow from "@material-ui/core/TableRow";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Checkbox from "@saleor/components/Checkbox";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import StatusLabel from "@saleor/components/StatusLabel";
 import TableHead from "@saleor/components/TableHead";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection } from "@saleor/misc";
-import { ListActions, ListProps } from "@saleor/types";
+import { ListActions, ListProps, SortPage } from "@saleor/types";
+import { PageListUrlSortField } from "@saleor/pages/urls";
+import TableCellHeader from "@saleor/components/TableCellHeader";
+import { getArrowDirection } from "@saleor/utils/sort";
 import { PageList_pages_edges_node } from "../../types/PageList";
 
-export interface PageListProps extends ListProps, ListActions {
+export interface PageListProps
+  extends ListProps,
+    ListActions,
+    SortPage<PageListUrlSortField> {
   pages: PageList_pages_edges_node[];
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     [theme.breakpoints.up("lg")]: {
       colSlug: {
         width: 250
@@ -38,34 +39,44 @@ const styles = (theme: Theme) =>
       }
     },
     colSlug: {},
-    colTitle: {},
+    colTitle: {
+      paddingLeft: 0
+    },
     colVisibility: {},
     link: {
       cursor: "pointer"
     }
-  });
+  }),
+  { name: "PageList" }
+);
 
 const numberOfColumns = 4;
 
-const PageList = withStyles(styles, { name: "PageList" })(
-  ({
-    classes,
+const PageList: React.FC<PageListProps> = props => {
+  const {
     settings,
     pages,
     disabled,
     onNextPage,
     pageInfo,
     onRowClick,
+    onSort,
     onUpdateListSettings,
     onPreviousPage,
     isChecked,
     selected,
+    sort,
     toggle,
     toggleAll,
     toolbar
-  }: PageListProps & WithStyles<typeof styles>) => (
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card>
-      <Table>
+      <ResponsiveTable>
         <TableHead
           colSpan={numberOfColumns}
           selected={selected}
@@ -74,15 +85,51 @@ const PageList = withStyles(styles, { name: "PageList" })(
           toggleAll={toggleAll}
           toolbar={toolbar}
         >
-          <TableCell className={classes.colTitle} padding="dense">
-            {i18n.t("Title", { context: "table header" })}
-          </TableCell>
-          <TableCell className={classes.colSlug} padding="dense">
-            {i18n.t("Slug", { context: "table header" })}
-          </TableCell>
-          <TableCell className={classes.colVisibility} padding="dense">
-            {i18n.t("Visibility", { context: "table header" })}
-          </TableCell>
+          <TableCellHeader
+            direction={
+              sort.sort === PageListUrlSortField.title
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            arrowPosition="right"
+            onClick={() => onSort(PageListUrlSortField.title)}
+            className={classes.colTitle}
+          >
+            <FormattedMessage
+              defaultMessage="Title"
+              description="dialog header"
+            />
+          </TableCellHeader>
+          <TableCellHeader
+            direction={
+              sort.sort === PageListUrlSortField.slug
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            arrowPosition="right"
+            onClick={() => onSort(PageListUrlSortField.slug)}
+            className={classes.colSlug}
+          >
+            <FormattedMessage
+              defaultMessage="Slug"
+              description="page internal name"
+            />
+          </TableCellHeader>
+          <TableCellHeader
+            direction={
+              sort.sort === PageListUrlSortField.visible
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            arrowPosition="right"
+            onClick={() => onSort(PageListUrlSortField.visible)}
+            className={classes.colVisibility}
+          >
+            <FormattedMessage
+              defaultMessage="Visibility"
+              description="page status"
+            />
+          </TableCellHeader>
         </TableHead>
         <TableFooter>
           <TableRow>
@@ -121,42 +168,48 @@ const PageList = withStyles(styles, { name: "PageList" })(
                       onChange={() => toggle(page.id)}
                     />
                   </TableCell>
-                  <TableCell className={classes.colTitle}>
+                  <TableCellHeader className={classes.colTitle}>
                     {maybe<React.ReactNode>(() => page.title, <Skeleton />)}
-                  </TableCell>
-                  <TableCell className={classes.colSlug}>
+                  </TableCellHeader>
+                  <TableCellHeader className={classes.colSlug}>
                     {maybe<React.ReactNode>(() => page.slug, <Skeleton />)}
-                  </TableCell>
-                  <TableCell className={classes.colVisibility}>
+                  </TableCellHeader>
+                  <TableCellHeader className={classes.colVisibility}>
                     {maybe<React.ReactNode>(
                       () => (
                         <StatusLabel
                           label={
                             page.isPublished
-                              ? i18n.t("Published")
-                              : i18n.t("Not Published")
+                              ? intl.formatMessage({
+                                  defaultMessage: "Published",
+                                  description: "page status"
+                                })
+                              : intl.formatMessage({
+                                  defaultMessage: "Not Published",
+                                  description: "page status"
+                                })
                           }
                           status={page.isPublished ? "success" : "error"}
                         />
                       ),
                       <Skeleton />
                     )}
-                  </TableCell>
+                  </TableCellHeader>
                 </TableRow>
               );
             },
             () => (
               <TableRow>
                 <TableCell colSpan={numberOfColumns}>
-                  {i18n.t("No pages found")}
+                  <FormattedMessage defaultMessage="No pages found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 PageList.displayName = "PageList";
 export default PageList;

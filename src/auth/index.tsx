@@ -1,30 +1,56 @@
 import React from "react";
+import { Route, Switch } from "react-router-dom";
 
+import Layout from "./components/Layout";
 import { User } from "./types/User";
-
-const TOKEN_STORAGE_KEY = "dashboardAuth";
+import {
+  newPasswordPath,
+  passwordResetPath,
+  passwordResetSuccessPath
+} from "./urls";
+import LoginView from "./views/Login";
+import NewPassword from "./views/NewPassword";
+import ResetPassword from "./views/ResetPassword";
+import ResetPasswordSuccess from "./views/ResetPasswordSuccess";
+import LoginLoading from "./components/LoginLoading";
 
 interface UserContext {
-  login: (username: string, password: string, persist: boolean) => void;
+  login: (username: string, password: string) => void;
+  loginByToken: (token: string, user: User) => void;
   logout: () => void;
+  tokenAuthLoading: boolean;
+  tokenVerifyLoading: boolean;
   user?: User;
 }
 
 export const UserContext = React.createContext<UserContext>({
   login: undefined,
-  logout: undefined
+  loginByToken: undefined,
+  logout: undefined,
+  tokenAuthLoading: false,
+  tokenVerifyLoading: false
 });
 
-export const getAuthToken = () =>
-  localStorage.getItem(TOKEN_STORAGE_KEY) ||
-  sessionStorage.getItem(TOKEN_STORAGE_KEY);
+interface AuthRouterProps {
+  hasToken: boolean;
+}
 
-export const setAuthToken = (token: string, persist: boolean) =>
-  persist
-    ? localStorage.setItem(TOKEN_STORAGE_KEY, token)
-    : sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+const AuthRouter: React.FC<AuthRouterProps> = ({ hasToken }) => (
+  <Layout>
+    <Switch>
+      <Route path={passwordResetSuccessPath} component={ResetPasswordSuccess} />
+      <Route path={passwordResetPath} component={ResetPassword} />
+      {!hasToken ? (
+        <Route path={newPasswordPath} component={NewPassword} />
+      ) : (
+        <LoginLoading />
+      )}
+      <Route component={LoginView} />
+    </Switch>
+  </Layout>
+);
 
-export const removeAuthToken = () => {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
-  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-};
+AuthRouter.displayName = "AuthRouter";
+export default AuthRouter;
+
+export * from "./utils";

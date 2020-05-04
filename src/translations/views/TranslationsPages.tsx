@@ -1,11 +1,12 @@
 import { stringify as stringifyQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
 import useShop from "@saleor/hooks/useShop";
-import i18n from "../../i18n";
-import { getMutationState, maybe } from "../../misc";
+import { commonMessages } from "@saleor/intl";
+import { maybe } from "../../misc";
 import {
   LanguageCodeEnum,
   PageTranslationInput
@@ -39,6 +40,7 @@ const TranslationsPages: React.FC<TranslationsPagesProps> = ({
   const navigate = useNavigator();
   const notify = useNotifier();
   const shop = useShop();
+  const intl = useIntl();
 
   const onEdit = (field: string) =>
     navigate(
@@ -51,7 +53,7 @@ const TranslationsPages: React.FC<TranslationsPagesProps> = ({
   const onUpdate = (data: UpdatePageTranslations) => {
     if (data.pageTranslate.errors.length === 0) {
       notify({
-        text: i18n.t("Translation Saved")
+        text: intl.formatMessage(commonMessages.savedChanges)
       });
       navigate("?", true);
     }
@@ -85,12 +87,6 @@ const TranslationsPages: React.FC<TranslationsPagesProps> = ({
               });
             };
 
-            const saveButtonState = getMutationState(
-              updateTranslationsOpts.called,
-              updateTranslationsOpts.loading,
-              maybe(() => updateTranslationsOpts.data.pageTranslate.errors, [])
-            );
-
             return (
               <TranslationsPagesPage
                 activeField={params.activeField}
@@ -99,13 +95,12 @@ const TranslationsPages: React.FC<TranslationsPagesProps> = ({
                 }
                 languageCode={languageCode}
                 languages={maybe(() => shop.languages, [])}
-                saveButtonState={saveButtonState}
+                saveButtonState={updateTranslationsOpts.status}
                 onBack={() =>
                   navigate(
-                    languageEntitiesUrl(
-                      languageCode,
-                      TranslatableEntities.pages
-                    )
+                    languageEntitiesUrl(languageCode, {
+                      tab: TranslatableEntities.pages
+                    })
                   )
                 }
                 onEdit={onEdit}

@@ -5,13 +5,56 @@ import AttributeListPage, {
   AttributeListPageProps
 } from "@saleor/attributes/components/AttributeListPage";
 import { attributes } from "@saleor/attributes/fixtures";
-import { listActionsProps, pageListProps } from "@saleor/fixtures";
+import {
+  listActionsProps,
+  pageListProps,
+  searchPageProps,
+  tabPageProps,
+  sortPageProps,
+  filterPageProps
+} from "@saleor/fixtures";
+import { AttributeListUrlSortField } from "@saleor/attributes/urls";
 import Decorator from "../../Decorator";
 
 const props: AttributeListPageProps = {
   ...pageListProps.default,
   ...listActionsProps,
-  attributes
+  ...tabPageProps,
+  ...searchPageProps,
+  ...filterPageProps,
+  attributes,
+  filterOpts: {
+    availableInGrid: {
+      active: false,
+      value: false
+    },
+    filterableInDashboard: {
+      active: false,
+      value: false
+    },
+    filterableInStorefront: {
+      active: false,
+      value: false
+    },
+    isVariantOnly: {
+      active: false,
+      value: false
+    },
+    valueRequired: {
+      active: false,
+      value: false
+    },
+    visibleInStorefront: {
+      active: false,
+      value: false
+    }
+  },
+  onBack: () => undefined,
+  onSort: () => undefined,
+  sort: {
+    ...sortPageProps.sort,
+    sort: AttributeListUrlSortField.name
+  }
 };
 
 storiesOf("Views / Attributes / Attribute list", module)

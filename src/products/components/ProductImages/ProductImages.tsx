@@ -1,27 +1,23 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import classNames from "classnames";
-
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import CardTitle from "@saleor/components/CardTitle";
 import ImageTile from "@saleor/components/ImageTile";
 import ImageUpload from "@saleor/components/ImageUpload";
+import { commonMessages } from "@saleor/intl";
 import { ReorderAction } from "@saleor/types";
+import createMultiFileUploadHandler from "@saleor/utils/handlers/multiFileUploadHandler";
+import classNames from "classnames";
 import React from "react";
+import { useIntl } from "react-intl";
 import { SortableContainer, SortableElement } from "react-sortable-hoc";
-import i18n from "../../../i18n";
 import { ProductDetails_product_images } from "../../types/ProductDetails";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     card: {
-      marginTop: theme.spacing.unit * 2,
+      marginTop: theme.spacing(2),
       [theme.breakpoints.down("sm")]: {
         marginTop: 0
       }
@@ -46,11 +42,11 @@ const styles = (theme: Theme) =>
       },
       background: "#ffffff",
       border: "1px solid #eaeaea",
-      borderRadius: theme.spacing.unit,
+      borderRadius: theme.spacing(),
       height: 140,
       margin: "auto",
       overflow: "hidden",
-      padding: theme.spacing.unit * 2,
+      padding: theme.spacing(2),
       position: "relative",
       width: 140
     },
@@ -63,7 +59,7 @@ const styles = (theme: Theme) =>
       display: "none",
       height: 140,
       left: 0,
-      padding: theme.spacing.unit * 2,
+      padding: theme.spacing(2),
       position: "absolute",
       top: 0,
       width: 140
@@ -72,12 +68,13 @@ const styles = (theme: Theme) =>
       alignContent: "flex-end",
       display: "flex",
       position: "relative",
-      right: -theme.spacing.unit * 3,
-      top: -theme.spacing.unit * 2
+      right: -theme.spacing(3),
+      top: -theme.spacing(2)
     },
     imageUpload: {
       height: "100%",
       left: 0,
+      outline: 0,
       position: "absolute",
       top: 0,
       width: "100%"
@@ -93,8 +90,8 @@ const styles = (theme: Theme) =>
     },
     root: {
       display: "grid",
-      gridColumnGap: theme.spacing.unit * 2 + "px",
-      gridRowGap: theme.spacing.unit * 2 + "px",
+      gridColumnGap: theme.spacing(2),
+      gridRowGap: theme.spacing(2),
       gridTemplateColumns: "repeat(4, 1fr)",
       [theme.breakpoints.down("sm")]: {
         gridTemplateColumns: "repeat(3, 1fr)"
@@ -106,9 +103,11 @@ const styles = (theme: Theme) =>
     rootDragActive: {
       opacity: 0.2
     }
-  });
+  }),
+  { name: "ProductImages" }
+);
 
-interface ProductImagesProps extends WithStyles<typeof styles> {
+interface ProductImagesProps {
   placeholderImage?: string;
   images: ProductDetails_product_images[];
   loading?: boolean;
@@ -140,40 +139,35 @@ const SortableImage = SortableElement<SortableImageProps>(
 
 interface ImageListContainerProps {
   className: string;
-  items: any;
+  items: ProductDetails_product_images[];
+  preview: ProductDetails_product_images[];
   onImageDelete: (id: string) => () => void;
   onImageEdit: (id: string) => () => void;
 }
 
 const ImageListContainer = SortableContainer<ImageListContainerProps>(
-  withStyles(styles, { name: "ImageListContainer" })(
-    ({
-      classes,
-      items,
-      onImageDelete,
-      onImageEdit,
-      ...props
-    }: ImageListContainerProps & WithStyles<typeof styles>) => {
-      return (
-        <div {...props}>
-          {items.map((image, index) => (
-            <SortableImage
-              key={`item-${index}`}
-              index={index}
-              image={image}
-              onImageEdit={onImageEdit ? onImageEdit(image.id) : null}
-              onImageDelete={onImageDelete(image.id)}
-            />
-          ))}
-        </div>
-      );
-    }
+  ({ items, preview, onImageDelete, onImageEdit, ...props }) => (
+    <div {...props}>
+      {items.map((image, index) => (
+        <SortableImage
+          key={`item-${index}`}
+          index={index}
+          image={image}
+          onImageEdit={onImageEdit ? onImageEdit(image.id) : null}
+          onImageDelete={onImageDelete(image.id)}
+        />
+      ))}
+      {preview
+        .sort((a, b) => (a.sortOrder > b.sortOrder ? 1 : -1))
+        .map(image => (
+          <ImageTile loading={true} image={image} />
+        ))}
+    </div>
   )
 );
 
-const ProductImages = withStyles(styles, { name: "ProductImages" })(
-  ({
-    classes,
+const ProductImages: React.FC<ProductImagesProps> = props => {
+  const {
     images,
     placeholderImage,
     loading,
@@ -181,26 +175,64 @@ const ProductImages = withStyles(styles, { name: "ProductImages" })(
     onImageDelete,
     onImageReorder,
     onImageUpload
-  }: ProductImagesProps) => (
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+  const upload = React.useRef(null);
+  const [imagesToUpload, setImagesToUpload] = React.useState<
+    ProductDetails_product_images[]
+  >([]);
+
+  const handleImageUpload = createMultiFileUploadHandler(onImageUpload, {
+    onAfterUpload: () =>
+      setImagesToUpload(prevImagesToUpload => prevImagesToUpload.slice(1)),
+    onStart: files => {
+      Array.from(files).forEach((file, fileIndex) => {
+        const reader = new FileReader();
+        reader.onload = event => {
+          setImagesToUpload(prevImagesToUpload => [
+            ...prevImagesToUpload,
+            {
+              __typename: "ProductImage",
+              alt: "",
+              id: "",
+              sortOrder: fileIndex,
+              url: event.target.result as string
+            }
+          ]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  });
+
+  return (
     <Card className={classes.card}>
       <CardTitle
-        title={i18n.t("Images")}
+        title={intl.formatMessage({
+          defaultMessage: "Images",
+          description: "section header"
+        })}
         toolbar={
           <>
             <Button
-              onClick={() => this.upload.click()}
+              onClick={() => upload.current.click()}
               disabled={loading}
               variant="text"
               color="primary"
+              data-tc="button-upload-image"
             >
-              {i18n.t("Upload image")}
+              {intl.formatMessage(commonMessages.uploadImage)}
             </Button>
             <input
               className={classes.fileField}
               id="fileUpload"
-              onChange={event => onImageUpload(event.target.files[0])}
+              onChange={event => handleImageUpload(event.target.files)}
+              multiple
               type="file"
-              ref={ref => (this.upload = ref)}
+              ref={upload}
+              accept="image/*"
             />
           </>
         }
@@ -222,7 +254,7 @@ const ProductImages = withStyles(styles, { name: "ProductImages" })(
               disableClick={true}
               iconContainerClassName={classes.imageUploadIcon}
               iconContainerActiveClassName={classes.imageUploadIconActive}
-              onImageUpload={onImageUpload}
+              onImageUpload={handleImageUpload}
             >
               {({ isDragActive }) => (
                 <CardContent>
@@ -231,6 +263,7 @@ const ProductImages = withStyles(styles, { name: "ProductImages" })(
                     helperClass="dragged"
                     axis="xy"
                     items={images}
+                    preview={imagesToUpload}
                     onSortEnd={onImageReorder}
                     className={classNames({
                       [classes.root]: true,
@@ -244,11 +277,11 @@ const ProductImages = withStyles(styles, { name: "ProductImages" })(
             </ImageUpload>
           </>
         ) : (
-          <ImageUpload onImageUpload={onImageUpload} />
+          <ImageUpload onImageUpload={handleImageUpload} />
         )}
       </div>
     </Card>
-  )
-);
+  );
+};
 ProductImages.displayName = "ProductImages";
 export default ProductImages;

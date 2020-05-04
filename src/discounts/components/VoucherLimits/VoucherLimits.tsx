@@ -2,18 +2,20 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
 import { ControlledCheckbox } from "@saleor/components/ControlledCheckbox";
-import i18n from "../../../i18n";
-import { FormErrors } from "../../../types";
+import { getFormErrors } from "@saleor/utils/errors";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import getDiscountErrorMessage from "@saleor/utils/errors/discounts";
 import { FormData } from "../VoucherDetailsPage";
 
 interface VoucherLimitsProps {
   data: FormData;
   defaultCurrency: string;
   disabled: boolean;
-  errors: FormErrors<"usageLimit">;
+  errors: DiscountErrorFragment[];
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
@@ -23,24 +25,37 @@ const VoucherLimits = ({
   errors,
   onChange
 }: VoucherLimitsProps) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["usageLimit"], errors);
+
   return (
     <Card>
-      <CardTitle title={i18n.t("Usage Limit ")} />
+      <CardTitle
+        title={intl.formatMessage({
+          defaultMessage: "Usage Limit",
+          description: "voucher usage limit, header"
+        })}
+      />
       <CardContent>
         <ControlledCheckbox
           checked={data.hasUsageLimit}
-          label={i18n.t(
-            "Limit number of times this discount can be used in total"
-          )}
+          label={intl.formatMessage({
+            defaultMessage:
+              "Limit number of times this discount can be used in total"
+          })}
           name={"hasUsageLimit" as keyof FormData}
           onChange={onChange}
         />
         {data.hasUsageLimit && (
           <TextField
             disabled={disabled}
-            error={!!errors.usageLimit}
-            helperText={errors.usageLimit}
-            label={i18n.t("Limit of Uses")}
+            error={!!formErrors.usageLimit}
+            helperText={getDiscountErrorMessage(formErrors.usageLimit, intl)}
+            label={intl.formatMessage({
+              defaultMessage: "Limit of Uses",
+              description: "voucher"
+            })}
             name={"usageLimit" as keyof FormData}
             value={data.usageLimit}
             onChange={onChange}
@@ -53,7 +68,10 @@ const VoucherLimits = ({
         )}
         <ControlledCheckbox
           checked={data.applyOncePerCustomer}
-          label={i18n.t("Limit to one use per customer")}
+          label={intl.formatMessage({
+            defaultMessage: "Limit to one use per customer",
+            description: "limit voucher"
+          })}
           name={"applyOncePerCustomer" as keyof FormData}
           onChange={onChange}
         />

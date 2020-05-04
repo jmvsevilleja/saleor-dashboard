@@ -1,11 +1,4 @@
-import Card from "@material-ui/core/Card";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableFooter from "@material-ui/core/TableFooter";
@@ -14,21 +7,25 @@ import TableRow from "@material-ui/core/TableRow";
 import Typography from "@material-ui/core/Typography";
 import classNames from "classnames";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import TablePagination from "@saleor/components/TablePagination";
-import i18n from "@saleor/i18n";
 import {
   getUserInitials,
   getUserName,
   maybe,
   renderCollection
 } from "@saleor/misc";
-import { ListProps } from "@saleor/types";
+import { ListProps, SortPage } from "@saleor/types";
+import { StaffListUrlSortField } from "@saleor/staff/urls";
+import TableCellHeader from "@saleor/components/TableCellHeader";
+import { getArrowDirection } from "@saleor/utils/sort";
 import { StaffList_staffUsers_edges_node } from "../../types/StaffList";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     avatar: {
       alignItems: "center",
       borderRadius: "100%",
@@ -36,7 +33,7 @@ const styles = (theme: Theme) =>
       float: "left",
       height: 47,
       justifyContent: "center",
-      marginRight: theme.spacing.unit * 1 + "px",
+      marginRight: theme.spacing(1),
       overflow: "hidden",
       width: 47
     },
@@ -63,114 +60,139 @@ const styles = (theme: Theme) =>
     wideColumn: {
       width: "80%"
     }
-  });
+  }),
+  { name: "StaffList" }
+);
 
-interface StaffListProps extends ListProps, WithStyles<typeof styles> {
+interface StaffListProps extends ListProps, SortPage<StaffListUrlSortField> {
   staffMembers: StaffList_staffUsers_edges_node[];
 }
 
-const StaffList = withStyles(styles, { name: "StaffList" })(
-  ({
-    classes,
+const StaffList: React.FC<StaffListProps> = props => {
+  const {
     settings,
     disabled,
     onNextPage,
     onPreviousPage,
     onUpdateListSettings,
     onRowClick,
+    onSort,
     pageInfo,
+    sort,
     staffMembers
-  }: StaffListProps) => (
-    <Card>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell className={classes.wideColumn}>
-              {i18n.t("Name", { context: "object" })}
-            </TableCell>
-            <TableCell>
-              {i18n.t("Email Address", { context: "object" })}
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-              colSpan={3}
-              settings={settings}
-              hasNextPage={
-                pageInfo && !disabled ? pageInfo.hasNextPage : undefined
-              }
-              onNextPage={onNextPage}
-              onUpdateListSettings={onUpdateListSettings}
-              hasPreviousPage={
-                pageInfo && !disabled ? pageInfo.hasPreviousPage : undefined
-              }
-              onPreviousPage={onPreviousPage}
+  } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  return (
+    <ResponsiveTable>
+      <TableHead>
+        <TableRow>
+          <TableCellHeader
+            direction={
+              sort.sort === StaffListUrlSortField.name
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            arrowPosition="right"
+            onClick={() => onSort(StaffListUrlSortField.name)}
+            className={classes.wideColumn}
+          >
+            <FormattedMessage
+              defaultMessage="Name"
+              description="staff member full name"
             />
-          </TableRow>
-        </TableFooter>
-        <TableBody>
-          {renderCollection(
-            staffMembers,
-            staffMember => (
-              <TableRow
-                className={classNames({
-                  [classes.tableRow]: !!staffMember
-                })}
-                hover={!!staffMember}
-                onClick={!!staffMember ? onRowClick(staffMember.id) : undefined}
-                key={staffMember ? staffMember.id : "skeleton"}
-              >
-                <TableCell>
-                  <div className={classes.avatar}>
-                    {maybe(() => staffMember.avatar.url) ? (
-                      <img
-                        className={classes.avatarImage}
-                        src={maybe(() => staffMember.avatar.url)}
-                      />
-                    ) : (
-                      <div className={classes.avatarDefault}>
-                        <Typography>{getUserInitials(staffMember)}</Typography>
-                      </div>
-                    )}
-                  </div>
-                  <Typography>
-                    {getUserName(staffMember) || <Skeleton />}
-                  </Typography>
-                  <Typography
-                    variant={"caption"}
-                    className={classes.statusText}
-                  >
-                    {maybe<React.ReactNode>(
-                      () =>
-                        staffMember.isActive
-                          ? i18n.t("Active", { context: "status" })
-                          : i18n.t("Inactive", { context: "status" }),
-                      <Skeleton />
-                    )}
-                  </Typography>
-                </TableCell>
-                <TableCell>
+          </TableCellHeader>
+          <TableCellHeader
+            direction={
+              sort.sort === StaffListUrlSortField.email
+                ? getArrowDirection(sort.asc)
+                : undefined
+            }
+            onClick={() => onSort(StaffListUrlSortField.email)}
+          >
+            <FormattedMessage defaultMessage="Email Address" />
+          </TableCellHeader>
+        </TableRow>
+      </TableHead>
+      <TableFooter>
+        <TableRow>
+          <TablePagination
+            colSpan={3}
+            settings={settings}
+            hasNextPage={
+              pageInfo && !disabled ? pageInfo.hasNextPage : undefined
+            }
+            onNextPage={onNextPage}
+            onUpdateListSettings={onUpdateListSettings}
+            hasPreviousPage={
+              pageInfo && !disabled ? pageInfo.hasPreviousPage : undefined
+            }
+            onPreviousPage={onPreviousPage}
+          />
+        </TableRow>
+      </TableFooter>
+      <TableBody>
+        {renderCollection(
+          staffMembers,
+          staffMember => (
+            <TableRow
+              className={classNames({
+                [classes.tableRow]: !!staffMember
+              })}
+              hover={!!staffMember}
+              onClick={!!staffMember ? onRowClick(staffMember.id) : undefined}
+              key={staffMember ? staffMember.id : "skeleton"}
+            >
+              <TableCell>
+                <div className={classes.avatar}>
+                  {maybe(() => staffMember.avatar.url) ? (
+                    <img
+                      className={classes.avatarImage}
+                      src={maybe(() => staffMember.avatar.url)}
+                    />
+                  ) : (
+                    <div className={classes.avatarDefault}>
+                      <Typography>{getUserInitials(staffMember)}</Typography>
+                    </div>
+                  )}
+                </div>
+                <Typography>
+                  {getUserName(staffMember) || <Skeleton />}
+                </Typography>
+                <Typography variant={"caption"} className={classes.statusText}>
                   {maybe<React.ReactNode>(
-                    () => staffMember.email,
+                    () =>
+                      staffMember.isActive
+                        ? intl.formatMessage({
+                            defaultMessage: "Active",
+                            description: "staff member status"
+                          })
+                        : intl.formatMessage({
+                            defaultMessage: "Inactive",
+                            description: "staff member status"
+                          }),
                     <Skeleton />
                   )}
-                </TableCell>
-              </TableRow>
-            ),
-            () => (
-              <TableRow>
-                <TableCell colSpan={3}>
-                  {i18n.t("No staff members found")}
-                </TableCell>
-              </TableRow>
-            )
-          )}
-        </TableBody>
-      </Table>
-    </Card>
-  )
-);
+                </Typography>
+              </TableCell>
+              <TableCell>
+                {maybe<React.ReactNode>(() => staffMember.email, <Skeleton />)}
+              </TableCell>
+            </TableRow>
+          ),
+          () => (
+            <TableRow>
+              <TableCell colSpan={3}>
+                <FormattedMessage defaultMessage="No staff members found" />
+              </TableCell>
+            </TableRow>
+          )
+        )}
+      </TableBody>
+    </ResponsiveTable>
+  );
+};
 StaffList.displayName = "StaffList";
 export default StaffList;

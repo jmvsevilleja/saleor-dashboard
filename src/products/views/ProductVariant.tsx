@@ -1,24 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useIntl } from "react-intl";
 
 import placeholderImg from "@assets/images/placeholder255x255.png";
 import { WindowTitle } from "@saleor/components/WindowTitle";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
-import i18n from "../../i18n";
-import { decimal, getMutationState, maybe } from "../../misc";
+import { commonMessages } from "@saleor/intl";
+import NotFoundPage from "@saleor/components/NotFoundPage";
+import createDialogActionHandlers from "@saleor/utils/handlers/dialogActionHandlers";
+import { DEFAULT_INITIAL_SEARCH_DATA } from "@saleor/config";
+import useWarehouseSearch from "@saleor/searches/useWarehouseSearch";
+import { decimal } from "../../misc";
 import ProductVariantDeleteDialog from "../components/ProductVariantDeleteDialog";
 import ProductVariantPage, {
   ProductVariantPageSubmitData
 } from "../components/ProductVariantPage";
 import ProductVariantOperations from "../containers/ProductVariantOperations";
 import { TypedProductVariantQuery } from "../queries";
-import { VariantUpdate } from "../types/VariantUpdate";
+import {
+  VariantUpdate,
+  VariantUpdate_productVariantUpdate_errors
+} from "../types/VariantUpdate";
 import {
   productUrl,
   productVariantAddUrl,
   productVariantEditUrl,
-  ProductVariantEditUrlQueryParams
+  ProductVariantEditUrlQueryParams,
+  ProductVariantEditUrlDialog
 } from "../urls";
+import ProductWarehousesDialog from "../components/ProductWarehousesDialog";
+import { useAddOrRemoveStocks } from "../mutations";
 
 interface ProductUpdateProps {
   variantId: string;
@@ -26,30 +37,75 @@ interface ProductUpdateProps {
   params: ProductVariantEditUrlQueryParams;
 }
 
-export const ProductVariant: React.StatelessComponent<ProductUpdateProps> = ({
+export const ProductVariant: React.FC<ProductUpdateProps> = ({
   variantId,
   productId,
   params
 }) => {
   const navigate = useNavigator();
   const notify = useNotifier();
+  const intl = useIntl();
+  const [errors, setErrors] = useState<
+    VariantUpdate_productVariantUpdate_errors[]
+  >([]);
+  useEffect(() => {
+    setErrors([]);
+  }, [variantId]);
+
+  const { result: searchWarehousesOpts } = useWarehouseSearch({
+    variables: {
+      ...DEFAULT_INITIAL_SEARCH_DATA,
+      first: 20
+    }
+  });
+
+  const [addOrRemoveStocks, addOrRemoveStocksOpts] = useAddOrRemoveStocks({
+    onCompleted: data => {
+      if (
+        data.productVariantStocksCreate.errors.length === 0 &&
+        data.productVariantStocksDelete.errors.length === 0
+      ) {
+        notify({
+          text: intl.formatMessage(commonMessages.savedChanges)
+        });
+        closeModal();
+      }
+    }
+  });
+
+  const [openModal, closeModal] = createDialogActionHandlers<
+    ProductVariantEditUrlDialog,
+    ProductVariantEditUrlQueryParams
+  >(
+    navigate,
+    params => productVariantEditUrl(productId, variantId, params),
+    params
+  );
+
+  const handleBack = () => navigate(productUrl(productId));
 
   return (
-    <TypedProductVariantQuery
-      displayLoader
-      variables={{ id: variantId }}
-      require={["productVariant"]}
-    >
+    <TypedProductVariantQuery displayLoader variables={{ id: variantId }}>
       {({ data, loading }) => {
-        const variant = data ? data.productVariant : undefined;
-        const handleBack = () => navigate(productUrl(productId));
+        const variant = data?.productVariant;
+
+        if (variant === null) {
+          return <NotFoundPage onBack={handleBack} />;
+        }
+
         const handleDelete = () => {
-          notify({ text: i18n.t("Variant removed") });
+          notify({
+            text: intl.formatMessage({
+              defaultMessage: "Variant removed"
+            })
+          });
           navigate(productUrl(productId));
         };
         const handleUpdate = (data: VariantUpdate) => {
-          if (!maybe(() => data.productVariantUpdate.errors.length)) {
-            notify({ text: i18n.t("Changes saved") });
+          if (data.productVariantUpdate.errors.length === 0) {
+            notify({ text: intl.formatMessage(commonMessages.savedChanges) });
+          } else {
+            setErrors(data.productVariantUpdate.errors);
           }
         };
 
@@ -65,16 +121,7 @@ export const ProductVariant: React.StatelessComponent<ProductUpdateProps> = ({
                 updateVariant.opts.loading ||
                 assignImage.opts.loading ||
                 unassignImage.opts.loading;
-              const formTransitionState = getMutationState(
-                updateVariant.opts.called,
-                updateVariant.opts.loading,
-                maybe(() => updateVariant.opts.data.productVariantUpdate.errors)
-              );
-              const removeTransitionState = getMutationState(
-                deleteVariant.opts.called,
-                deleteVariant.opts.loading,
-                maybe(() => deleteVariant.opts.data.productVariantDelete.errors)
-              );
+
               const handleImageSelect = (id: string) => () => {
                 if (variant) {
                   if (
@@ -96,17 +143,14 @@ export const ProductVariant: React.StatelessComponent<ProductUpdateProps> = ({
 
               return (
                 <>
-                  <WindowTitle title={maybe(() => data.productVariant.name)} />
+                  <WindowTitle title={data?.productVariant?.name} />
                   <ProductVariantPage
-                    errors={maybe(
-                      () => updateVariant.opts.data.productVariantUpdate.errors,
-                      []
-                    )}
-                    saveButtonBarState={formTransitionState}
+                    errors={errors}
+                    saveButtonBarState={updateVariant.opts.status}
                     loading={disableFormSave}
                     placeholderImage={placeholderImg}
                     variant={variant}
-                    header={variant ? variant.name || variant.sku : undefined}
+                    header={variant?.name || variant?.sku}
                     onAdd={() => navigate(productVariantAddUrl(productId))}
                     onBack={handleBack}
                     onDelete={() =>
@@ -117,28 +161,30 @@ export const ProductVariant: React.StatelessComponent<ProductUpdateProps> = ({
                       )
                     }
                     onImageSelect={handleImageSelect}
-                    onSubmit={(data: ProductVariantPageSubmitData) => {
-                      if (variant) {
-                        updateVariant.mutate({
-                          attributes: data.attributes.map(attribute => ({
-                            id: attribute.id,
-                            values: [attribute.value]
-                          })),
-                          costPrice: decimal(data.costPrice),
-                          id: variantId,
-                          priceOverride: decimal(data.priceOverride),
-                          quantity: data.quantity || null,
-                          sku: data.sku,
-                          trackInventory: true // FIXME: missing in UI
-                        });
-                      }
-                    }}
+                    onSubmit={(data: ProductVariantPageSubmitData) =>
+                      updateVariant.mutate({
+                        attributes: data.attributes.map(attribute => ({
+                          id: attribute.id,
+                          values: [attribute.value]
+                        })),
+                        costPrice: decimal(data.costPrice),
+                        id: variantId,
+                        priceOverride: decimal(data.priceOverride),
+                        sku: data.sku,
+                        stocks: data.stocks.map(stock => ({
+                          quantity: parseInt(stock.value, 10),
+                          warehouse: stock.id
+                        })),
+                        trackInventory: data.trackInventory
+                      })
+                    }
                     onVariantClick={variantId => {
                       navigate(productVariantEditUrl(productId, variantId));
                     }}
+                    onWarehousesEdit={() => openModal("edit-stocks")}
                   />
                   <ProductVariantDeleteDialog
-                    confirmButtonState={removeTransitionState}
+                    confirmButtonState={deleteVariant.opts.status}
                     onClose={() =>
                       navigate(productVariantEditUrl(productId, variantId))
                     }
@@ -148,7 +194,37 @@ export const ProductVariant: React.StatelessComponent<ProductUpdateProps> = ({
                       })
                     }
                     open={params.action === "remove"}
-                    name={maybe(() => data.productVariant.name)}
+                    name={data?.productVariant?.name}
+                  />
+                  <ProductWarehousesDialog
+                    confirmButtonState={addOrRemoveStocksOpts.status}
+                    disabled={addOrRemoveStocksOpts.loading}
+                    errors={[
+                      ...(addOrRemoveStocksOpts.data?.productVariantStocksCreate
+                        .errors || []),
+                      ...(addOrRemoveStocksOpts.data?.productVariantStocksDelete
+                        .errors || [])
+                    ]}
+                    onClose={closeModal}
+                    open={params.action === "edit-stocks"}
+                    warehouses={searchWarehousesOpts.data?.search.edges.map(
+                      edge => edge.node
+                    )}
+                    warehousesWithStocks={
+                      variant?.stocks.map(stock => stock.warehouse.id) || []
+                    }
+                    onConfirm={data =>
+                      addOrRemoveStocks({
+                        variables: {
+                          add: data.added.map(id => ({
+                            quantity: 0,
+                            warehouse: id
+                          })),
+                          remove: data.removed,
+                          variantId
+                        }
+                      })
+                    }
                   />
                 </>
               );

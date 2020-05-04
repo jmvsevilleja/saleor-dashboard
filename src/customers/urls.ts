@@ -1,13 +1,41 @@
 import { stringify as stringifyQs } from "qs";
 import urlJoin from "url-join";
 
-import { BulkAction, Dialog, Pagination, SingleAction } from "../types";
+import {
+  ActiveTab,
+  BulkAction,
+  Dialog,
+  Filters,
+  Pagination,
+  SingleAction,
+  TabActionDialog,
+  Sort
+} from "../types";
 
 export const customerSection = "/customers/";
 
 export const customerListPath = customerSection;
-export type CustomerListUrlDialog = "remove";
-export type CustomerListUrlQueryParams = BulkAction &
+export enum CustomerListUrlFiltersEnum {
+  joinedFrom = "joinedFrom",
+  joinedTo = "joinedTo",
+  moneySpentFrom = "moneySpentFrom",
+  moneySpentTo = "moneySpentTo",
+  numberOfOrdersFrom = "numberOfOrdersFrom",
+  numberOfOrdersTo = "numberOfOrdersTo",
+  query = "query"
+}
+export type CustomerListUrlFilters = Filters<CustomerListUrlFiltersEnum>;
+export type CustomerListUrlDialog = "remove" | TabActionDialog;
+export enum CustomerListUrlSortField {
+  name = "name",
+  email = "email",
+  orders = "orders"
+}
+export type CustomerListUrlSort = Sort<CustomerListUrlSortField>;
+export type CustomerListUrlQueryParams = ActiveTab &
+  BulkAction &
+  CustomerListUrlFilters &
+  CustomerListUrlSort &
   Dialog<CustomerListUrlDialog> &
   Pagination;
 export const customerListUrl = (params?: CustomerListUrlQueryParams) =>

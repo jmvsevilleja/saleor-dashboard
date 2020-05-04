@@ -1,20 +1,45 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import useNavigator from "@saleor/hooks/useNavigator";
+import useNotifier from "@saleor/hooks/useNotifier";
+import { commonMessages } from "@saleor/intl";
 import { configurationMenuUrl } from "../../configuration";
 import { maybe } from "../../misc";
 import CountryListPage from "../components/CountryListPage";
 import { TypedFetchTaxes, TypedUpdateTaxSettings } from "../mutations";
 import { TypedCountryListQuery } from "../queries";
+import { FetchTaxes } from "../types/FetchTaxes";
+import { UpdateTaxSettings } from "../types/UpdateTaxSettings";
 import { countryTaxRatesUrl } from "../urls";
 
-export const CountryList: React.StatelessComponent = () => {
+export const CountryList: React.FC = () => {
+  const intl = useIntl();
   const navigate = useNavigator();
+  const notify = useNotifier();
+
+  const handleUpdateTaxSettings = (data: UpdateTaxSettings) => {
+    if (data.shopSettingsUpdate.errors.length === 0) {
+      notify({
+        text: intl.formatMessage(commonMessages.savedChanges)
+      });
+    }
+  };
+
+  const handleFetchTaxes = (data: FetchTaxes) => {
+    if (data.shopFetchTaxRates.errors.length === 0) {
+      notify({
+        text: intl.formatMessage({
+          defaultMessage: "Successfully fetched tax rates"
+        })
+      });
+    }
+  };
 
   return (
-    <TypedUpdateTaxSettings>
+    <TypedUpdateTaxSettings onCompleted={handleUpdateTaxSettings}>
       {(updateTaxSettings, updateTaxSettingsOpts) => (
-        <TypedFetchTaxes>
+        <TypedFetchTaxes onCompleted={handleFetchTaxes}>
           {(fetchTaxes, fetchTaxesOpts) => (
             <TypedCountryListQuery displayLoader={true}>
               {({ data, loading }) => (
@@ -38,6 +63,7 @@ export const CountryList: React.StatelessComponent = () => {
                     })
                   }
                   onTaxFetch={fetchTaxes}
+                  saveButtonBarState={updateTaxSettingsOpts.status}
                   shop={maybe(() => ({
                     ...data.shop,
                     countries: data.shop.countries.filter(

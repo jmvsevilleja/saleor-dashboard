@@ -4,19 +4,22 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
-import AddIcon from "@material-ui/icons/Add";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
 import AddressEdit from "@saleor/components/AddressEdit";
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
 import Form from "@saleor/components/Form";
+import useAddressValidation from "@saleor/hooks/useAddressValidation";
+import useModalDialogErrors from "@saleor/hooks/useModalDialogErrors";
 import useStateFromProps from "@saleor/hooks/useStateFromProps";
-import i18n from "@saleor/i18n";
+import { buttonMessages } from "@saleor/intl";
 import { maybe } from "@saleor/misc";
-import { UserError } from "@saleor/types";
+import { AddressInput } from "@saleor/types/globalTypes";
 import createSingleAutocompleteSelectHandler from "@saleor/utils/handlers/singleAutocompleteSelectChangeHandler";
+import { AccountErrorFragment } from "@saleor/customers/types/AccountErrorFragment";
 import { AddressTypeInput } from "../../types";
 import { CustomerAddresses_user_addresses } from "../../types/CustomerAddresses";
 
@@ -27,11 +30,11 @@ export interface CustomerAddressDialogProps {
     code: string;
     label: string;
   }>;
-  errors: UserError[];
+  errors: AccountErrorFragment[];
   open: boolean;
   variant: "create" | "edit";
   onClose: () => void;
-  onConfirm: (data: AddressTypeInput) => void;
+  onConfirm: (data: AddressInput) => void;
 }
 
 const styles = createStyles({
@@ -40,7 +43,10 @@ const styles = createStyles({
   }
 });
 
-const CustomerAddressDialog = withStyles(styles, {})(
+const CustomerAddressDialog = withStyles(
+  styles,
+  {}
+)(
   ({
     address,
     classes,
@@ -55,6 +61,15 @@ const CustomerAddressDialog = withStyles(styles, {})(
     const [countryDisplayName, setCountryDisplayName] = useStateFromProps(
       maybe(() => address.country.country, "")
     );
+    const {
+      errors: validationErrors,
+      submit: handleSubmit
+    } = useAddressValidation(onConfirm);
+    const dialogErrors = useModalDialogErrors(
+      [...errors, ...validationErrors],
+      open
+    );
+
     const initialForm: AddressTypeInput = {
       city: maybe(() => address.city, ""),
       cityArea: maybe(() => address.cityArea, ""),
@@ -86,8 +101,8 @@ const CustomerAddressDialog = withStyles(styles, {})(
         fullWidth
         maxWidth="sm"
       >
-        <Form initial={initialForm} errors={errors} onSubmit={onConfirm}>
-          {({ change, data, errors, submit }) => {
+        <Form initial={initialForm} onSubmit={handleSubmit}>
+          {({ change, data }) => {
             const handleCountrySelect = createSingleAutocompleteSelectHandler(
               change,
               setCountryDisplayName,
@@ -97,33 +112,39 @@ const CustomerAddressDialog = withStyles(styles, {})(
             return (
               <>
                 <DialogTitle>
-                  {variant === "create"
-                    ? i18n.t("Add Address")
-                    : i18n.t("Edit Address")}
+                  {variant === "create" ? (
+                    <FormattedMessage
+                      defaultMessage="Add Address"
+                      description="dialog title"
+                    />
+                  ) : (
+                    <FormattedMessage
+                      defaultMessage="Edit Address"
+                      description="dialog title"
+                    />
+                  )}
                 </DialogTitle>
                 <DialogContent className={classes.overflow}>
                   <AddressEdit
                     countries={countryChoices}
                     data={data}
                     countryDisplayValue={countryDisplayName}
-                    errors={errors}
+                    errors={dialogErrors}
                     onChange={change}
                     onCountryChange={handleCountrySelect}
                   />
                 </DialogContent>
                 <DialogActions>
                   <Button onClick={onClose}>
-                    {i18n.t("Cancel", { context: "button" })}
+                    <FormattedMessage {...buttonMessages.back} />
                   </Button>
                   <ConfirmButton
                     transitionState={confirmButtonState}
                     color="primary"
                     variant="contained"
-                    onClick={submit}
                     type="submit"
                   >
-                    {i18n.t("Save Address", { context: "button" })}
-                    <AddIcon />
+                    <FormattedMessage {...buttonMessages.save} />
                   </ConfirmButton>
                 </DialogActions>
               </>

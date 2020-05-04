@@ -2,6 +2,8 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
+import { CategoryFilterInput, CategorySortingInput } from "./../../types/globalTypes";
+
 // ====================================================
 // GraphQL query operation: RootCategories
 // ====================================================
@@ -52,4 +54,6 @@ export interface RootCategoriesVariables {
   after?: string | null;
   last?: number | null;
   before?: string | null;
+  filter?: CategoryFilterInput | null;
+  sort?: CategorySortingInput | null;
 }

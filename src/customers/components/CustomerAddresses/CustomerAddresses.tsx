@@ -1,46 +1,47 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import AddressFormatter from "@saleor/components/AddressFormatter";
 import CardTitle from "@saleor/components/CardTitle";
 import { Hr } from "@saleor/components/Hr";
-import i18n from "../../../i18n";
+import { buttonMessages } from "@saleor/intl";
 import { maybe } from "../../../misc";
 import { CustomerDetails_user } from "../../types/CustomerDetails";
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     label: {
       fontWeight: 600,
-      marginBottom: theme.spacing.unit
+      marginBottom: theme.spacing(1)
     }
-  });
+  }),
+  { name: "CustomerAddresses" }
+);
 
-export interface CustomerAddressesProps extends WithStyles<typeof styles> {
+export interface CustomerAddressesProps {
   customer: CustomerDetails_user;
   disabled: boolean;
   onAddressManageClick: () => void;
 }
 
-const CustomerAddresses = withStyles(styles, { name: "CustomerAddresses" })(
-  ({
-    classes,
-    customer,
-    disabled,
-    onAddressManageClick
-  }: CustomerAddressesProps) => (
+const CustomerAddresses: React.FC<CustomerAddressesProps> = props => {
+  const { customer, disabled, onAddressManageClick } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  return (
     <Card>
       <CardTitle
-        title={i18n.t("Address Information")}
+        title={intl.formatMessage({
+          defaultMessage: "Address Information",
+          description: "header"
+        })}
         toolbar={
           <Button
             color="primary"
@@ -48,7 +49,7 @@ const CustomerAddresses = withStyles(styles, { name: "CustomerAddresses" })(
             variant="text"
             onClick={onAddressManageClick}
           >
-            {i18n.t("Manage", { context: "button" })}
+            <FormattedMessage {...buttonMessages.manage} />
           </Button>
         }
       />
@@ -58,7 +59,10 @@ const CustomerAddresses = withStyles(styles, { name: "CustomerAddresses" })(
           {maybe(() => customer.defaultBillingAddress) !== null && (
             <CardContent>
               <Typography className={classes.label}>
-                {i18n.t("Billing address")}
+                <FormattedMessage
+                  defaultMessage="Billing Address"
+                  description="subsection header"
+                />
               </Typography>
               <AddressFormatter
                 address={maybe(() => customer.defaultBillingAddress)}
@@ -72,7 +76,10 @@ const CustomerAddresses = withStyles(styles, { name: "CustomerAddresses" })(
           {maybe(() => customer.defaultShippingAddress) && (
             <CardContent>
               <Typography className={classes.label}>
-                {i18n.t("Shipping address")}
+                <FormattedMessage
+                  defaultMessage="Shipping Address"
+                  description="subsection header"
+                />
               </Typography>
               <AddressFormatter
                 address={maybe(() => customer.defaultShippingAddress)}
@@ -84,19 +91,24 @@ const CustomerAddresses = withStyles(styles, { name: "CustomerAddresses" })(
         maybe(() => customer.defaultShippingAddress) === null ? (
         <CardContent>
           <Typography>
-            {i18n.t("This customer has no addresses yet")}
+            <FormattedMessage defaultMessage="This customer has no addresses yet" />
           </Typography>
         </CardContent>
       ) : (
         <CardContent>
-          <Typography className={classes.label}>{i18n.t("Address")}</Typography>
+          <Typography className={classes.label}>
+            <FormattedMessage
+              defaultMessage="Address"
+              description="subsection header"
+            />
+          </Typography>
           <AddressFormatter
             address={maybe(() => customer.defaultBillingAddress)}
           />
         </CardContent>
       )}
     </Card>
-  )
-);
+  );
+};
 CustomerAddresses.displayName = "CustomerAddresses";
 export default CustomerAddresses;

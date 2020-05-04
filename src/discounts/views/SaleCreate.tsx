@@ -1,11 +1,12 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import { WindowTitle } from "@saleor/components/WindowTitle";
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
 import useShop from "@saleor/hooks/useShop";
-import i18n from "../../i18n";
-import { decimal, getMutationState, maybe } from "../../misc";
+import { sectionNames } from "@saleor/intl";
+import { decimal, joinDateTime, maybe } from "../../misc";
 import { DiscountValueTypeEnum, SaleType } from "../../types/globalTypes";
 import SaleCreatePage from "../components/SaleCreatePage";
 import { TypedSaleCreate } from "../mutations";
@@ -18,16 +19,17 @@ function discountValueTypeEnum(type: SaleType): DiscountValueTypeEnum {
     : DiscountValueTypeEnum.PERCENTAGE;
 }
 
-export const SaleDetails: React.StatelessComponent = () => {
+export const SaleDetails: React.FC = () => {
   const navigate = useNavigator();
   const pushMessage = useNotifier();
   const shop = useShop();
+  const intl = useIntl();
 
   const handleSaleCreate = (data: SaleCreate) => {
     if (data.saleCreate.errors.length === 0) {
       pushMessage({
-        text: i18n.t("Successfully created sale", {
-          context: "notification"
+        text: intl.formatMessage({
+          defaultMessage: "Successfully created sale"
         })
       });
       navigate(saleUrl(data.saleCreate.sale.id), true);
@@ -36,41 +38,36 @@ export const SaleDetails: React.StatelessComponent = () => {
 
   return (
     <TypedSaleCreate onCompleted={handleSaleCreate}>
-      {(saleCreate, saleCreateOpts) => {
-        const formTransitionState = getMutationState(
-          saleCreateOpts.called,
-          saleCreateOpts.loading,
-          maybe(() => saleCreateOpts.data.saleCreate.errors)
-        );
-
-        return (
-          <>
-            <WindowTitle title={i18n.t("Sales")} />
-            <SaleCreatePage
-              defaultCurrency={maybe(() => shop.defaultCurrency)}
-              disabled={saleCreateOpts.loading}
-              errors={maybe(() => saleCreateOpts.data.saleCreate.errors)}
-              onBack={() => navigate(saleListUrl())}
-              onSubmit={formData =>
-                saleCreate({
-                  variables: {
-                    input: {
-                      endDate:
-                        formData.endDate === "" ? null : formData.endDate,
-                      name: formData.name,
-                      startDate:
-                        formData.startDate === "" ? null : formData.startDate,
-                      type: discountValueTypeEnum(formData.type),
-                      value: decimal(formData.value)
-                    }
+      {(saleCreate, saleCreateOpts) => (
+        <>
+          <WindowTitle title={intl.formatMessage(sectionNames.sales)} />
+          <SaleCreatePage
+            defaultCurrency={maybe(() => shop.defaultCurrency)}
+            disabled={saleCreateOpts.loading}
+            errors={saleCreateOpts.data?.saleCreate.errors || []}
+            onBack={() => navigate(saleListUrl())}
+            onSubmit={formData =>
+              saleCreate({
+                variables: {
+                  input: {
+                    endDate: formData.hasEndDate
+                      ? joinDateTime(formData.endDate, formData.endTime)
+                      : null,
+                    name: formData.name,
+                    startDate: joinDateTime(
+                      formData.startDate,
+                      formData.startTime
+                    ),
+                    type: discountValueTypeEnum(formData.type),
+                    value: decimal(formData.value)
                   }
-                })
-              }
-              saveButtonBarState={formTransitionState}
-            />
-          </>
-        );
-      }}
+                }
+              })
+            }
+            saveButtonBarState={saleCreateOpts.status}
+          />
+        </>
+      )}
     </TypedSaleCreate>
   );
 };

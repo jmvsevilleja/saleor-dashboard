@@ -1,22 +1,21 @@
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
 import IconButton from "@material-ui/core/IconButton";
-import { Theme } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import DeleteIcon from "@material-ui/icons/Delete";
-import makeStyles from "@material-ui/styles/makeStyles";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import CardTitle from "@saleor/components/CardTitle";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import Skeleton from "@saleor/components/Skeleton";
 import {
   SortableTableBody,
   SortableTableRow
 } from "@saleor/components/SortableTable";
-import i18n from "@saleor/i18n";
 import { maybe, renderCollection, stopPropagation } from "@saleor/misc";
 import { ReorderAction } from "@saleor/types";
 import { AttributeDetailsFragment_values } from "../../types/AttributeDetailsFragment";
@@ -30,29 +29,32 @@ export interface AttributeValuesProps {
   onValueUpdate: (id: string) => void;
 }
 
-const useStyles = makeStyles((theme: Theme) => ({
-  columnAdmin: {
-    width: "50%"
-  },
-  columnDrag: {
-    width: 48 + theme.spacing.unit * 1.5
-  },
-  columnStore: {
-    width: "50%"
-  },
-  dragIcon: {
-    cursor: "grab"
-  },
-  iconCell: {
-    "&:last-child": {
-      paddingRight: theme.spacing.unit
+const useStyles = makeStyles(
+  theme => ({
+    columnAdmin: {
+      width: "50%"
     },
-    width: 48 + theme.spacing.unit * 1.5
-  },
-  link: {
-    cursor: "pointer"
-  }
-}));
+    columnDrag: {
+      width: 48 + theme.spacing(1.5)
+    },
+    columnStore: {
+      width: "50%"
+    },
+    dragIcon: {
+      cursor: "grab"
+    },
+    iconCell: {
+      "&:last-child": {
+        paddingRight: theme.spacing()
+      },
+      width: 48 + theme.spacing(1.5)
+    },
+    link: {
+      cursor: "pointer"
+    }
+  }),
+  { name: "AttributeValues" }
+);
 
 const AttributeValues: React.FC<AttributeValuesProps> = ({
   disabled,
@@ -63,26 +65,39 @@ const AttributeValues: React.FC<AttributeValuesProps> = ({
   values
 }) => {
   const classes = useStyles({});
+  const intl = useIntl();
 
   return (
     <Card>
       <CardTitle
-        title={i18n.t("Attribute Values")}
+        title={intl.formatMessage({
+          defaultMessage: "Attribute Values",
+          description: "section header"
+        })}
         toolbar={
           <Button color="primary" variant="text" onClick={onValueAdd}>
-            {i18n.t("Add value", { context: "button" })}
+            <FormattedMessage
+              defaultMessage="Assign value"
+              description="assign attribute value button"
+            />
           </Button>
         }
       />
-      <Table>
+      <ResponsiveTable>
         <TableHead>
           <TableRow>
             <TableCell className={classes.columnDrag} />
             <TableCell className={classes.columnAdmin}>
-              {i18n.t("Admin")}
+              <FormattedMessage
+                defaultMessage="Admin"
+                description="attribute values list: slug column header"
+              />
             </TableCell>
             <TableCell className={classes.columnStore}>
-              {i18n.t("Default Store View")}
+              <FormattedMessage
+                defaultMessage="Default Store View"
+                description="attribute values list: name column header"
+              />
             </TableCell>
             <TableCell />
           </TableRow>
@@ -116,12 +131,17 @@ const AttributeValues: React.FC<AttributeValuesProps> = ({
             ),
             () => (
               <TableRow>
-                <TableCell colSpan={2}>{i18n.t("No values found")}</TableCell>
+                <TableCell colSpan={2}>
+                  <FormattedMessage
+                    defaultMessage="No values found"
+                    description="No attribute values found"
+                  />
+                </TableCell>
               </TableRow>
             )
           )}
         </SortableTableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
   );
 };

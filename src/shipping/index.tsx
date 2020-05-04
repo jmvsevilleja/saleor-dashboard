@@ -1,9 +1,10 @@
 import { parse as parseQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 import { Route, RouteComponentProps, Switch } from "react-router-dom";
 
+import { sectionNames } from "@saleor/intl";
 import { WindowTitle } from "../components/WindowTitle";
-import i18n from "../i18n";
 import {
   shippingZoneAddPath,
   shippingZonePath,
@@ -15,9 +16,7 @@ import ShippingZoneCreate from "./views/ShippingZoneCreate";
 import ShippingZoneDetailsComponent from "./views/ShippingZoneDetails";
 import ShippingZonesListComponent from "./views/ShippingZonesList";
 
-const ShippingZonesList: React.StatelessComponent<RouteComponentProps<{}>> = ({
-  location
-}) => {
+const ShippingZonesList: React.FC<RouteComponentProps<{}>> = ({ location }) => {
   const qs = parseQs(location.search.substr(1));
   const params: ShippingZonesListUrlQueryParams = qs;
   return <ShippingZonesListComponent params={params} />;
@@ -26,7 +25,7 @@ const ShippingZonesList: React.StatelessComponent<RouteComponentProps<{}>> = ({
 interface ShippingZoneDetailsRouteProps {
   id: string;
 }
-const ShippingZoneDetails: React.StatelessComponent<
+const ShippingZoneDetails: React.FC<
   RouteComponentProps<ShippingZoneDetailsRouteProps>
 > = ({ location, match }) => {
   const qs = parseQs(location.search.substr(1));
@@ -39,14 +38,26 @@ const ShippingZoneDetails: React.StatelessComponent<
   );
 };
 
-export const ShippingRouter: React.StatelessComponent = () => (
-  <>
-    <WindowTitle title={i18n.t("Shipping")} />
-    <Switch>
-      <Route exact path={shippingZonesListPath} component={ShippingZonesList} />
-      <Route exact path={shippingZoneAddPath} component={ShippingZoneCreate} />
-      <Route path={shippingZonePath(":id")} component={ShippingZoneDetails} />
-    </Switch>
-  </>
-);
+export const ShippingRouter: React.FC = () => {
+  const intl = useIntl();
+
+  return (
+    <>
+      <WindowTitle title={intl.formatMessage(sectionNames.shipping)} />
+      <Switch>
+        <Route
+          exact
+          path={shippingZonesListPath}
+          component={ShippingZonesList}
+        />
+        <Route
+          exact
+          path={shippingZoneAddPath}
+          component={ShippingZoneCreate}
+        />
+        <Route path={shippingZonePath(":id")} component={ShippingZoneDetails} />
+      </Switch>
+    </>
+  );
+};
 export default ShippingRouter;

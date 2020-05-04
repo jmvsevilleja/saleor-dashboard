@@ -5,12 +5,16 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
 import Form from "@saleor/components/Form";
-import i18n from "../../../i18n";
+import { buttonMessages } from "@saleor/intl";
+import { MenuErrorFragment } from "@saleor/navigation/types/MenuErrorFragment";
+import { getFormErrors } from "@saleor/utils/errors";
+import getMenuErrorMessage from "@saleor/utils/errors/menu";
 
 export interface MenuCreateDialogFormData {
   name: string;
@@ -19,6 +23,7 @@ export interface MenuCreateDialogFormData {
 export interface MenuCreateDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
   disabled: boolean;
+  errors: MenuErrorFragment[];
   open: boolean;
   onClose: () => void;
   onConfirm: (data: MenuCreateDialogFormData) => void;
@@ -31,49 +36,61 @@ const initialForm: MenuCreateDialogFormData = {
 const MenuCreateDialog: React.FC<MenuCreateDialogProps> = ({
   confirmButtonState,
   disabled,
+  errors,
   onClose,
   onConfirm,
   open
-}) => (
-  <Dialog onClose={onClose} maxWidth="sm" fullWidth open={open}>
-    <DialogTitle>
-      {i18n.t("Add Menu", {
-        context: "create menu modal window title"
-      })}
-    </DialogTitle>
-    <Form initial={initialForm} onSubmit={onConfirm}>
-      {({ change, data, errors: formErrors, submit }) => (
-        <>
-          <DialogContent>
-            <TextField
-              disabled={disabled}
-              error={!!formErrors.name}
-              fullWidth
-              helperText={formErrors.name}
-              label={i18n.t("Menu Title")}
-              name={"name" as keyof MenuCreateDialogFormData}
-              value={data.name}
-              onChange={change}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={onClose}>
-              {i18n.t("Cancel", { context: "button" })}
-            </Button>
-            <ConfirmButton
-              transitionState={confirmButtonState}
-              color="primary"
-              variant="contained"
-              onClick={submit}
-            >
-              {i18n.t("Create")}
-            </ConfirmButton>
-          </DialogActions>
-        </>
-      )}
-    </Form>
-  </Dialog>
-);
+}) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["name"], errors);
+
+  return (
+    <Dialog onClose={onClose} maxWidth="sm" fullWidth open={open}>
+      <DialogTitle>
+        <FormattedMessage
+          defaultMessage="Create Menu"
+          description="dialog header"
+          id="menuCreateDialogHeader"
+        />
+      </DialogTitle>
+      <Form initial={initialForm} onSubmit={onConfirm}>
+        {({ change, data, submit }) => (
+          <>
+            <DialogContent>
+              <TextField
+                disabled={disabled}
+                error={!!formErrors.name}
+                fullWidth
+                helperText={getMenuErrorMessage(formErrors.name, intl)}
+                label={intl.formatMessage({
+                  defaultMessage: "Menu Title",
+                  id: "menuCreateDialogMenuTitleLabel"
+                })}
+                name={"name" as keyof MenuCreateDialogFormData}
+                value={data.name}
+                onChange={change}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={onClose}>
+                <FormattedMessage {...buttonMessages.back} />
+              </Button>
+              <ConfirmButton
+                transitionState={confirmButtonState}
+                color="primary"
+                variant="contained"
+                onClick={submit}
+              >
+                <FormattedMessage {...buttonMessages.save} />
+              </ConfirmButton>
+            </DialogActions>
+          </>
+        )}
+      </Form>
+    </Dialog>
+  );
+};
 
 MenuCreateDialog.displayName = "MenuCreateDialog";
 export default MenuCreateDialog;

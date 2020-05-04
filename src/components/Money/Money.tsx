@@ -10,14 +10,14 @@ export interface MoneyProps {
   money: IMoney;
 }
 
-export const Money: React.StatelessComponent<MoneyProps> = ({ money }) => (
+export const Money: React.FC<MoneyProps> = ({ money }) => (
   <LocaleConsumer>
-    {locale => {
-      return money.amount.toLocaleString(locale, {
+    {({ locale }) =>
+      money.amount.toLocaleString(locale, {
         currency: money.currency,
         style: "currency"
-      });
-    }}
+      })
+    }
   </LocaleConsumer>
 );
 

@@ -30,11 +30,24 @@ export function move<TData>(
   return addAtIndex(data, remove(data, list, compare), index);
 }
 
+export function update<TData>(
+  data: TData,
+  list: List<TData>,
+  compare: Compare<TData>
+) {
+  const index = list.findIndex(element => compare(data, element));
+
+  return updateAtIndex(data, list, index);
+}
+
 export function updateAtIndex<TData>(
   data: TData,
   list: List<TData>,
   index: number
 ) {
+  if (!index.toFixed) {
+    throw new Error("Index is not a number");
+  }
   return addAtIndex(data, removeAtIndex(list, index), index);
 }
 

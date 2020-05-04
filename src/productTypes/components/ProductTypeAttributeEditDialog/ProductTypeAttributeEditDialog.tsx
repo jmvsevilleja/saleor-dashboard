@@ -5,11 +5,14 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Form from "@saleor/components/Form";
 import { FormSpacer } from "@saleor/components/FormSpacer";
 import ListField from "@saleor/components/ListField";
-import i18n from "../../../i18n";
+import { buttonMessages } from "@saleor/intl";
+import { UserError } from "@saleor/types";
+import { getFieldError } from "@saleor/utils/errors";
 
 export interface FormData {
   name: string;
@@ -21,10 +24,7 @@ export interface FormData {
 
 export interface ProductTypeAttributeEditDialogProps {
   disabled: boolean;
-  errors: Array<{
-    field: string;
-    message: string;
-  }>;
+  errors: UserError[];
   name: string;
   opened: boolean;
   title: string;
@@ -36,26 +36,37 @@ export interface ProductTypeAttributeEditDialogProps {
   onConfirm: (data: FormData) => void;
 }
 
-const ProductTypeAttributeEditDialog: React.StatelessComponent<
-  ProductTypeAttributeEditDialogProps
-> = ({ disabled, errors, name, opened, title, values, onClose, onConfirm }) => {
+const ProductTypeAttributeEditDialog: React.FC<ProductTypeAttributeEditDialogProps> = ({
+  disabled,
+  errors,
+  name,
+  opened,
+  title,
+  values,
+  onClose,
+  onConfirm
+}) => {
+  const intl = useIntl();
+
   const initialForm: FormData = {
     name: name || "",
     values: values || []
   };
   return (
     <Dialog onClose={onClose} open={opened}>
-      <Form errors={errors} initial={initialForm} onSubmit={onConfirm}>
-        {({ change, data, errors: formErrors }) => (
+      <Form initial={initialForm} onSubmit={onConfirm}>
+        {({ change, data }) => (
           <>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
               <TextField
                 disabled={disabled}
-                error={!!formErrors.name}
+                error={!!getFieldError(errors, "name")}
                 fullWidth
-                label={i18n.t("Attribute name")}
-                helperText={formErrors.name}
+                label={intl.formatMessage({
+                  defaultMessage: "Attribute name"
+                })}
+                helperText={getFieldError(errors, "name")?.message}
                 name="name"
                 value={data.name}
                 onChange={change}
@@ -65,17 +76,19 @@ const ProductTypeAttributeEditDialog: React.StatelessComponent<
                 autoComplete="off"
                 disabled={disabled}
                 error={
-                  !!formErrors.values ||
-                  !!formErrors.addValues ||
-                  !!formErrors.removeValues
+                  !!getFieldError(errors, "values") ||
+                  !!getFieldError(errors, "addValues") ||
+                  !!getFieldError(errors, "removeValues")
                 }
                 fullWidth
                 name="values"
-                label={i18n.t("Attribute values")}
+                label={intl.formatMessage({
+                  defaultMessage: "Attribute values"
+                })}
                 helperText={
-                  formErrors.values ||
-                  formErrors.addValues ||
-                  formErrors.removeValues
+                  getFieldError(errors, "values") ||
+                  getFieldError(errors, "addValues") ||
+                  getFieldError(errors, "removeValues")
                 }
                 values={data.values}
                 onChange={change}
@@ -83,10 +96,10 @@ const ProductTypeAttributeEditDialog: React.StatelessComponent<
             </DialogContent>
             <DialogActions>
               <Button onClick={onClose}>
-                {i18n.t("Cancel", { context: "button" })}
+                <FormattedMessage {...buttonMessages.back} />
               </Button>
               <Button color="primary" variant="contained" type="submit">
-                {i18n.t("Save", { context: "button" })}
+                <FormattedMessage {...buttonMessages.confirm} />
               </Button>
             </DialogActions>
           </>

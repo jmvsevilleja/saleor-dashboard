@@ -2,16 +2,16 @@
 /* eslint-disable */
 // This file was automatically generated and should not be edited.
 
-import { CatalogueInput, DiscountValueTypeEnum, VoucherTypeEnum } from "./../../types/globalTypes";
+import { CatalogueInput, DiscountErrorCode, DiscountValueTypeEnum, VoucherTypeEnum } from "./../../types/globalTypes";
 
 // ====================================================
 // GraphQL mutation operation: VoucherCataloguesAdd
 // ====================================================
 
 export interface VoucherCataloguesAdd_voucherCataloguesAdd_errors {
-  __typename: "Error";
+  __typename: "DiscountError";
+  code: DiscountErrorCode;
   field: string | null;
-  message: string | null;
 }
 
 export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher_countries {
@@ -20,7 +20,7 @@ export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher_countries {
   country: string;
 }
 
-export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher_minAmountSpent {
+export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher_minSpent {
   __typename: "Money";
   currency: string;
   amount: number;
@@ -140,7 +140,7 @@ export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher {
   discountValueType: DiscountValueTypeEnum;
   discountValue: number;
   countries: (VoucherCataloguesAdd_voucherCataloguesAdd_voucher_countries | null)[] | null;
-  minAmountSpent: VoucherCataloguesAdd_voucherCataloguesAdd_voucher_minAmountSpent | null;
+  minSpent: VoucherCataloguesAdd_voucherCataloguesAdd_voucher_minSpent | null;
   minCheckoutItemsQuantity: number | null;
   type: VoucherTypeEnum;
   used: number;
@@ -153,7 +153,7 @@ export interface VoucherCataloguesAdd_voucherCataloguesAdd_voucher {
 
 export interface VoucherCataloguesAdd_voucherCataloguesAdd {
   __typename: "VoucherAddCatalogues";
-  errors: VoucherCataloguesAdd_voucherCataloguesAdd_errors[] | null;
+  errors: VoucherCataloguesAdd_voucherCataloguesAdd_errors[];
   voucher: VoucherCataloguesAdd_voucherCataloguesAdd_voucher | null;
 }
 

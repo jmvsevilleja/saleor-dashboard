@@ -2,17 +2,20 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Button from "@material-ui/core/Button";
 import CardTitle from "@saleor/components/CardTitle";
-import i18n from "../../../i18n";
-import { generateCode } from "../../../misc";
-import { FormErrors } from "../../../types";
+import { commonMessages } from "@saleor/intl";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import { getFormErrors } from "@saleor/utils/errors";
+import getDiscountErrorMessage from "@saleor/utils/errors/discounts";
 import { FormData } from "../VoucherDetailsPage";
+import { generateCode } from "../../../misc";
 
 interface VoucherInfoProps {
   data: FormData;
-  errors: FormErrors<"code">;
+  errors: DiscountErrorFragment[];
   disabled: boolean;
   variant: "create" | "update";
   onChange: (event: any) => void;
@@ -25,6 +28,10 @@ const VoucherInfo = ({
   variant,
   onChange
 }: VoucherInfoProps) => {
+  const intl = useIntl();
+
+  const formErrors = getFormErrors(["code"], errors);
+
   const onGenerateCode = () =>
     onChange({
       target: {
@@ -36,11 +43,14 @@ const VoucherInfo = ({
   return (
     <Card>
       <CardTitle
-        title={i18n.t("General Information")}
+        title={intl.formatMessage(commonMessages.generalInformations)}
         toolbar={
           variant === "create" && (
             <Button color="primary" onClick={onGenerateCode}>
-              {i18n.t("Generate Code")}
+              <FormattedMessage
+                defaultMessage="Generate Code"
+                description="voucher code, button"
+              />
             </Button>
           )
         }
@@ -48,11 +58,13 @@ const VoucherInfo = ({
       <CardContent>
         <TextField
           disabled={variant === "update" || disabled}
-          error={!!errors.code}
+          error={!!formErrors.code}
           fullWidth
-          helperText={errors.code}
+          helperText={getDiscountErrorMessage(formErrors.code, intl)}
           name={"code" as keyof FormData}
-          label={i18n.t("Discount Code")}
+          label={intl.formatMessage({
+            defaultMessage: "Discount Code"
+          })}
           value={data.code}
           onChange={onChange}
         />

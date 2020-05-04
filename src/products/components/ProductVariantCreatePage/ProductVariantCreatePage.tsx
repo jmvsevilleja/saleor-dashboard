@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -12,57 +13,61 @@ import useFormset, {
   FormsetChange,
   FormsetData
 } from "@saleor/hooks/useFormset";
-import {
-  getVariantAttributeErrors,
-  getVariantAttributeInputFromProduct
-} from "@saleor/products/utils/data";
-import i18n from "../../../i18n";
+import { getVariantAttributeInputFromProduct } from "@saleor/products/utils/data";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
+import { SearchWarehouses_search_edges_node } from "@saleor/searches/types/SearchWarehouses";
 import { maybe } from "../../../misc";
-import { UserError } from "../../../types";
 import { ProductVariantCreateData_product } from "../../types/ProductVariantCreateData";
 import ProductVariantAttributes, {
   VariantAttributeInputData
 } from "../ProductVariantAttributes";
 import ProductVariantNavigation from "../ProductVariantNavigation";
 import ProductVariantPrice from "../ProductVariantPrice";
-import ProductVariantStock from "../ProductVariantStock";
+import ProductStocks, { ProductStockInput } from "../ProductStocks";
 
 interface ProductVariantCreatePageFormData {
   costPrice: string;
   images: string[];
   priceOverride: string;
-  quantity: number;
+  quantity: string;
   sku: string;
+  trackInventory: boolean;
 }
 
 export interface ProductVariantCreatePageSubmitData
   extends ProductVariantCreatePageFormData {
   attributes: FormsetData<VariantAttributeInputData>;
+  stocks: ProductStockInput[];
 }
 
 interface ProductVariantCreatePageProps {
   currencySymbol: string;
-  errors: UserError[];
+  disabled: boolean;
+  errors: ProductErrorFragment[];
   header: string;
-  loading: boolean;
   product: ProductVariantCreateData_product;
   saveButtonBarState: ConfirmButtonTransitionState;
+  warehouses: SearchWarehouses_search_edges_node[];
   onBack: () => void;
   onSubmit: (data: ProductVariantCreatePageSubmitData) => void;
   onVariantClick: (variantId: string) => void;
+  onWarehouseEdit: () => void;
 }
 
 const ProductVariantCreatePage: React.FC<ProductVariantCreatePageProps> = ({
   currencySymbol,
-  errors: formErrors,
-  loading,
+  disabled,
+  errors,
   header,
   product,
   saveButtonBarState,
+  warehouses,
   onBack,
   onSubmit,
-  onVariantClick
+  onVariantClick,
+  onWarehouseEdit
 }) => {
+  const intl = useIntl();
   const attributeInput = React.useMemo(
     () => getVariantAttributeInputFromProduct(product),
     [product]
@@ -70,33 +75,38 @@ const ProductVariantCreatePage: React.FC<ProductVariantCreatePageProps> = ({
   const { change: changeAttributeData, data: attributes } = useFormset(
     attributeInput
   );
+  const { change: changeStockData, data: stocks, set: setStocks } = useFormset<
+    null
+  >([]);
+  React.useEffect(() => {
+    const newStocks = warehouses.map(warehouse => ({
+      data: null,
+      id: warehouse.id,
+      label: warehouse.name,
+      value: stocks.find(stock => stock.id === warehouse.id)?.value || 0
+    }));
+    setStocks(newStocks);
+  }, [JSON.stringify(warehouses)]);
 
-  const initialForm = {
-    attributes: maybe(
-      () =>
-        product.productType.variantAttributes.map(attribute => ({
-          name: attribute.name,
-          slug: attribute.slug,
-          values: [""]
-        })),
-      []
-    ),
+  const initialForm: ProductVariantCreatePageFormData = {
     costPrice: "",
     images: maybe(() => product.images.map(image => image.id)),
     priceOverride: "",
-    quantity: 0,
-    sku: ""
+    quantity: "0",
+    sku: "",
+    trackInventory: true
   };
 
   const handleSubmit = (data: ProductVariantCreatePageFormData) =>
     onSubmit({
       ...data,
-      attributes
+      attributes,
+      stocks
     });
 
   return (
-    <Form initial={initialForm} errors={formErrors} onSubmit={handleSubmit}>
-      {({ change, data, errors, hasChanged, submit, triggerChange }) => {
+    <Form initial={initialForm} onSubmit={handleSubmit}>
+      {({ change, data, hasChanged, submit, triggerChange }) => {
         const handleAttributeChange: FormsetChange = (id, value) => {
           changeAttributeData(id, value);
           triggerChange();
@@ -121,11 +131,8 @@ const ProductVariantCreatePage: React.FC<ProductVariantCreatePageProps> = ({
               <div>
                 <ProductVariantAttributes
                   attributes={attributes}
-                  disabled={loading}
-                  errors={getVariantAttributeErrors(
-                    formErrors,
-                    maybe(() => product.productType.variantAttributes)
-                  )}
+                  disabled={disabled}
+                  errors={errors}
                   onChange={handleAttributeChange}
                 />
                 <CardSpacer />
@@ -134,24 +141,32 @@ const ProductVariantCreatePage: React.FC<ProductVariantCreatePageProps> = ({
                   priceOverride={data.priceOverride}
                   currencySymbol={currencySymbol}
                   costPrice={data.costPrice}
-                  loading={loading}
+                  loading={disabled}
                   onChange={change}
                 />
                 <CardSpacer />
-                <ProductVariantStock
+                <ProductStocks
+                  data={data}
+                  disabled={disabled}
+                  onChange={changeStockData}
+                  onFormDataChange={change}
                   errors={errors}
-                  sku={data.sku}
-                  quantity={data.quantity}
-                  loading={loading}
-                  onChange={change}
+                  stocks={stocks}
+                  onWarehousesEdit={onWarehouseEdit}
                 />
               </div>
             </Grid>
             <SaveButtonBar
-              disabled={loading || !onSubmit || !hasChanged}
+              disabled={disabled || !onSubmit || !hasChanged}
               labels={{
-                delete: i18n.t("Remove variant"),
-                save: i18n.t("Save variant")
+                delete: intl.formatMessage({
+                  defaultMessage: "Delete Variant",
+                  description: "button"
+                }),
+                save: intl.formatMessage({
+                  defaultMessage: "Save variant",
+                  description: "button"
+                })
               }}
               state={saveButtonBarState}
               onCancel={onBack}

@@ -1,16 +1,15 @@
 import Card from "@material-ui/core/Card";
-import { createStyles, withStyles, WithStyles } from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import React from "react";
+import { FormattedMessage } from "react-intl";
 
-// tslint:disable no-submodule-imports
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import { ShopInfo_shop_languages } from "@saleor/components/Shop/types/ShopInfo";
 import Skeleton from "@saleor/components/Skeleton";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 
 export interface TranslationsLanguageListProps {
@@ -18,29 +17,32 @@ export interface TranslationsLanguageListProps {
   onRowClick: (code: string) => void;
 }
 
-const styles = createStyles({
-  capitalize: {
-    textTransform: "capitalize"
+const useStyles = makeStyles(
+  {
+    capitalize: {
+      textTransform: "capitalize"
+    },
+    link: {
+      cursor: "pointer"
+    }
   },
-  link: {
-    cursor: "pointer"
-  }
-});
+  { name: "TranslationsLanguageList" }
+);
 
-const TranslationsLanguageList = withStyles(styles, {
-  name: "TranslationsLanguageList"
-})(
-  ({
-    classes,
-    languages,
-    onRowClick
-  }: TranslationsLanguageListProps & WithStyles<typeof styles>) => (
+const TranslationsLanguageList: React.FC<
+  TranslationsLanguageListProps
+> = props => {
+  const { languages, onRowClick } = props;
+
+  const classes = useStyles(props);
+
+  return (
     <Card>
-      <Table>
+      <ResponsiveTable>
         <TableHead>
           <TableRow>
             <TableCell>
-              {i18n.t("Language", { context: "table header" })}
+              <FormattedMessage defaultMessage="Language" />
             </TableCell>
           </TableRow>
         </TableHead>
@@ -65,15 +67,15 @@ const TranslationsLanguageList = withStyles(styles, {
             () => (
               <TableRow>
                 <TableCell colSpan={1}>
-                  {i18n.t("No languages found")}
+                  <FormattedMessage defaultMessage="No languages found" />
                 </TableCell>
               </TableRow>
             )
           )}
         </TableBody>
-      </Table>
+      </ResponsiveTable>
     </Card>
-  )
-);
+  );
+};
 TranslationsLanguageList.displayName = "TranslationsLanguageList";
 export default TranslationsLanguageList;

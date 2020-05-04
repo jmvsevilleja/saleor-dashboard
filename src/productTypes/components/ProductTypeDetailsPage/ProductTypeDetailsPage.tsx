@@ -1,17 +1,18 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
 import { ConfirmButtonTransitionState } from "@saleor/components/ConfirmButton";
 import Container from "@saleor/components/Container";
-import { ControlledCheckbox } from "@saleor/components/ControlledCheckbox";
+import ControlledSwitch from "@saleor/components/ControlledSwitch";
 import Form from "@saleor/components/Form";
 import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import { ChangeEvent, FormChange } from "@saleor/hooks/useForm";
 import useStateFromProps from "@saleor/hooks/useStateFromProps";
-import i18n from "@saleor/i18n";
+import { sectionNames } from "@saleor/intl";
 import { maybe } from "@saleor/misc";
 import { ListActions, ReorderEvent, UserError } from "@saleor/types";
 import { AttributeTypeEnum, WeightUnitsEnum } from "@saleor/types/globalTypes";
@@ -55,6 +56,7 @@ export interface ProductTypeDetailsPageProps {
   onAttributeUnassign: (id: string) => void;
   onBack: () => void;
   onDelete: () => void;
+  onHasVariantsToggle: (hasVariants: boolean) => void;
   onSubmit: (data: ProductTypeForm) => void;
 }
 
@@ -70,9 +72,7 @@ function handleTaxTypeChange(
   );
 }
 
-const ProductTypeDetailsPage: React.StatelessComponent<
-  ProductTypeDetailsPageProps
-> = ({
+const ProductTypeDetailsPage: React.FC<ProductTypeDetailsPageProps> = ({
   defaultWeightUnit,
   disabled,
   errors,
@@ -88,10 +88,12 @@ const ProductTypeDetailsPage: React.StatelessComponent<
   onAttributeClick,
   onBack,
   onDelete,
+  onHasVariantsToggle,
   onSubmit
 }) => {
+  const intl = useIntl();
   const [taxTypeDisplayName, setTaxTypeDisplayName] = useStateFromProps(
-    maybe(() => productType.taxType.description)
+    maybe(() => productType.taxType.description, "")
   );
   const formInitialData: ProductTypeForm = {
     hasVariants:
@@ -121,22 +123,19 @@ const ProductTypeDetailsPage: React.StatelessComponent<
     weight: maybe(() => productType.weight.value)
   };
   return (
-    <Form
-      errors={errors}
-      initial={formInitialData}
-      onSubmit={onSubmit}
-      confirmLeave
-    >
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={formInitialData} onSubmit={onSubmit} confirmLeave>
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Product Types")}</AppHeader>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.productTypes)}
+          </AppHeader>
           <PageHeader title={pageTitle} />
           <Grid>
             <div>
               <ProductTypeDetails
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
@@ -168,12 +167,15 @@ const ProductTypeDetailsPage: React.StatelessComponent<
                 {...productAttributeList}
               />
               <CardSpacer />
-              <ControlledCheckbox
+              <ControlledSwitch
                 checked={data.hasVariants}
                 disabled={disabled}
-                label={i18n.t("This product type has variants")}
+                label={intl.formatMessage({
+                  defaultMessage: "Product type uses Variant Attributes",
+                  description: "switch button"
+                })}
                 name="hasVariants"
-                onChange={change}
+                onChange={event => onHasVariantsToggle(event.target.value)}
               />
               {data.hasVariants && (
                 <>

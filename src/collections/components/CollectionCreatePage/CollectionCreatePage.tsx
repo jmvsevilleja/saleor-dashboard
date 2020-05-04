@@ -2,6 +2,7 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 import { ContentState, convertToRaw, RawDraftContentState } from "draft-js";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import { CardSpacer } from "@saleor/components/CardSpacer";
@@ -14,8 +15,9 @@ import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
 import SeoForm from "@saleor/components/SeoForm";
 import VisibilityCard from "@saleor/components/VisibilityCard";
-import i18n from "../../../i18n";
-import { UserError } from "../../../types";
+import useDateLocalize from "@saleor/hooks/useDateLocalize";
+import { commonMessages, sectionNames } from "@saleor/intl";
+import { ProductErrorFragment } from "@saleor/attributes/types/ProductErrorFragment";
 import CollectionDetails from "../CollectionDetails/CollectionDetails";
 import { CollectionImage } from "../CollectionImage/CollectionImage";
 
@@ -35,7 +37,7 @@ export interface CollectionCreatePageFormData {
 
 export interface CollectionCreatePageProps {
   disabled: boolean;
-  errors: UserError[];
+  errors: ProductErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
   onSubmit: (data: CollectionCreatePageFormData) => void;
@@ -55,113 +57,133 @@ const initialForm: CollectionCreatePageFormData = {
   seoTitle: ""
 };
 
-const CollectionCreatePage: React.StatelessComponent<
-  CollectionCreatePageProps
-> = ({
+const CollectionCreatePage: React.FC<CollectionCreatePageProps> = ({
   disabled,
   errors,
   saveButtonBarState,
   onBack,
   onSubmit
-}: CollectionCreatePageProps) => (
-  <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-    {({ change, data, errors: formErrors, hasChanged, submit }) => (
-      <Container>
-        <AppHeader onBack={onBack}>{i18n.t("Collections")}</AppHeader>
-        <PageHeader
-          title={i18n.t("Add collection", {
-            context: "page title"
-          })}
-        />
-        <Grid>
-          <div>
-            <CollectionDetails
-              data={data}
-              disabled={disabled}
-              errors={formErrors}
-              onChange={change}
-            />
-            <CardSpacer />
-            <CollectionImage
-              image={
-                data.backgroundImage.url
-                  ? {
-                      __typename: "Image",
-                      alt: data.backgroundImageAlt,
-                      url: data.backgroundImage.url
-                    }
-                  : null
-              }
-              onImageDelete={() =>
-                change({
-                  target: {
-                    name: "backgroundImage",
-                    value: {
-                      url: null,
-                      value: null
-                    }
-                  }
-                } as any)
-              }
-              onImageUpload={file =>
-                change({
-                  target: {
-                    name: "backgroundImage",
-                    value: {
-                      url: URL.createObjectURL(file),
-                      value: file
-                    }
-                  }
-                } as any)
-              }
-              onChange={change}
-              data={data}
-            />
-            <CardSpacer />
-            <SeoForm
-              description={data.seoDescription}
-              disabled={disabled}
-              descriptionPlaceholder=""
-              helperText={i18n.t(
-                "Add search engine title and description to make this collection easier to find",
-                {
-                  context: "help text"
-                }
-              )}
-              title={data.seoTitle}
-              titlePlaceholder={data.name}
-              onChange={change}
-            />
-          </div>
-          <div>
+}: CollectionCreatePageProps) => {
+  const intl = useIntl();
+  const localizeDate = useDateLocalize();
+
+  return (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
+        <Container>
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.collections)}
+          </AppHeader>
+          <PageHeader
+            title={intl.formatMessage({
+              defaultMessage: "Add Collection",
+              description: "page header"
+            })}
+          />
+          <Grid>
             <div>
-              <Card>
-                <CardTitle
-                  title={i18n.t("Availability", {
-                    context: "collection status"
-                  })}
-                />
-                <CardContent>
-                  <VisibilityCard
-                    data={data}
-                    errors={formErrors}
-                    disabled={disabled}
-                    onChange={change}
-                  />
-                </CardContent>
-              </Card>
+              <CollectionDetails
+                data={data}
+                disabled={disabled}
+                errors={errors}
+                onChange={change}
+              />
+              <CardSpacer />
+              <CollectionImage
+                image={
+                  data.backgroundImage.url
+                    ? {
+                        __typename: "Image",
+                        alt: data.backgroundImageAlt,
+                        url: data.backgroundImage.url
+                      }
+                    : null
+                }
+                onImageDelete={() =>
+                  change({
+                    target: {
+                      name: "backgroundImage",
+                      value: {
+                        url: null,
+                        value: null
+                      }
+                    }
+                  } as any)
+                }
+                onImageUpload={file =>
+                  change({
+                    target: {
+                      name: "backgroundImage",
+                      value: {
+                        url: URL.createObjectURL(file),
+                        value: file
+                      }
+                    }
+                  } as any)
+                }
+                onChange={change}
+                data={data}
+              />
+              <CardSpacer />
+              <SeoForm
+                description={data.seoDescription}
+                disabled={disabled}
+                descriptionPlaceholder=""
+                helperText={intl.formatMessage({
+                  defaultMessage:
+                    "Add search engine title and description to make this collection easier to find"
+                })}
+                title={data.seoTitle}
+                titlePlaceholder={data.name}
+                onChange={change}
+              />
             </div>
-          </div>
-        </Grid>
-        <SaveButtonBar
-          state={saveButtonBarState}
-          disabled={disabled || !hasChanged}
-          onCancel={onBack}
-          onSave={submit}
-        />
-      </Container>
-    )}
-  </Form>
-);
+            <div>
+              <div>
+                <Card>
+                  <CardTitle
+                    title={intl.formatMessage(commonMessages.availability)}
+                  />
+                  <CardContent>
+                    <VisibilityCard
+                      data={data}
+                      errors={errors}
+                      disabled={disabled}
+                      hiddenMessage={intl.formatMessage(
+                        {
+                          defaultMessage: "will be visible from {date}",
+                          description: "collection"
+                        },
+                        {
+                          date: localizeDate(data.publicationDate)
+                        }
+                      )}
+                      onChange={change}
+                      visibleMessage={intl.formatMessage(
+                        {
+                          defaultMessage: "since {date}",
+                          description: "collection"
+                        },
+                        {
+                          date: localizeDate(data.publicationDate)
+                        }
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </Grid>
+          <SaveButtonBar
+            state={saveButtonBarState}
+            disabled={disabled || !hasChanged}
+            onCancel={onBack}
+            onSave={submit}
+          />
+        </Container>
+      )}
+    </Form>
+  );
+};
 CollectionCreatePage.displayName = "CollectionCreatePage";
 export default CollectionCreatePage;

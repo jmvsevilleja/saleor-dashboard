@@ -1,38 +1,23 @@
-import CircularProgress from "@material-ui/core/CircularProgress";
 import IconButton from "@material-ui/core/IconButton";
-import MenuItem from "@material-ui/core/MenuItem";
-import Paper from "@material-ui/core/Paper";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import Typography from "@material-ui/core/Typography";
 import CloseIcon from "@material-ui/icons/Close";
 import Downshift, { ControllerStateAndHelpers } from "downshift";
+import { filter } from "fuzzaldrin";
 import React from "react";
-import { compareTwoStrings } from "string-similarity";
 
 import { fade } from "@material-ui/core/styles/colorManipulator";
-import Checkbox from "@saleor/components/Checkbox";
 import Debounce, { DebounceProps } from "@saleor/components/Debounce";
-import i18n from "@saleor/i18n";
 import ArrowDropdownIcon from "@saleor/icons/ArrowDropdown";
-import Hr from "../Hr";
+import { FetchMoreProps } from "@saleor/types";
+import MultiAutocompleteSelectFieldContent, {
+  MultiAutocompleteChoiceType,
+  MultiAutocompleteActionType
+} from "./MultiAutocompleteSelectFieldContent";
 
-export interface MultiAutocompleteChoiceType {
-  label: string;
-  value: string;
-}
-
-const styles = (theme: Theme) =>
-  createStyles({
-    checkbox: {
-      height: 24,
-      width: 20
-    },
+const useStyles = makeStyles(
+  theme => ({
     chip: {
       width: "100%"
     },
@@ -44,21 +29,21 @@ const styles = (theme: Theme) =>
     chipContainer: {
       display: "flex",
       flexDirection: "column",
-      marginTop: theme.spacing.unit
+      marginTop: theme.spacing(1)
     },
     chipInner: {
       "& svg": {
         color: theme.palette.primary.contrastText
       },
       alignItems: "center",
-      background: fade(theme.palette.primary.main, 0.6),
-      borderRadius: 24,
+      background: fade(theme.palette.primary.main, 0.8),
+      borderRadius: 18,
       color: theme.palette.primary.contrastText,
       display: "flex",
       justifyContent: "space-between",
-      margin: `${theme.spacing.unit}px 0`,
-      paddingLeft: theme.spacing.unit * 2,
-      paddingRight: theme.spacing.unit
+      margin: theme.spacing(1, 0),
+      paddingLeft: theme.spacing(2),
+      paddingRight: theme.spacing(1)
     },
     chipLabel: {
       color: theme.palette.primary.contrastText
@@ -67,32 +52,30 @@ const styles = (theme: Theme) =>
       flexGrow: 1,
       position: "relative"
     },
-    hr: {
-      margin: `${theme.spacing.unit}px 0`
-    },
-    menuItem: {
-      display: "grid",
-      gridColumnGap: theme.spacing.unit + "px",
-      gridTemplateColumns: "20px 1fr",
-      height: "auto",
-      whiteSpace: "normal"
-    },
-    menuItemLabel: {
-      overflowWrap: "break-word"
-    },
-    paper: {
-      left: 0,
-      marginTop: theme.spacing.unit,
-      padding: theme.spacing.unit,
-      position: "absolute",
-      right: 0,
-      zIndex: 2
+    disabledChipInner: {
+      "& svg": {
+        color: theme.palette.grey[200]
+      },
+      alignItems: "center",
+      background: fade(theme.palette.grey[400], 0.8),
+      borderRadius: 18,
+      color: theme.palette.primary.contrastText,
+      display: "flex",
+      justifyContent: "space-between",
+      margin: theme.spacing(1, 0),
+      paddingLeft: theme.spacing(2),
+      paddingRight: theme.spacing(1)
     }
-  });
+  }),
+  { name: "MultiAutocompleteSelectField" }
+);
 
-export interface MultiAutocompleteSelectFieldProps {
+export interface MultiAutocompleteSelectFieldProps
+  extends Partial<FetchMoreProps> {
+  add?: MultiAutocompleteActionType;
   allowCustomValues?: boolean;
   displayValues: MultiAutocompleteChoiceType[];
+  error?: boolean;
   name: string;
   choices: MultiAutocompleteChoiceType[];
   value: string[];
@@ -104,18 +87,18 @@ export interface MultiAutocompleteSelectFieldProps {
   onChange: (event: React.ChangeEvent<any>) => void;
 }
 
-const DebounceAutocomplete: React.ComponentType<
-  DebounceProps<string>
-> = Debounce;
+const DebounceAutocomplete: React.ComponentType<DebounceProps<
+  string
+>> = Debounce;
 
-export const MultiAutocompleteSelectFieldComponent = withStyles(styles, {
-  name: "MultiAutocompleteSelectField"
-})(
-  ({
+const MultiAutocompleteSelectFieldComponent: React.FC<MultiAutocompleteSelectFieldProps> = props => {
+  const {
+    add,
     allowCustomValues,
     choices,
-    classes,
     displayValues,
+    error,
+    hasMore,
     helperText,
     label,
     loading,
@@ -123,37 +106,50 @@ export const MultiAutocompleteSelectFieldComponent = withStyles(styles, {
     placeholder,
     value,
     fetchChoices,
-    onChange
-  }: MultiAutocompleteSelectFieldProps & WithStyles<typeof styles>) => {
-    const handleSelect = (
-      item: string,
-      downshiftOpts?: ControllerStateAndHelpers
-    ) => {
-      if (downshiftOpts) {
-        downshiftOpts.reset({ inputValue: "" });
-      }
-      onChange({
-        target: { name, value: item }
-      } as any);
-    };
-    const suggestions = choices.filter(choice => !value.includes(choice.value));
+    onChange,
+    onFetchMore,
+    ...rest
+  } = props;
+  const classes = useStyles(props);
 
-    return (
-      <>
-        <Downshift
-          onInputValueChange={fetchChoices}
-          onSelect={handleSelect}
-          itemToString={() => ""}
-        >
-          {({
-            getInputProps,
-            getItemProps,
-            isOpen,
-            toggleMenu,
-            highlightedIndex,
-            inputValue
-          }) => (
-            <div className={classes.container}>
+  const handleSelect = (
+    item: string,
+    downshiftOpts?: ControllerStateAndHelpers
+  ) => {
+    if (downshiftOpts) {
+      downshiftOpts.reset({ inputValue: "" });
+    }
+    onChange({
+      target: { name, value: item }
+    } as any);
+  };
+
+  return (
+    <>
+      <Downshift
+        onInputValueChange={fetchChoices}
+        onSelect={handleSelect}
+        itemToString={() => ""}
+      >
+        {({
+          closeMenu,
+          getInputProps,
+          getItemProps,
+          isOpen,
+          toggleMenu,
+          highlightedIndex,
+          inputValue
+        }) => {
+          const displayCustomValue =
+            inputValue &&
+            inputValue.length > 0 &&
+            allowCustomValues &&
+            !choices.find(
+              choice => choice.label.toLowerCase() === inputValue.toLowerCase()
+            );
+
+          return (
+            <div className={classes.container} {...rest}>
               <TextField
                 InputProps={{
                   ...getInputProps({
@@ -161,130 +157,77 @@ export const MultiAutocompleteSelectFieldComponent = withStyles(styles, {
                   }),
                   endAdornment: (
                     <div>
-                      {loading ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <ArrowDropdownIcon onClick={toggleMenu} />
-                      )}
+                      <ArrowDropdownIcon onClick={() => toggleMenu()} />
                     </div>
                   ),
                   id: undefined,
                   onClick: toggleMenu
                 }}
+                error={error}
                 helperText={helperText}
                 label={label}
                 fullWidth={true}
               />
               {isOpen && (!!inputValue || !!choices.length) && (
-                <Paper className={classes.paper} square>
-                  {choices.length > 0 ||
-                  displayValues.length > 0 ||
-                  allowCustomValues ? (
-                    <>
-                      {displayValues.map(value => (
-                        <MenuItem
-                          className={classes.menuItem}
-                          key={value.value}
-                          selected={true}
-                          component="div"
-                          {...getItemProps({
-                            item: value.value
-                          })}
-                        >
-                          <Checkbox
-                            className={classes.checkbox}
-                            checked={true}
-                            disableRipple
-                          />
-                          <span className={classes.menuItemLabel}>
-                            {value.label}
-                          </span>
-                        </MenuItem>
-                      ))}
-                      {displayValues.length > 0 && suggestions.length > 0 && (
-                        <Hr className={classes.hr} />
-                      )}
-                      {suggestions.map((suggestion, index) => (
-                        <MenuItem
-                          className={classes.menuItem}
-                          key={suggestion.value}
-                          selected={highlightedIndex === index + value.length}
-                          component="div"
-                          {...getItemProps({
-                            item: suggestion.value
-                          })}
-                        >
-                          <Checkbox
-                            checked={value.includes(suggestion.value)}
-                            className={classes.checkbox}
-                            disableRipple
-                          />
-                          <span className={classes.menuItemLabel}>
-                            {suggestion.label}
-                          </span>
-                        </MenuItem>
-                      ))}
-                      {allowCustomValues &&
-                        inputValue &&
-                        !choices.find(
-                          choice =>
-                            choice.label.toLowerCase() ===
-                            inputValue.toLowerCase()
-                        ) && (
-                          <MenuItem
-                            className={classes.menuItem}
-                            key={"customValue"}
-                            component="div"
-                            {...getItemProps({
-                              item: inputValue
-                            })}
-                          >
-                            <span className={classes.menuItemLabel}>
-                              {i18n.t("Add new value: {{ value }}", {
-                                context: "add custom option",
-                                value: inputValue
-                              })}
-                            </span>
-                          </MenuItem>
-                        )}
-                    </>
-                  ) : (
-                    !loading && (
-                      <MenuItem disabled={true} component="div">
-                        {i18n.t("No results found")}
-                      </MenuItem>
-                    )
+                <MultiAutocompleteSelectFieldContent
+                  add={{
+                    ...add,
+                    onClick: () => {
+                      add.onClick();
+                      closeMenu();
+                    }
+                  }}
+                  choices={choices.filter(
+                    choice => !value.includes(choice.value)
                   )}
-                </Paper>
+                  displayCustomValue={displayCustomValue}
+                  displayValues={displayValues}
+                  getItemProps={getItemProps}
+                  hasMore={hasMore}
+                  highlightedIndex={highlightedIndex}
+                  loading={loading}
+                  inputValue={inputValue}
+                  onFetchMore={onFetchMore}
+                />
               )}
             </div>
-          )}
-        </Downshift>
-        <div className={classes.chipContainer}>
-          {displayValues.map(value => (
-            <div className={classes.chip} key={value.value}>
-              <div className={classes.chipInner}>
-                <Typography className={classes.chipLabel} variant="caption">
-                  {value.label}
-                </Typography>
-                <IconButton
-                  className={classes.chipClose}
-                  onClick={() => handleSelect(value.value)}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </div>
+          );
+        }}
+      </Downshift>
+      <div className={classes.chipContainer}>
+        {displayValues.map(value => (
+          <div className={classes.chip} key={value.value}>
+            <div
+              className={
+                !value.disabled ? classes.chipInner : classes.disabledChipInner
+              }
+            >
+              <Typography className={classes.chipLabel}>
+                {value.label}
+              </Typography>
+
+              <IconButton
+                className={classes.chipClose}
+                disabled={value.disabled}
+                onClick={() => handleSelect(value.value)}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-);
-const MultiAutocompleteSelectField: React.FC<
-  MultiAutocompleteSelectFieldProps
-> = ({ choices, fetchChoices, ...props }) => {
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
+
+const MultiAutocompleteSelectField: React.FC<MultiAutocompleteSelectFieldProps> = ({
+  choices,
+  fetchChoices,
+  ...props
+}) => {
   const [query, setQuery] = React.useState("");
+
   if (fetchChoices) {
     return (
       <DebounceAutocomplete debounceFn={fetchChoices}>
@@ -299,25 +242,16 @@ const MultiAutocompleteSelectField: React.FC<
     );
   }
 
-  const sortedChoices = choices.sort((a, b) => {
-    const ratingA = compareTwoStrings(query, a.label);
-    const ratingB = compareTwoStrings(query, b.label);
-    if (ratingA > ratingB) {
-      return -1;
-    }
-    if (ratingA < ratingB) {
-      return 1;
-    }
-    return 0;
-  });
-
   return (
     <MultiAutocompleteSelectFieldComponent
       fetchChoices={q => setQuery(q || "")}
-      choices={sortedChoices}
+      choices={filter(choices, query, {
+        key: "label"
+      })}
       {...props}
     />
   );
 };
+
 MultiAutocompleteSelectField.displayName = "MultiAutocompleteSelectField";
 export default MultiAutocompleteSelectField;

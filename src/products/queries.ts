@@ -1,7 +1,12 @@
 import gql from "graphql-tag";
 
-import { TypedQuery } from "../queries";
-import { ProductCreateData } from "./types/ProductCreateData";
+import makeQuery from "@saleor/hooks/makeQuery";
+import { warehouseFragment } from "@saleor/warehouses/queries";
+import { pageInfoFragment, TypedQuery } from "../queries";
+import {
+  AvailableInGridAttributes,
+  AvailableInGridAttributesVariables
+} from "./types/AvailableInGridAttributes";
 import {
   ProductDetails,
   ProductDetailsVariables
@@ -19,6 +24,26 @@ import {
   ProductVariantDetails,
   ProductVariantDetailsVariables
 } from "./types/ProductVariantDetails";
+import {
+  InitialProductFilterData,
+  InitialProductFilterDataVariables
+} from "./types/InitialProductFilterData";
+import {
+  CreateMultipleVariantsData,
+  CreateMultipleVariantsDataVariables
+} from "./types/CreateMultipleVariantsData";
+
+export const stockFragment = gql`
+  fragment StockFragment on Stock {
+    id
+    quantity
+    quantityAllocated
+    warehouse {
+      id
+      name
+    }
+  }
+`;
 
 export const fragmentMoney = gql`
   fragment Money on Money {
@@ -45,6 +70,7 @@ export const productFragment = gql`
       url
     }
     isAvailable
+    isPublished
     basePrice {
       ...Money
     }
@@ -54,11 +80,51 @@ export const productFragment = gql`
     }
   }
 `;
+
+const productVariantAttributesFragment = gql`
+  fragment ProductVariantAttributesFragment on Product {
+    id
+    attributes {
+      attribute {
+        id
+        slug
+        name
+        inputType
+        valueRequired
+        values {
+          id
+          name
+          slug
+        }
+      }
+      values {
+        id
+        name
+        slug
+      }
+    }
+    productType {
+      id
+      variantAttributes {
+        id
+        name
+        values {
+          id
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+
 export const productFragmentDetails = gql`
   ${fragmentProductImage}
   ${fragmentMoney}
+  ${productVariantAttributesFragment}
+  ${stockFragment}
   fragment Product on Product {
-    id
+    ...ProductVariantAttributesFragment
     name
     descriptionJson
     seoTitle
@@ -90,25 +156,6 @@ export const productFragmentDetails = gql`
     isPublished
     chargeTaxes
     publicationDate
-    attributes {
-      attribute {
-        id
-        slug
-        name
-        inputType
-        valueRequired
-        values {
-          id
-          name
-          slug
-        }
-      }
-      values {
-        id
-        name
-        slug
-      }
-    }
     pricing {
       priceRange {
         start {
@@ -134,22 +181,23 @@ export const productFragmentDetails = gql`
         ...Money
       }
       margin
-      quantity
-      quantityAllocated
-      stockQuantity
+      stocks {
+        ...StockFragment
+      }
+      trackInventory
     }
     productType {
       id
       name
       hasVariants
     }
-    url
   }
 `;
 
 export const fragmentVariant = gql`
   ${fragmentMoney}
   ${fragmentProductImage}
+  ${stockFragment}
   fragment ProductVariant on ProductVariant {
     id
     attributes {
@@ -164,7 +212,7 @@ export const fragmentVariant = gql`
           slug
         }
       }
-      value {
+      values {
         id
         name
         slug
@@ -201,10 +249,63 @@ export const fragmentVariant = gql`
       }
     }
     sku
-    quantity
-    quantityAllocated
+    stocks {
+      ...StockFragment
+    }
+    trackInventory
   }
 `;
+
+const initialProductFilterDataQuery = gql`
+  query InitialProductFilterData(
+    $categories: [ID!]
+    $collections: [ID!]
+    $productTypes: [ID!]
+  ) {
+    attributes(first: 100, filter: { filterableInDashboard: true }) {
+      edges {
+        node {
+          id
+          name
+          slug
+          values {
+            id
+            name
+            slug
+          }
+        }
+      }
+    }
+    categories(first: 100, filter: { ids: $categories }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    collections(first: 100, filter: { ids: $collections }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+    productTypes(first: 100, filter: { ids: $productTypes }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+export const useInitialProductFilterDataQuery = makeQuery<
+  InitialProductFilterData,
+  InitialProductFilterDataVariables
+>(initialProductFilterDataQuery);
 
 const productListQuery = gql`
   ${productFragment}
@@ -214,6 +315,7 @@ const productListQuery = gql`
     $last: Int
     $before: String
     $filter: ProductFilterInput
+    $sort: ProductOrder
   ) {
     products(
       before: $before
@@ -221,10 +323,20 @@ const productListQuery = gql`
       first: $first
       last: $last
       filter: $filter
+      sortBy: $sort
     ) {
       edges {
         node {
           ...ProductFragment
+          attributes {
+            attribute {
+              id
+            }
+            values {
+              id
+              name
+            }
+          }
         }
       }
       pageInfo {
@@ -266,35 +378,6 @@ export const TypedProductVariantQuery = TypedQuery<
   ProductVariantDetails,
   ProductVariantDetailsVariables
 >(productVariantQuery);
-
-const productCreateQuery = gql`
-  query ProductCreateData {
-    productTypes(first: 20) {
-      edges {
-        node {
-          id
-          name
-          hasVariants
-          productAttributes {
-            id
-            inputType
-            slug
-            name
-            valueRequired
-            values {
-              id
-              name
-              slug
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-export const TypedProductCreateQuery = TypedQuery<ProductCreateData, {}>(
-  productCreateQuery
-);
 
 const productVariantCreateQuery = gql`
   query ProductVariantCreateData($id: ID!) {
@@ -361,3 +444,63 @@ export const TypedProductImageQuery = TypedQuery<
   ProductImageById,
   ProductImageByIdVariables
 >(productImageQuery);
+
+const availableInGridAttributes = gql`
+  ${pageInfoFragment}
+  query GridAttributes($first: Int!, $after: String, $ids: [ID!]!) {
+    availableInGrid: attributes(
+      first: $first
+      after: $after
+      filter: { availableInGrid: true, isVariantOnly: false }
+    ) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+      pageInfo {
+        ...PageInfoFragment
+      }
+      totalCount
+    }
+
+    grid: attributes(first: 25, filter: { ids: $ids }) {
+      edges {
+        node {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+export const AvailableInGridAttributesQuery = TypedQuery<
+  AvailableInGridAttributes,
+  AvailableInGridAttributesVariables
+>(availableInGridAttributes);
+
+const createMultipleVariantsData = gql`
+  ${fragmentMoney}
+  ${productVariantAttributesFragment}
+  ${warehouseFragment}
+  query CreateMultipleVariantsData($id: ID!) {
+    product(id: $id) {
+      ...ProductVariantAttributesFragment
+      basePrice {
+        ...Money
+      }
+    }
+    warehouses(first: 20) {
+      edges {
+        node {
+          ...WarehouseFragment
+        }
+      }
+    }
+  }
+`;
+export const useCreateMultipleVariantsData = makeQuery<
+  CreateMultipleVariantsData,
+  CreateMultipleVariantsDataVariables
+>(createMultipleVariantsData);

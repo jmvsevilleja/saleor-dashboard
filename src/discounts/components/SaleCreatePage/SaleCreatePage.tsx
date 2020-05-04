@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import CardSpacer from "@saleor/components/CardSpacer";
@@ -8,30 +9,34 @@ import Form from "@saleor/components/Form";
 import Grid from "@saleor/components/Grid";
 import PageHeader from "@saleor/components/PageHeader";
 import SaveButtonBar from "@saleor/components/SaveButtonBar";
-import i18n from "../../../i18n";
-import { UserError } from "../../../types";
-import { SaleType } from "../../../types/globalTypes";
+import { sectionNames } from "@saleor/intl";
+import { DiscountErrorFragment } from "@saleor/discounts/types/DiscountErrorFragment";
+import { SaleType as SaleTypeEnum } from "../../../types/globalTypes";
+import DiscountDates from "../DiscountDates";
 import SaleInfo from "../SaleInfo";
-import SalePricing from "../SalePricing";
+import SaleType from "../SaleType";
 
 export interface FormData {
+  endDate: string;
+  endTime: string;
+  hasEndDate: boolean;
   name: string;
   startDate: string;
-  endDate: string;
+  startTime: string;
+  type: SaleTypeEnum;
   value: string;
-  type: SaleType;
 }
 
 export interface SaleCreatePageProps {
   defaultCurrency: string;
   disabled: boolean;
-  errors: UserError[];
+  errors: DiscountErrorFragment[];
   saveButtonBarState: ConfirmButtonTransitionState;
   onBack: () => void;
   onSubmit: (data: FormData) => void;
 }
 
-const SaleCreatePage: React.StatelessComponent<SaleCreatePageProps> = ({
+const SaleCreatePage: React.FC<SaleCreatePageProps> = ({
   defaultCurrency,
   disabled,
   errors,
@@ -39,33 +44,47 @@ const SaleCreatePage: React.StatelessComponent<SaleCreatePageProps> = ({
   saveButtonBarState,
   onBack
 }) => {
+  const intl = useIntl();
+
   const initialForm: FormData = {
     endDate: "",
+    endTime: "",
+    hasEndDate: false,
     name: "",
     startDate: "",
-    type: SaleType.FIXED,
+    startTime: "",
+    type: SaleTypeEnum.FIXED,
     value: ""
   };
   return (
-    <Form errors={errors} initial={initialForm} onSubmit={onSubmit}>
-      {({ change, data, errors: formErrors, hasChanged, submit }) => (
+    <Form initial={initialForm} onSubmit={onSubmit}>
+      {({ change, data, hasChanged, submit }) => (
         <Container>
-          <AppHeader onBack={onBack}>{i18n.t("Sales")}</AppHeader>
-          <PageHeader title={i18n.t("Create Sale")} />
+          <AppHeader onBack={onBack}>
+            {intl.formatMessage(sectionNames.sales)}
+          </AppHeader>
+          <PageHeader
+            title={intl.formatMessage({
+              defaultMessage: "Create Sale",
+              description: "page header"
+            })}
+          />
           <Grid>
             <div>
               <SaleInfo
                 data={data}
                 disabled={disabled}
-                errors={formErrors}
+                errors={errors}
                 onChange={change}
               />
               <CardSpacer />
-              <SalePricing
+              <SaleType data={data} disabled={disabled} onChange={change} />
+              <CardSpacer />
+              <DiscountDates
                 data={data}
-                defaultCurrency={defaultCurrency}
                 disabled={disabled}
-                errors={formErrors}
+                defaultCurrency={defaultCurrency}
+                errors={errors}
                 onChange={change}
               />
             </div>

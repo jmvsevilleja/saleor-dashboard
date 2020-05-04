@@ -31,21 +31,21 @@ const HomeSection = () => {
           onOrdersToCaptureClick={() =>
             navigate(
               orderListUrl({
-                status: OrderStatusFilter.READY_TO_CAPTURE
+                status: [OrderStatusFilter.READY_TO_CAPTURE]
               })
             )
           }
           onOrdersToFulfillClick={() =>
             navigate(
               orderListUrl({
-                status: OrderStatusFilter.READY_TO_FULFILL
+                status: [OrderStatusFilter.READY_TO_FULFILL]
               })
             )
           }
           onProductsOutOfStockClick={() =>
             navigate(
               productListUrl({
-                status: StockAvailability.OUT_OF_STOCK
+                stockStatus: StockAvailability.OUT_OF_STOCK
               })
             )
           }
@@ -53,6 +53,7 @@ const HomeSection = () => {
           ordersToFulfill={maybe(() => data.ordersToFulfill.totalCount)}
           productsOutOfStock={maybe(() => data.productsOutOfStock.totalCount)}
           userName={getUserName(user, true)}
+          userPermissions={user?.userPermissions || []}
         />
       )}
     </HomePageQuery>

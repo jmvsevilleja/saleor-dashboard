@@ -6,39 +6,49 @@
 // GraphQL query operation: SearchOrderVariant
 // ====================================================
 
-export interface SearchOrderVariant_products_edges_node_thumbnail {
+export interface SearchOrderVariant_search_edges_node_thumbnail {
   __typename: "Image";
   url: string;
 }
 
-export interface SearchOrderVariant_products_edges_node_variants_price {
+export interface SearchOrderVariant_search_edges_node_variants_pricing_priceUndiscounted_net {
   __typename: "Money";
   amount: number;
   currency: string;
 }
 
-export interface SearchOrderVariant_products_edges_node_variants {
+export interface SearchOrderVariant_search_edges_node_variants_pricing_priceUndiscounted {
+  __typename: "TaxedMoney";
+  net: SearchOrderVariant_search_edges_node_variants_pricing_priceUndiscounted_net;
+}
+
+export interface SearchOrderVariant_search_edges_node_variants_pricing {
+  __typename: "VariantPricingInfo";
+  priceUndiscounted: SearchOrderVariant_search_edges_node_variants_pricing_priceUndiscounted | null;
+}
+
+export interface SearchOrderVariant_search_edges_node_variants {
   __typename: "ProductVariant";
   id: string;
   name: string;
   sku: string;
-  price: SearchOrderVariant_products_edges_node_variants_price | null;
+  pricing: SearchOrderVariant_search_edges_node_variants_pricing | null;
 }
 
-export interface SearchOrderVariant_products_edges_node {
+export interface SearchOrderVariant_search_edges_node {
   __typename: "Product";
   id: string;
   name: string;
-  thumbnail: SearchOrderVariant_products_edges_node_thumbnail | null;
-  variants: (SearchOrderVariant_products_edges_node_variants | null)[] | null;
+  thumbnail: SearchOrderVariant_search_edges_node_thumbnail | null;
+  variants: (SearchOrderVariant_search_edges_node_variants | null)[] | null;
 }
 
-export interface SearchOrderVariant_products_edges {
+export interface SearchOrderVariant_search_edges {
   __typename: "ProductCountableEdge";
-  node: SearchOrderVariant_products_edges_node;
+  node: SearchOrderVariant_search_edges_node;
 }
 
-export interface SearchOrderVariant_products_pageInfo {
+export interface SearchOrderVariant_search_pageInfo {
   __typename: "PageInfo";
   endCursor: string | null;
   hasNextPage: boolean;
@@ -46,14 +56,14 @@ export interface SearchOrderVariant_products_pageInfo {
   startCursor: string | null;
 }
 
-export interface SearchOrderVariant_products {
+export interface SearchOrderVariant_search {
   __typename: "ProductCountableConnection";
-  edges: SearchOrderVariant_products_edges[];
-  pageInfo: SearchOrderVariant_products_pageInfo;
+  edges: SearchOrderVariant_search_edges[];
+  pageInfo: SearchOrderVariant_search_pageInfo;
 }
 
 export interface SearchOrderVariant {
-  products: SearchOrderVariant_products | null;
+  search: SearchOrderVariant_search | null;
 }
 
 export interface SearchOrderVariantVariables {

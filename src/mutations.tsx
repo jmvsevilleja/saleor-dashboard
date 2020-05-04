@@ -2,14 +2,17 @@ import { ApolloError, MutationUpdaterFn } from "apollo-client";
 import { DocumentNode } from "graphql";
 import React from "react";
 import { Mutation, MutationFunction, MutationResult } from "react-apollo";
+import { useIntl } from "react-intl";
 
 import useNotifier from "./hooks/useNotifier";
-import i18n from "./i18n";
+import { commonMessages } from "./intl";
+import { maybe, getMutationStatus } from "./misc";
+import { MutationResultAdditionalProps } from "./types";
 
 export interface TypedMutationInnerProps<TData, TVariables> {
   children: (
     mutateFn: MutationFunction<TData, TVariables>,
-    result: MutationResult<TData>
+    result: MutationResult<TData> & MutationResultAdditionalProps
   ) => React.ReactNode;
   onCompleted?: (data: TData) => void;
   onError?: (error: ApolloError) => void;
@@ -23,17 +26,29 @@ export function TypedMutation<TData, TVariables>(
 ) {
   return (props: TypedMutationInnerProps<TData, TVariables>) => {
     const notify = useNotifier();
+    const intl = useIntl();
     const { children, onCompleted, onError, variables } = props;
 
     return (
       <Mutation
         mutation={mutation}
         onCompleted={onCompleted}
-        onError={err => {
-          const msg = i18n.t("Something went wrong: {{ message }}", {
-            message: err.message
-          });
-          notify({ text: msg });
+        onError={(err: ApolloError) => {
+          if (
+            maybe(
+              () =>
+                err.graphQLErrors[0].extensions.exception.code ===
+                "ReadOnlyException"
+            )
+          ) {
+            notify({
+              text: intl.formatMessage(commonMessages.readOnly)
+            });
+          } else {
+            notify({
+              text: intl.formatMessage(commonMessages.somethingWentWrong)
+            });
+          }
           if (onError) {
             onError(err);
           }
@@ -41,7 +56,14 @@ export function TypedMutation<TData, TVariables>(
         variables={variables}
         update={update}
       >
-        {(mutateFn, result) => <>{children(mutateFn, result)}</>}
+        {(mutateFn, result) => (
+          <>
+            {children(mutateFn, {
+              ...result,
+              status: getMutationStatus(result)
+            })}
+          </>
+        )}
       </Mutation>
     );
   };

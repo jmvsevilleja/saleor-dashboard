@@ -3,6 +3,7 @@ import { Omit } from "@material-ui/core";
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { ProductErrorCode } from "@saleor/types/globalTypes";
 import { category as categoryFixture } from "../../../categories/fixtures";
 
 import CategoryUpdatePage, {
@@ -53,7 +54,13 @@ storiesOf("Views / Categories / Update category", module)
     />
   ))
   .add("no background", () => (
-    <CategoryUpdatePage {...updateProps} category={category} />
+    <CategoryUpdatePage
+      {...updateProps}
+      category={{
+        ...category,
+        backgroundImage: null
+      }}
+    />
   ))
   .add("no subcategories", () => (
     <CategoryUpdatePage {...updateProps} subcategories={[]} />
@@ -72,5 +79,23 @@ storiesOf("Views / Categories / Update category", module)
       disabled={true}
       products={undefined}
       category={undefined}
+    />
+  ))
+  .add("form errors", () => (
+    <CategoryUpdatePage
+      {...updateProps}
+      errors={[
+        {
+          code: ProductErrorCode.REQUIRED,
+          field: "name"
+        },
+        {
+          code: ProductErrorCode.REQUIRED,
+          field: "descriptionJson"
+        }
+      ].map(err => ({
+        __typename: "ProductError",
+        ...err
+      }))}
     />
   ));

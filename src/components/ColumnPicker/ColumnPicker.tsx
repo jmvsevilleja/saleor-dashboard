@@ -1,27 +1,35 @@
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import Grow from "@material-ui/core/Grow";
 import Popper from "@material-ui/core/Popper";
-import { Theme } from "@material-ui/core/styles";
 import { fade } from "@material-ui/core/styles/colorManipulator";
-import makeStyles from "@material-ui/styles/makeStyles";
+import makeStyles from "@material-ui/core/styles/makeStyles";
 import React from "react";
 
+import useStateFromProps from "@saleor/hooks/useStateFromProps";
+import { toggle } from "@saleor/utils/lists";
 import ColumnPickerButton from "./ColumnPickerButton";
 import ColumnPickerContent, {
   ColumnPickerContentProps
 } from "./ColumnPickerContent";
 
-export interface ColumnPickerProps extends ColumnPickerContentProps {
+export interface ColumnPickerProps
+  extends Omit<
+    ColumnPickerContentProps,
+    "selectedColumns" | "onCancel" | "onColumnToggle" | "onReset" | "onSave"
+  > {
   className?: string;
-  initial?: boolean;
+  defaultColumns: string[];
+  initialColumns: string[];
+  initialOpen?: boolean;
+  onSave: (columns: string[]) => void;
 }
 
 const useStyles = makeStyles(
-  (theme: Theme) => ({
+  theme => ({
     popper: {
       boxShadow: `0px 5px 10px 0 ${fade(theme.palette.common.black, 0.05)}`,
-      marginTop: theme.spacing.unit * 2,
-      zIndex: 1
+      marginTop: theme.spacing(1),
+      zIndex: 2
     }
   }),
   {
@@ -33,70 +41,81 @@ const ColumnPicker: React.FC<ColumnPickerProps> = props => {
   const {
     className,
     columns,
-    initial = false,
-    selectedColumns,
-    onCancel,
-    onColumnToggle,
-    onReset,
+    defaultColumns,
+    hasMore,
+    initialColumns,
+    initialOpen = false,
+    loading,
+    total,
+    onFetchMore,
     onSave
   } = props;
   const classes = useStyles(props);
   const anchor = React.useRef<HTMLDivElement>();
   const [isExpanded, setExpansionState] = React.useState(false);
+  const [selectedColumns, setSelectedColumns] = useStateFromProps(
+    initialColumns
+  );
 
   React.useEffect(() => {
-    setTimeout(() => setExpansionState(initial), 100);
+    setTimeout(() => setExpansionState(initialOpen), 100);
   }, []);
 
-  const handleCancel = React.useCallback(() => {
+  const handleCancel = () => {
     setExpansionState(false);
-    onCancel();
-  }, []);
+    setSelectedColumns(initialColumns);
+  };
+
+  const handleColumnToggle = (column: string) =>
+    setSelectedColumns(toggle(column, selectedColumns, (a, b) => a === b));
+
+  const handleReset = () => setSelectedColumns(defaultColumns);
 
   const handleSave = () => {
     setExpansionState(false);
-    onSave();
+    onSave(selectedColumns);
   };
 
   return (
-    <div ref={anchor} className={className}>
-      <ColumnPickerButton
-        active={isExpanded}
-        onClick={() => setExpansionState(prevState => !prevState)}
-      />
-      <Popper
-        className={classes.popper}
-        open={isExpanded}
-        anchorEl={anchor.current}
-        transition
-        disablePortal
-        placement="bottom-end"
-      >
-        {({ TransitionProps, placement }) => (
-          <Grow
-            {...TransitionProps}
-            style={{
-              transformOrigin:
-                placement === "bottom" ? "right bottom" : "right top"
-            }}
-          >
-            <ClickAwayListener
-              onClickAway={() => setExpansionState(false)}
-              mouseEvent="onClick"
+    <ClickAwayListener onClickAway={() => setExpansionState(false)}>
+      <div ref={anchor} className={className}>
+        <ColumnPickerButton
+          active={isExpanded}
+          onClick={() => setExpansionState(prevState => !prevState)}
+        />
+        <Popper
+          className={classes.popper}
+          open={isExpanded}
+          anchorEl={anchor.current}
+          transition
+          disablePortal
+          placement="bottom-end"
+        >
+          {({ TransitionProps, placement }) => (
+            <Grow
+              {...TransitionProps}
+              style={{
+                transformOrigin:
+                  placement === "bottom" ? "right bottom" : "right top"
+              }}
             >
               <ColumnPickerContent
                 columns={columns}
+                hasMore={hasMore}
+                loading={loading}
                 selectedColumns={selectedColumns}
+                total={total}
                 onCancel={handleCancel}
-                onColumnToggle={onColumnToggle}
-                onReset={onReset}
+                onColumnToggle={handleColumnToggle}
+                onFetchMore={onFetchMore}
+                onReset={handleReset}
                 onSave={handleSave}
               />
-            </ClickAwayListener>
-          </Grow>
-        )}
-      </Popper>
-    </div>
+            </Grow>
+          )}
+        </Popper>
+      </div>
+    </ClickAwayListener>
   );
 };
 

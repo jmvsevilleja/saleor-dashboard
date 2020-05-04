@@ -1,12 +1,18 @@
 import { MutationResult } from "react-apollo";
 
-import { FilterContentSubmitData } from "./components/Filter";
-import { Filter } from "./components/TableFilter";
-import { GetFilterTabsOutput } from "./utils/filters";
+import { User_userPermissions } from "./auth/types/User";
+import { ConfirmButtonTransitionState } from "./components/ConfirmButton";
+import { IFilter } from "./components/Filter";
+import { MultiAutocompleteChoiceType } from "./components/MultiAutocompleteSelectField";
 
 export interface UserError {
-  field: string;
-  message: string;
+  field: string | null;
+  message?: string;
+}
+
+export interface DialogProps {
+  open: boolean;
+  onClose: () => void;
 }
 
 export interface ListSettings<TColumn extends string = string> {
@@ -23,11 +29,16 @@ export enum ListViews {
   NAVIGATION_LIST = "NAVIGATION_LIST",
   ORDER_LIST = "ORDER_LIST",
   PAGES_LIST = "PAGES_LIST",
+  PLUGINS_LIST = "PLUGIN_LIST",
   PRODUCT_LIST = "PRODUCT_LIST",
+  PERMISSION_GROUP_LIST = "PERMISSION_GROUP_LIST",
+  PRODUCT_TYPE_LIST = "PRODUCT_TYPE_LIST",
   SALES_LIST = "SALES_LIST",
   SHIPPING_METHODS_LIST = "SHIPPING_METHODS_LIST",
   STAFF_MEMBERS_LIST = "STAFF_MEMBERS_LIST",
-  VOUCHER_LIST = "VOUCHER_LIST"
+  VOUCHER_LIST = "VOUCHER_LIST",
+  WAREHOUSE_LIST = "WAREHOUSE_LIST",
+  WEBHOOK_LIST = "WEBHOOK_LIST"
 }
 
 export interface ListProps<TColumns extends string = string> {
@@ -46,6 +57,18 @@ export interface ListProps<TColumns extends string = string> {
   ) => void;
   onListSettingsReset?: () => void;
 }
+
+export interface SortPage<TSortKey extends string> {
+  sort: Sort<TSortKey>;
+  onSort: (field: TSortKey, id?: string) => void;
+}
+
+/**
+ * @param toggle Will be use to change status of item
+ * @param isChecked Returns true for ids of chosen items
+ * @param selected  Number of chosen items.
+ */
+
 export interface ListActionsWithoutToolbar {
   toggle: (id: string) => void;
   toggleAll: (items: React.ReactNodeArray, selected: number) => void;
@@ -64,38 +87,45 @@ export interface PageListProps<TColumns extends string = string>
   defaultSettings?: ListSettings<TColumns>;
   onAdd: () => void;
 }
-export interface FilterPageProps<TUrlFilters> {
-  currencySymbol: string;
-  currentTab: number;
-  filterTabs: GetFilterTabsOutput<TUrlFilters>;
-  filtersList: Filter[];
-  initialSearch: string;
-  onAll: () => void;
+
+export interface SearchProps {
   onSearchChange: (value: string) => void;
-  onFilterAdd: (filter: FilterContentSubmitData) => void;
-  onFilterDelete: () => void;
-  onFilterSave: () => void;
-  onTabChange: (tab: number) => void;
 }
-export interface FilterProps<TUrlFilters> extends FilterPageProps<TUrlFilters> {
-  allTabLabel: string;
-  filterLabel: string;
-  searchPlaceholder: string;
+export interface SearchPageProps extends SearchProps {
+  initialSearch: string;
+}
+export interface FilterPageProps<TKeys extends string, TOpts extends object>
+  extends FilterProps<TKeys>,
+    SearchPageProps,
+    TabPageProps {
+  filterOpts: TOpts;
+}
+
+export interface FilterProps<TKeys extends string> {
+  currencySymbol: string;
+  onFilterChange: (filter: IFilter<TKeys>) => void;
+}
+
+export interface TabPageProps {
+  currentTab: number;
+  tabs: string[];
+  onAll: () => void;
+  onTabChange: (tab: number) => void;
+  onTabDelete: () => void;
+  onTabSave: () => void;
 }
 
 export interface PartialMutationProviderOutput<
   TData extends {} = {},
   TVariables extends {} = {}
 > {
-  opts: MutationResult<TData>;
+  opts: MutationResult<TData> & MutationResultAdditionalProps;
   mutate: (variables: TVariables) => void;
 }
 
 export interface Node {
   id: string;
 }
-
-export type FormErrors<TKeys extends string> = Partial<Record<TKeys, string>>;
 
 export type Pagination = Partial<{
   after: string;
@@ -111,8 +141,21 @@ export type ActiveTab<TTab extends string = string> = Partial<{
 export type Filters<TFilters extends string> = Partial<
   Record<TFilters, string>
 >;
+export type FiltersWithMultipleValues<TFilters extends string> = Partial<
+  Record<TFilters, string[]>
+>;
+export type FiltersAsDictWithMultipleValues<TFilters extends string> = Partial<
+  Record<TFilters, Record<string, string[]>>
+>;
+export type Search = Partial<{
+  query: string;
+}>;
 export type SingleAction = Partial<{
   id: string;
+}>;
+export type Sort<TSort extends string = string> = Partial<{
+  asc: boolean;
+  sort: TSort;
 }>;
 export type BulkAction = Partial<{
   ids: string[];
@@ -124,9 +167,32 @@ export interface ReorderEvent {
 }
 export type ReorderAction = (event: ReorderEvent) => void;
 
-export interface FetchMoreProps<TData = string> {
+export interface FetchMoreProps {
   loading: boolean;
   hasMore: boolean;
-  onFetch: (value: TData) => void;
   onFetchMore: () => void;
+}
+
+export type TabActionDialog = "save-search" | "delete-search";
+
+export interface UserPermissionProps {
+  userPermissions: User_userPermissions[];
+}
+
+export interface MutationResultAdditionalProps {
+  status: ConfirmButtonTransitionState;
+}
+
+export type MinMax = Record<"min" | "max", string>;
+
+export interface FilterOpts<T> {
+  active: boolean;
+  value: T;
+}
+
+export interface AutocompleteFilterOpts
+  extends FetchMoreProps,
+    SearchPageProps {
+  choices: MultiAutocompleteChoiceType[];
+  displayValues: MultiAutocompleteChoiceType[];
 }

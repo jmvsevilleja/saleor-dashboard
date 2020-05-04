@@ -2,6 +2,7 @@ import { Omit } from "@material-ui/core";
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { adminUserPermissions } from "@saleor/fixtures";
 import OrderCustomer, {
   OrderCustomerProps
 } from "../../../orders/components/OrderCustomer";
@@ -19,6 +20,7 @@ const props: Omit<OrderCustomerProps, "classes"> = {
   onProfileView: () => undefined,
   onShippingAddressEdit: undefined,
   order,
+  userPermissions: adminUserPermissions,
   users: clients
 };
 
@@ -37,4 +39,7 @@ storiesOf("Orders / OrderCustomer", module)
   ))
   .add("editable", () => (
     <OrderCustomer {...props} canEditAddresses={true} canEditCustomer={true} />
+  ))
+  .add("no user permissions", () => (
+    <OrderCustomer {...props} userPermissions={[]} />
   ));

@@ -1,18 +1,13 @@
 import Button from "@material-ui/core/Button";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import AddIcon from "@material-ui/icons/Add";
+
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import AppHeader from "@saleor/components/AppHeader";
 import Container from "@saleor/components/Container";
 import PageHeader from "@saleor/components/PageHeader";
-import i18n from "../../../i18n";
 import { maybe, renderCollection } from "../../../misc";
 import { AddressTypeEnum } from "../../../types/globalTypes";
 import { CustomerAddresses_user } from "../../types/CustomerAddresses";
@@ -28,32 +23,33 @@ export interface CustomerAddressListPageProps {
   onSetAsDefault: (id: string, type: AddressTypeEnum) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     addButton: {
-      marginTop: theme.spacing.unit * 2
+      marginTop: theme.spacing(2)
     },
     description: {
-      marginTop: theme.spacing.unit
+      marginTop: theme.spacing(1)
     },
     empty: {
-      margin: `${theme.spacing.unit * 13}px auto 0`,
+      margin: `${theme.spacing(13)}px auto 0`,
       textAlign: "center",
       width: 600
     },
     root: {
-      columnGap: theme.spacing.unit * 3 + "px",
+      columnGap: theme.spacing(3),
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
-      rowGap: theme.spacing.unit * 3 + "px"
+      rowGap: theme.spacing(3)
     }
-  });
+  }),
+  { name: "CustomerAddressListPage" }
+);
 
-const CustomerAddressListPage = withStyles(styles, {
-  name: "CustomerAddressListPage"
-})(
-  ({
-    classes,
+const CustomerAddressListPage: React.FC<
+  CustomerAddressListPageProps
+> = props => {
+  const {
     customer,
     disabled,
     onAdd,
@@ -61,84 +57,96 @@ const CustomerAddressListPage = withStyles(styles, {
     onEdit,
     onRemove,
     onSetAsDefault
-  }: CustomerAddressListPageProps & WithStyles<typeof styles>) => {
-    const isEmpty = maybe(() => customer.addresses.length) === 0;
-    return (
-      <Container>
-        <AppHeader onBack={onBack}>
-          {i18n.t("Customer Info", {
-            context: "navigation"
-          })}
-        </AppHeader>
-        {!isEmpty && (
-          <PageHeader
-            title={maybe(() =>
-              i18n.t("{{ firstName }} {{ lastName }} Address Book", {
-                context: "customer address book",
-                firstName: customer.firstName,
-                lastName: customer.lastName
-              })
-            )}
+  } = props;
+  const classes = useStyles(props);
+
+  const intl = useIntl();
+
+  const isEmpty = maybe(() => customer.addresses.length) === 0;
+  const fullName = maybe(
+    () => [customer.firstName, customer.lastName].join(" "),
+    "..."
+  );
+
+  return (
+    <Container>
+      <AppHeader onBack={onBack}>
+        <FormattedMessage
+          defaultMessage="{fullName} Details"
+          description="customer details, header"
+          values={{
+            fullName
+          }}
+        />
+      </AppHeader>
+      {!isEmpty && (
+        <PageHeader
+          title={intl.formatMessage(
+            {
+              defaultMessage: "{fullName}'s Address Book",
+              description: "customer's address book, header"
+            },
+            {
+              fullName
+            }
+          )}
+        >
+          <Button color="primary" variant="contained" onClick={onAdd}>
+            <FormattedMessage
+              defaultMessage="Add address"
+              description="button"
+            />
+          </Button>
+        </PageHeader>
+      )}
+      {isEmpty ? (
+        <div className={classes.empty}>
+          <Typography variant="h5">
+            <FormattedMessage defaultMessage="There is no address to show for this customer" />
+          </Typography>
+          <Typography className={classes.description}>
+            <FormattedMessage defaultMessage="This customer doesn’t have any adresses added to his address book. You can add address using the button below." />
+          </Typography>
+          <Button
+            className={classes.addButton}
+            color="primary"
+            variant="contained"
+            onClick={onAdd}
           >
-            <Button color="primary" variant="contained" onClick={onAdd}>
-              {i18n.t("Add address", {
-                context: "add customer address"
-              })}
-              <AddIcon />
-            </Button>
-          </PageHeader>
-        )}
-        {isEmpty ? (
-          <div className={classes.empty}>
-            <Typography variant="h5">
-              {i18n.t("There is no address to show for this customer")}
-            </Typography>
-            <Typography className={classes.description}>
-              {i18n.t(
-                "This customer doesn’t have any adresses added to his address book. You can add address using the button below."
-              )}
-            </Typography>
-            <Button
-              className={classes.addButton}
-              color="primary"
-              variant="contained"
-              onClick={onAdd}
-            >
-              {i18n.t("Add address", {
-                context: "add customer address"
-              })}
-              <AddIcon />
-            </Button>
-          </div>
-        ) : (
-          <div className={classes.root}>
-            {renderCollection(
-              maybe(() => customer.addresses),
-              (address, addressNumber) => (
-                <CustomerAddress
-                  address={address}
-                  addressNumber={addressNumber + 1}
-                  disabled={disabled}
-                  isDefaultBillingAddress={
-                    maybe(() => customer.defaultBillingAddress.id) ===
-                    maybe(() => address.id)
-                  }
-                  isDefaultShippingAddress={
-                    maybe(() => customer.defaultShippingAddress.id) ===
-                    maybe(() => address.id)
-                  }
-                  onEdit={() => onEdit(address.id)}
-                  onRemove={() => onRemove(address.id)}
-                  onSetAsDefault={type => onSetAsDefault(address.id, type)}
-                  key={maybe(() => address.id, "skeleton")}
-                />
-              )
-            )}
-          </div>
-        )}
-      </Container>
-    );
-  }
-);
+            <FormattedMessage
+              defaultMessage="Add address"
+              description="button"
+            />
+          </Button>
+        </div>
+      ) : (
+        <div className={classes.root}>
+          {renderCollection(
+            maybe(() => customer.addresses),
+            (address, addressNumber) => (
+              <CustomerAddress
+                address={address}
+                addressNumber={addressNumber + 1}
+                disabled={disabled}
+                isDefaultBillingAddress={
+                  maybe(() => customer.defaultBillingAddress.id) ===
+                  maybe(() => address.id)
+                }
+                isDefaultShippingAddress={
+                  maybe(() => customer.defaultShippingAddress.id) ===
+                  maybe(() => address.id)
+                }
+                onEdit={() => onEdit(address.id)}
+                onRemove={() => onRemove(address.id)}
+                onSetAsDefault={type => onSetAsDefault(address.id, type)}
+                key={maybe(() => address.id, "skeleton")}
+              />
+            )
+          )}
+        </div>
+      )}
+    </Container>
+  );
+};
 CustomerAddressListPage.displayName = "CustomerAddressListPage";
 export default CustomerAddressListPage;

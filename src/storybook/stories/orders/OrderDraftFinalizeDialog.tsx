@@ -1,13 +1,16 @@
 import { storiesOf } from "@storybook/react";
 import React from "react";
 
+import { OrderErrorCode } from "@saleor/types/globalTypes";
 import OrderDraftFinalize, {
-  OrderDraftFinalizeDialogProps
+  OrderDraftFinalizeDialogProps,
+  OrderDraftFinalizeWarning
 } from "../../../orders/components/OrderDraftFinalizeDialog";
 import Decorator from "../../Decorator";
 
 const props: OrderDraftFinalizeDialogProps = {
   confirmButtonState: "default",
+  errors: [],
   onClose: () => undefined,
   onConfirm: () => undefined,
   open: true,
@@ -21,6 +24,23 @@ storiesOf("Orders / OrderDraftFinalizeDialog", module)
   .add("with warnings", () => (
     <OrderDraftFinalize
       {...props}
-      warnings={["no-shipping-method", "no-shipping", "no-billing", "no-user"]}
+      warnings={[
+        OrderDraftFinalizeWarning.NO_SHIPPING_METHOD,
+        OrderDraftFinalizeWarning.NO_SHIPPING,
+        OrderDraftFinalizeWarning.NO_BILLING,
+        OrderDraftFinalizeWarning.NO_USER
+      ]}
+    />
+  ))
+  .add("with errors", () => (
+    <OrderDraftFinalize
+      {...props}
+      errors={[
+        {
+          __typename: "OrderError",
+          code: OrderErrorCode.GRAPHQL_ERROR,
+          field: null
+        }
+      ]}
     />
   ));

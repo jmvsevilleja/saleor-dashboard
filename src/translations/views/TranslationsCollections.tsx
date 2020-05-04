@@ -1,11 +1,12 @@
 import { stringify as stringifyQs } from "qs";
 import React from "react";
+import { useIntl } from "react-intl";
 
 import useNavigator from "@saleor/hooks/useNavigator";
 import useNotifier from "@saleor/hooks/useNotifier";
 import useShop from "@saleor/hooks/useShop";
-import i18n from "../../i18n";
-import { getMutationState, maybe } from "../../misc";
+import { commonMessages } from "@saleor/intl";
+import { maybe } from "../../misc";
 import { LanguageCodeEnum, TranslationInput } from "../../types/globalTypes";
 import TranslationsCollectionsPage, {
   fieldNames
@@ -36,6 +37,7 @@ const TranslationsCollections: React.FC<TranslationsCollectionsProps> = ({
   const navigate = useNavigator();
   const notify = useNotifier();
   const shop = useShop();
+  const intl = useIntl();
 
   const onEdit = (field: string) =>
     navigate(
@@ -48,7 +50,7 @@ const TranslationsCollections: React.FC<TranslationsCollectionsProps> = ({
   const onUpdate = (data: UpdateCollectionTranslations) => {
     if (data.collectionTranslate.errors.length === 0) {
       notify({
-        text: i18n.t("Translation Saved")
+        text: intl.formatMessage(commonMessages.savedChanges)
       });
       navigate("?", true);
     }
@@ -84,15 +86,6 @@ const TranslationsCollections: React.FC<TranslationsCollectionsProps> = ({
               });
             };
 
-            const saveButtonState = getMutationState(
-              updateTranslationsOpts.called,
-              updateTranslationsOpts.loading,
-              maybe(
-                () => updateTranslationsOpts.data.collectionTranslate.errors,
-                []
-              )
-            );
-
             return (
               <TranslationsCollectionsPage
                 activeField={params.activeField}
@@ -102,15 +95,14 @@ const TranslationsCollections: React.FC<TranslationsCollectionsProps> = ({
                 }
                 languageCode={languageCode}
                 languages={maybe(() => shop.languages, [])}
-                saveButtonState={saveButtonState}
+                saveButtonState={updateTranslationsOpts.status}
                 onEdit={onEdit}
                 onDiscard={onDiscard}
                 onBack={() =>
                   navigate(
-                    languageEntitiesUrl(
-                      languageCode,
-                      TranslatableEntities.collections
-                    )
+                    languageEntitiesUrl(languageCode, {
+                      tab: TranslatableEntities.collections
+                    })
                   )
                 }
                 onLanguageChange={lang =>

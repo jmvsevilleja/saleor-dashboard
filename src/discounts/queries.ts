@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
 
+import makeQuery from "@saleor/hooks/makeQuery";
 import { pageInfoFragment, TypedQuery } from "../queries";
 import { SaleDetails, SaleDetailsVariables } from "./types/SaleDetails";
 import { SaleList, SaleListVariables } from "./types/SaleList";
@@ -91,7 +92,7 @@ export const voucherFragment = gql`
       code
       country
     }
-    minAmountSpent {
+    minSpent {
       currency
       amount
     }
@@ -166,8 +167,22 @@ export const voucherDetailsFragment = gql`
 export const saleList = gql`
   ${pageInfoFragment}
   ${saleFragment}
-  query SaleList($after: String, $before: String, $first: Int, $last: Int) {
-    sales(after: $after, before: $before, first: $first, last: $last) {
+  query SaleList(
+    $after: String
+    $before: String
+    $first: Int
+    $last: Int
+    $filter: SaleFilterInput
+    $sort: SaleSortingInput
+  ) {
+    sales(
+      after: $after
+      before: $before
+      first: $first
+      last: $last
+      filter: $filter
+      sortBy: $sort
+    ) {
       edges {
         node {
           ...SaleFragment
@@ -179,13 +194,29 @@ export const saleList = gql`
     }
   }
 `;
-export const TypedSaleList = TypedQuery<SaleList, SaleListVariables>(saleList);
+export const useSaleListQuery = makeQuery<SaleList, SaleListVariables>(
+  saleList
+);
 
 export const voucherList = gql`
   ${pageInfoFragment}
   ${voucherFragment}
-  query VoucherList($after: String, $before: String, $first: Int, $last: Int) {
-    vouchers(after: $after, before: $before, first: $first, last: $last) {
+  query VoucherList(
+    $after: String
+    $before: String
+    $first: Int
+    $last: Int
+    $filter: VoucherFilterInput
+    $sort: VoucherSortingInput
+  ) {
+    vouchers(
+      after: $after
+      before: $before
+      first: $first
+      last: $last
+      filter: $filter
+      sortBy: $sort
+    ) {
       edges {
         node {
           ...VoucherFragment
@@ -197,7 +228,7 @@ export const voucherList = gql`
     }
   }
 `;
-export const TypedVoucherList = TypedQuery<VoucherList, VoucherListVariables>(
+export const useVoucherListQuery = makeQuery<VoucherList, VoucherListVariables>(
   voucherList
 );
 

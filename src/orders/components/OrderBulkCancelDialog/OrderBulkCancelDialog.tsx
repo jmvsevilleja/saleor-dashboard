@@ -1,49 +1,48 @@
 import DialogContentText from "@material-ui/core/DialogContentText";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ActionDialog from "@saleor/components/ActionDialog";
 import { ConfirmButtonTransitionState } from "@saleor/components/ConfirmButton";
-import ControlledCheckbox from "@saleor/components/ControlledCheckbox";
-import i18n from "../../../i18n";
 
 export interface OrderBulkCancelDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
   numberOfOrders: string;
   open: boolean;
   onClose: () => void;
-  onConfirm: (restock: boolean) => void;
+  onConfirm: () => void;
 }
 
-const OrderBulkCancelDialog: React.StatelessComponent<
-  OrderBulkCancelDialogProps
-> = ({ confirmButtonState, numberOfOrders, open, onClose, onConfirm }) => {
-  const [restock, setRestock] = React.useState(true);
+const OrderBulkCancelDialog: React.FC<OrderBulkCancelDialogProps> = ({
+  confirmButtonState,
+  numberOfOrders,
+  open,
+  onClose,
+  onConfirm
+}) => {
+  const intl = useIntl();
 
   return (
     <ActionDialog
       confirmButtonState={confirmButtonState}
       open={open}
       variant="delete"
-      title={i18n.t("Cancel Orders")}
+      title={intl.formatMessage({
+        defaultMessage: "Cancel Orders",
+        description: "dialog header"
+      })}
       onClose={onClose}
-      onConfirm={() => onConfirm(restock)}
+      onConfirm={onConfirm}
     >
-      <DialogContentText
-        dangerouslySetInnerHTML={{
-          __html: i18n.t(
-            "Are you sure you want to cancel <strong>{{ number }}</strong> orders?",
-            {
-              number: numberOfOrders
-            }
-          )
-        }}
-      />
-      <ControlledCheckbox
-        checked={restock}
-        label={i18n.t("Release all stock allocated to these orders")}
-        name="restock"
-        onChange={event => setRestock(event.target.value)}
-      />
+      <DialogContentText>
+        <FormattedMessage
+          defaultMessage="{counter,plural,one{Are you sure you want to cancel this order?} other{Are you sure you want to cancel {displayQuantity} orders?}}"
+          values={{
+            counter: numberOfOrders,
+            displayQuantity: <strong>{numberOfOrders}</strong>
+          }}
+        />
+      </DialogContentText>
     </ActionDialog>
   );
 };

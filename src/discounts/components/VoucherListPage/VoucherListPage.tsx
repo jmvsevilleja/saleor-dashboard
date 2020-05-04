@@ -1,60 +1,92 @@
 import Button from "@material-ui/core/Button";
-import AddIcon from "@material-ui/icons/Add";
+import Card from "@material-ui/core/Card";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import Container from "@saleor/components/Container";
 import PageHeader from "@saleor/components/PageHeader";
-import i18n from "@saleor/i18n";
-import { ListActions, PageListProps } from "@saleor/types";
+import FilterBar from "@saleor/components/FilterBar";
+import { sectionNames } from "@saleor/intl";
+import {
+  ListActions,
+  PageListProps,
+  TabPageProps,
+  SortPage,
+  FilterPageProps
+} from "@saleor/types";
+import { VoucherListUrlSortField } from "@saleor/discounts/urls";
 import { VoucherList_vouchers_edges_node } from "../../types/VoucherList";
 import VoucherList from "../VoucherList";
+import {
+  VoucherFilterKeys,
+  VoucherListFilterOpts,
+  createFilterStructure
+} from "./filters";
 
-export interface VoucherListPageProps extends PageListProps, ListActions {
+export interface VoucherListPageProps
+  extends PageListProps,
+    ListActions,
+    FilterPageProps<VoucherFilterKeys, VoucherListFilterOpts>,
+    SortPage<VoucherListUrlSortField>,
+    TabPageProps {
   defaultCurrency: string;
   vouchers: VoucherList_vouchers_edges_node[];
 }
 
-const VoucherListPage: React.StatelessComponent<VoucherListPageProps> = ({
-  defaultCurrency,
-  disabled,
-  settings,
+const VoucherListPage: React.FC<VoucherListPageProps> = ({
+  currencySymbol,
+  currentTab,
+  filterOpts,
+  initialSearch,
   onAdd,
-  onNextPage,
-  onPreviousPage,
-  onUpdateListSettings,
-  onRowClick,
-  pageInfo,
-  vouchers,
-  isChecked,
-  selected,
-  toggle,
-  toggleAll,
-  toolbar
-}) => (
-  <Container>
-    <PageHeader title={i18n.t("Vouchers")}>
-      <Button onClick={onAdd} variant="contained" color="primary">
-        {i18n.t("Add voucher")}
-        <AddIcon />
-      </Button>
-    </PageHeader>
-    <VoucherList
-      defaultCurrency={defaultCurrency}
-      settings={settings}
-      disabled={disabled}
-      onNextPage={onNextPage}
-      onPreviousPage={onPreviousPage}
-      onUpdateListSettings={onUpdateListSettings}
-      onRowClick={onRowClick}
-      pageInfo={pageInfo}
-      vouchers={vouchers}
-      isChecked={isChecked}
-      selected={selected}
-      toggle={toggle}
-      toggleAll={toggleAll}
-      toolbar={toolbar}
-    />
-  </Container>
-);
+  onAll,
+  onFilterChange,
+  onSearchChange,
+  onTabChange,
+  onTabDelete,
+  onTabSave,
+  tabs,
+  ...listProps
+}) => {
+  const intl = useIntl();
+
+  const structure = createFilterStructure(intl, filterOpts);
+
+  return (
+    <Container>
+      <PageHeader title={intl.formatMessage(sectionNames.vouchers)}>
+        <Button onClick={onAdd} variant="contained" color="primary">
+          <FormattedMessage
+            defaultMessage="Create voucher"
+            description="button"
+          />
+        </Button>
+      </PageHeader>
+      <Card>
+        <FilterBar
+          allTabLabel={intl.formatMessage({
+            defaultMessage: "All Vouchers",
+            description: "tab name"
+          })}
+          currencySymbol={currencySymbol}
+          currentTab={currentTab}
+          filterStructure={structure}
+          initialSearch={initialSearch}
+          searchPlaceholder={intl.formatMessage({
+            defaultMessage: "Search Voucher"
+          })}
+          tabs={tabs}
+          onAll={onAll}
+          onFilterChange={onFilterChange}
+          onSearchChange={onSearchChange}
+          onTabChange={onTabChange}
+          onTabDelete={onTabDelete}
+          onTabSave={onTabSave}
+        />
+        <VoucherList {...listProps} />
+      </Card>
+    </Container>
+  );
+};
 VoucherListPage.displayName = "VoucherListPage";
 export default VoucherListPage;

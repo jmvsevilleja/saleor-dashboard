@@ -2,40 +2,40 @@ import Button from "@material-ui/core/Button";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
+import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
-import Table from "@material-ui/core/Table";
+import { makeStyles } from "@material-ui/core/styles";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import TextField from "@material-ui/core/TextField";
 import React from "react";
+import { FormattedMessage, useIntl } from "react-intl";
 
 import ConfirmButton, {
   ConfirmButtonTransitionState
 } from "@saleor/components/ConfirmButton";
 import Form from "@saleor/components/Form";
 import { FormSpacer } from "@saleor/components/FormSpacer";
+import ResponsiveTable from "@saleor/components/ResponsiveTable";
 import TableCellAvatar, {
   AVATAR_MARGIN
 } from "@saleor/components/TableCellAvatar";
-import i18n from "../../../i18n";
-import { maybe } from "../../../misc";
+import { buttonMessages } from "@saleor/intl";
+import { OrderErrorFragment } from "@saleor/orders/types/OrderErrorFragment";
+import { getFormErrors } from "@saleor/utils/errors";
+import getOrderErrorMessage from "@saleor/utils/errors/order";
 import { OrderDetails_order_lines } from "../../types/OrderDetails";
+import { maybe } from "../../../misc";
 
 export interface FormData {
   lines: number[];
   trackingNumber: string;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
+const useStyles = makeStyles(
+  theme => ({
     colName: {
       width: "auto"
     },
@@ -54,36 +54,38 @@ const styles = (theme: Theme) =>
       width: 120
     },
     quantityInput: {
-      width: "4rem"
+      width: 100
     },
     remainingQuantity: {
-      marginLeft: theme.spacing.unit,
+      marginLeft: theme.spacing(),
       paddingTop: 14
     },
     table: {
       tableLayout: "fixed"
     }
-  });
+  }),
+  { name: "OrderFulfillmentDialog" }
+);
 
-export interface OrderFulfillmentDialogProps extends WithStyles<typeof styles> {
+export interface OrderFulfillmentDialogProps {
   confirmButtonState: ConfirmButtonTransitionState;
+  errors: OrderErrorFragment[];
   open: boolean;
   lines: OrderDetails_order_lines[];
   onClose();
   onSubmit(data: FormData);
 }
 
-const OrderFulfillmentDialog = withStyles(styles, {
-  name: "OrderFulfillmentDialog"
-})(
-  ({
-    classes,
-    confirmButtonState,
-    open,
-    lines,
-    onClose,
-    onSubmit
-  }: OrderFulfillmentDialogProps) => (
+const OrderFulfillmentDialog: React.FC<OrderFulfillmentDialogProps> = props => {
+  const { confirmButtonState, errors, open, lines, onClose, onSubmit } = props;
+
+  const classes = useStyles(props);
+  const intl = useIntl();
+
+  const formFields = ["trackingNumber"];
+  const formErrors = getFormErrors(formFields, errors);
+
+  return (
     <Dialog onClose={onClose} open={open}>
       <Form
         initial={{
@@ -114,20 +116,31 @@ const OrderFulfillmentDialog = withStyles(styles, {
           };
           return (
             <>
-              <DialogTitle>{i18n.t("Fulfill products")}</DialogTitle>
-              <Table className={classes.table}>
+              <DialogTitle>
+                <FormattedMessage
+                  defaultMessage="Fulfill Products"
+                  description="dialog header"
+                />
+              </DialogTitle>
+              <ResponsiveTable className={classes.table}>
                 <TableHead>
                   <TableRow>
                     <TableCell className={classes.colName}>
                       <span className={classes.colNameLabel}>
-                        {i18n.t("Product name")}
+                        <FormattedMessage defaultMessage="Product name" />
                       </span>
                     </TableCell>
                     <TableCell className={classes.colSku}>
-                      {i18n.t("SKU")}
+                      <FormattedMessage
+                        defaultMessage="SKU"
+                        description="product's sku"
+                      />
                     </TableCell>
                     <TableCell className={classes.colQuantity}>
-                      {i18n.t("Quantity")}
+                      <FormattedMessage
+                        defaultMessage="Quantity"
+                        description="quantity of fulfilled products"
+                      />
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -160,8 +173,13 @@ const OrderFulfillmentDialog = withStyles(styles, {
                                 handleQuantityChange(productIndex, event)
                               }
                               error={
+                                !!formErrors.trackingNumber ||
                                 remainingQuantity < data.lines[productIndex]
                               }
+                              helperText={getOrderErrorMessage(
+                                formErrors.trackingNumber,
+                                intl
+                              )}
                             />
                             <div className={classes.remainingQuantity}>
                               / {remainingQuantity}
@@ -172,20 +190,40 @@ const OrderFulfillmentDialog = withStyles(styles, {
                     );
                   })}
                 </TableBody>
-              </Table>
+              </ResponsiveTable>
               <DialogContent>
                 <FormSpacer />
                 <TextField
+                  error={!!formErrors.trackingNumber}
                   fullWidth
-                  label={i18n.t("Tracking number")}
+                  helperText={getOrderErrorMessage(
+                    formErrors.trackingNumber,
+                    intl
+                  )}
+                  label={intl.formatMessage({
+                    defaultMessage: "Tracking number",
+                    description: "fulfillment group"
+                  })}
                   name="trackingNumber"
                   value={data.trackingNumber}
                   onChange={change}
                 />
+                {errors.length > 0 && (
+                  <>
+                    <FormSpacer />
+                    {errors
+                      .filter(err => !formFields.includes(err.field))
+                      .map(err => (
+                        <DialogContentText color="error">
+                          {getOrderErrorMessage(err, intl)}
+                        </DialogContentText>
+                      ))}
+                  </>
+                )}
               </DialogContent>
               <DialogActions>
                 <Button onClick={onClose}>
-                  {i18n.t("Cancel", { context: "button" })}
+                  <FormattedMessage {...buttonMessages.back} />
                 </Button>
                 <ConfirmButton
                   transitionState={confirmButtonState}
@@ -193,7 +231,7 @@ const OrderFulfillmentDialog = withStyles(styles, {
                   variant="contained"
                   type="submit"
                 >
-                  {i18n.t("Confirm", { context: "button" })}
+                  <FormattedMessage {...buttonMessages.confirm} />
                 </ConfirmButton>
               </DialogActions>
             </>
@@ -201,7 +239,8 @@ const OrderFulfillmentDialog = withStyles(styles, {
         }}
       </Form>
     </Dialog>
-  )
-);
+  );
+};
+
 OrderFulfillmentDialog.displayName = "OrderFulfillmentDialog";
 export default OrderFulfillmentDialog;

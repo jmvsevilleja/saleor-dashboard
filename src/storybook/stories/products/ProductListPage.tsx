@@ -3,48 +3,71 @@ import React from "react";
 
 import placeholderImage from "@assets/images/placeholder255x255.png";
 import { defaultListSettings } from "@saleor/config";
+import { products as productListFixture } from "@saleor/products/fixtures";
+import { ProductListUrlSortField } from "@saleor/products/urls";
+import { attributes } from "@saleor/productTypes/fixtures";
 import { ListViews } from "@saleor/types";
-import { category as categoryFixture } from "../../../categories/fixtures";
+import { productListFilterOpts } from "@saleor/products/views/ProductList/fixtures";
 import {
+  fetchMoreProps,
   filterPageProps,
-  filters,
   listActionsProps,
-  pageListProps
+  pageListProps,
+  sortPageProps
 } from "../../../fixtures";
 import ProductListPage, {
   ProductListPageProps
 } from "../../../products/components/ProductListPage";
 import Decorator from "../../Decorator";
 
-const products = categoryFixture(placeholderImage).products.edges.map(
-  edge => edge.node
-);
+const products = productListFixture(placeholderImage);
 
 const props: ProductListPageProps = {
   ...listActionsProps,
   ...pageListProps.default,
   ...filterPageProps,
+  ...fetchMoreProps,
+  ...{
+    ...sortPageProps,
+    sort: {
+      ...sortPageProps.sort,
+      sort: ProductListUrlSortField.name
+    }
+  },
+  activeAttributeSortId: undefined,
+  availableInGridAttributes: attributes,
   defaultSettings: defaultListSettings[ListViews.PRODUCT_LIST],
+  filterOpts: productListFilterOpts,
+  gridAttributes: attributes,
   products,
   settings: {
     ...pageListProps.default.settings,
     columns: ["isPublished", "productType", "price"]
-  }
+  },
+  totalGridAttributes: attributes.length
 };
 
 storiesOf("Views / Products / Product list", module)
   .addDecorator(Decorator)
   .add("default", () => <ProductListPage {...props} />)
-  .add("with custom filters", () => (
-    <ProductListPage {...props} filtersList={filters} />
-  ))
   .add("loading", () => (
     <ProductListPage
       {...props}
       products={undefined}
-      filtersList={undefined}
       currentTab={undefined}
       disabled={true}
+    />
+  ))
+  .add("published", () => (
+    <ProductListPage
+      {...props}
+      products={products.filter(product => product.isPublished)}
+    />
+  ))
+  .add("not published", () => (
+    <ProductListPage
+      {...props}
+      products={products.filter(product => !product.isPublished)}
     />
   ))
   .add("no data", () => <ProductListPage {...props} products={[]} />);

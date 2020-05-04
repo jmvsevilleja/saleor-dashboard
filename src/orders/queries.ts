@@ -1,6 +1,7 @@
 import gql from "graphql-tag";
 
-import BaseSearch from "../containers/BaseSearch";
+import makeTopLevelSearch from "@saleor/hooks/makeTopLevelSearch";
+import makeQuery from "@saleor/hooks/makeQuery";
 import { TypedQuery } from "../queries";
 import { OrderDetails, OrderDetailsVariables } from "./types/OrderDetails";
 import {
@@ -12,6 +13,10 @@ import {
   SearchOrderVariant as SearchOrderVariantType,
   SearchOrderVariantVariables
 } from "./types/SearchOrderVariant";
+import {
+  OrderFulfillData,
+  OrderFulfillDataVariables
+} from "./types/OrderFulfillData";
 
 export const fragmentOrderEvent = gql`
   fragment OrderEventFragment on OrderEvent {
@@ -72,11 +77,32 @@ export const fragmentOrderLine = gql`
     }
   }
 `;
+export const fulfillmentFragment = gql`
+  ${fragmentOrderLine}
+  fragment FulfillmentFragment on Fulfillment {
+    id
+    lines {
+      id
+      quantity
+      orderLine {
+        ...OrderLineFragment
+      }
+    }
+    fulfillmentOrder
+    status
+    trackingNumber
+    warehouse {
+      id
+      name
+    }
+  }
+`;
 
 export const fragmentOrderDetails = gql`
   ${fragmentAddress}
   ${fragmentOrderEvent}
   ${fragmentOrderLine}
+  ${fulfillmentFragment}
   fragment OrderDetailsFragment on Order {
     id
     billingAddress {
@@ -89,17 +115,7 @@ export const fragmentOrderDetails = gql`
       ...OrderEventFragment
     }
     fulfillments {
-      id
-      lines {
-        id
-        quantity
-        orderLine {
-          ...OrderLineFragment
-        }
-      }
-      fulfillmentOrder
-      status
-      trackingNumber
+      ...FulfillmentFragment
     }
     lines {
       ...OrderLineFragment
@@ -168,16 +184,16 @@ export const orderListQuery = gql`
     $after: String
     $last: Int
     $before: String
-    $status: OrderStatusFilter
     $filter: OrderFilterInput
+    $sort: OrderSortingInput
   ) {
     orders(
       before: $before
       after: $after
       first: $first
       last: $last
-      status: $status
       filter: $filter
+      sortBy: $sort
     ) {
       edges {
         node {
@@ -210,7 +226,7 @@ export const orderListQuery = gql`
     }
   }
 `;
-export const TypedOrderListQuery = TypedQuery<OrderList, OrderListVariables>(
+export const useOrderListQuery = makeQuery<OrderList, OrderListVariables>(
   orderListQuery
 );
 
@@ -221,8 +237,17 @@ export const orderDraftListQuery = gql`
     $after: String
     $last: Int
     $before: String
+    $filter: OrderDraftFilterInput
+    $sort: OrderSortingInput
   ) {
-    draftOrders(before: $before, after: $after, first: $first, last: $last) {
+    draftOrders(
+      before: $before
+      after: $after
+      first: $first
+      last: $last
+      filter: $filter
+      sortBy: $sort
+    ) {
       edges {
         node {
           __typename
@@ -254,7 +279,7 @@ export const orderDraftListQuery = gql`
     }
   }
 `;
-export const TypedOrderDraftListQuery = TypedQuery<
+export const useOrderDraftListQuery = makeQuery<
   OrderDraftList,
   OrderDraftListVariables
 >(orderDraftListQuery);
@@ -281,7 +306,7 @@ export const TypedOrderDetailsQuery = TypedQuery<
 
 export const searchOrderVariant = gql`
   query SearchOrderVariant($first: Int!, $query: String!, $after: String) {
-    products(query: $query, first: $first, after: $after) {
+    search: products(first: $first, after: $after, filter: { search: $query }) {
       edges {
         node {
           id
@@ -293,9 +318,13 @@ export const searchOrderVariant = gql`
             id
             name
             sku
-            price {
-              amount
-              currency
+            pricing {
+              priceUndiscounted {
+                net {
+                  amount
+                  currency
+                }
+              }
             }
           }
         }
@@ -309,7 +338,49 @@ export const searchOrderVariant = gql`
     }
   }
 `;
-export const SearchOrderVariant = BaseSearch<
+export const useOrderVariantSearch = makeTopLevelSearch<
   SearchOrderVariantType,
   SearchOrderVariantVariables
 >(searchOrderVariant);
+
+const orderFulfillData = gql`
+  query OrderFulfillData($orderId: ID!) {
+    order(id: $orderId) {
+      id
+      lines {
+        id
+        isShippingRequired
+        productName
+        quantity
+        quantityFulfilled
+        variant {
+          id
+          name
+          sku
+          attributes {
+            values {
+              id
+              name
+            }
+          }
+          stocks {
+            id
+            warehouse {
+              id
+            }
+            quantity
+            quantityAllocated
+          }
+        }
+        thumbnail(size: 64) {
+          url
+        }
+      }
+      number
+    }
+  }
+`;
+export const useOrderFulfillData = makeQuery<
+  OrderFulfillData,
+  OrderFulfillDataVariables
+>(orderFulfillData);

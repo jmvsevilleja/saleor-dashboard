@@ -1,17 +1,22 @@
 import moment from "moment-timezone";
 import { MutationFunction, MutationResult } from "react-apollo";
+import { defineMessages, IntlShape } from "react-intl";
 import urlJoin from "url-join";
 
 import { ConfirmButtonTransitionState } from "./components/ConfirmButton/ConfirmButton";
 import { APP_MOUNT_URI } from "./config";
-import { AddressType } from "./customers/types";
-import i18n from "./i18n";
-import { PartialMutationProviderOutput, UserError } from "./types";
+import { AddressType, AddressTypeInput } from "./customers/types";
 import {
+  PartialMutationProviderOutput,
+  UserError,
+  MutationResultAdditionalProps
+} from "./types";
+import {
+  AddressInput,
   AuthorizationKeyType,
+  CountryCode,
   OrderStatus,
-  PaymentChargeStatusEnum,
-  TaxRateType
+  PaymentChargeStatusEnum
 } from "./types/globalTypes";
 
 export type RequireAtLeastOne<T, Keys extends keyof T = keyof T> = Pick<
@@ -26,7 +31,7 @@ export type RequireOnlyOne<T, Keys extends keyof T = keyof T> = Pick<
 > &
   {
     [K in Keys]-?: Required<Pick<T, K>> &
-      Partial<Record<Exclude<Keys, K>, undefined>>
+      Partial<Record<Exclude<Keys, K>, undefined>>;
   }[Keys];
 
 export function renderCollection<T>(
@@ -57,33 +62,117 @@ export function decimal(value: string | number) {
 export const removeDoubleSlashes = (url: string) =>
   url.replace(/([^:]\/)\/+/g, "$1");
 
-export const transformPaymentStatus = (status: string) => {
+const paymentStatusMessages = defineMessages({
+  paid: {
+    defaultMessage: "Fully paid",
+    description: "payment status"
+  },
+  partiallyPaid: {
+    defaultMessage: "Partially paid",
+    description: "payment status"
+  },
+  partiallyRefunded: {
+    defaultMessage: "Partially refunded",
+    description: "payment status"
+  },
+  refunded: {
+    defaultMessage: "Fully refunded",
+    description: "payment status"
+  },
+  unpaid: {
+    defaultMessage: "Unpaid",
+    description: "payment status"
+  }
+});
+
+export const transformPaymentStatus = (status: string, intl: IntlShape) => {
   switch (status) {
     case PaymentChargeStatusEnum.PARTIALLY_CHARGED:
-      return { localized: i18n.t("Partially paid"), status: "error" };
+      return {
+        localized: intl.formatMessage(paymentStatusMessages.partiallyPaid),
+        status: "error"
+      };
     case PaymentChargeStatusEnum.FULLY_CHARGED:
-      return { localized: i18n.t("Fully paid"), status: "success" };
+      return {
+        localized: intl.formatMessage(paymentStatusMessages.paid),
+        status: "success"
+      };
     case PaymentChargeStatusEnum.PARTIALLY_REFUNDED:
-      return { localized: i18n.t("Partially refunded"), status: "error" };
+      return {
+        localized: intl.formatMessage(paymentStatusMessages.partiallyRefunded),
+        status: "error"
+      };
     case PaymentChargeStatusEnum.FULLY_REFUNDED:
-      return { localized: i18n.t("Fully refunded"), status: "success" };
+      return {
+        localized: intl.formatMessage(paymentStatusMessages.refunded),
+        status: "success"
+      };
     default:
-      return { localized: i18n.t("Unpaid"), status: "error" };
+      return {
+        localized: intl.formatMessage(paymentStatusMessages.unpaid),
+        status: "error"
+      };
   }
 };
 
-export const transformOrderStatus = (status: string) => {
+export const orderStatusMessages = defineMessages({
+  cancelled: {
+    defaultMessage: "Cancelled",
+    description: "order status"
+  },
+  draft: {
+    defaultMessage: "Draft",
+    description: "order status"
+  },
+  fulfilled: {
+    defaultMessage: "Fulfilled",
+    description: "order status"
+  },
+  partiallyFulfilled: {
+    defaultMessage: "Partially fulfilled",
+    description: "order status"
+  },
+  readyToCapture: {
+    defaultMessage: "Ready to capture",
+    description: "order status"
+  },
+  readyToFulfill: {
+    defaultMessage: "Ready to fulfill",
+    description: "order status"
+  },
+  unfulfilled: {
+    defaultMessage: "Unfulfilled",
+    description: "order status"
+  }
+});
+
+export const transformOrderStatus = (status: string, intl: IntlShape) => {
   switch (status) {
     case OrderStatus.FULFILLED:
-      return { localized: i18n.t("Fulfilled"), status: "success" };
+      return {
+        localized: intl.formatMessage(orderStatusMessages.fulfilled),
+        status: "success"
+      };
     case OrderStatus.PARTIALLY_FULFILLED:
-      return { localized: i18n.t("Partially fulfilled"), status: "neutral" };
+      return {
+        localized: intl.formatMessage(orderStatusMessages.partiallyFulfilled),
+        status: "neutral"
+      };
     case OrderStatus.UNFULFILLED:
-      return { localized: i18n.t("Unfulfilled"), status: "error" };
+      return {
+        localized: intl.formatMessage(orderStatusMessages.unfulfilled),
+        status: "error"
+      };
     case OrderStatus.CANCELED:
-      return { localized: i18n.t("Cancelled"), status: "error" };
+      return {
+        localized: intl.formatMessage(orderStatusMessages.cancelled),
+        status: "error"
+      };
     case OrderStatus.DRAFT:
-      return { localized: i18n.t("Draft"), status: "error" };
+      return {
+        localized: intl.formatMessage(orderStatusMessages.draft),
+        status: "error"
+      };
   }
   return {
     localized: status,
@@ -105,43 +194,10 @@ export const transformAddressToForm = (data: AddressType) => ({
   streetAddress2: maybe(() => data.streetAddress2, "")
 });
 
-export const translatedTaxRates = () => ({
-  [TaxRateType.ACCOMMODATION]: i18n.t("Accommodation"),
-  [TaxRateType.ADMISSION_TO_CULTURAL_EVENTS]: i18n.t(
-    "Admission to cultural events"
-  ),
-  [TaxRateType.ADMISSION_TO_ENTERTAINMENT_EVENTS]: i18n.t(
-    "Admission to entertainment events"
-  ),
-  [TaxRateType.ADMISSION_TO_SPORTING_EVENTS]: i18n.t(
-    "Admission to sporting events"
-  ),
-  [TaxRateType.ADVERTISING]: i18n.t("Advertising"),
-  [TaxRateType.AGRICULTURAL_SUPPLIES]: i18n.t("Agricultural supplies"),
-  [TaxRateType.BABY_FOODSTUFFS]: i18n.t("Baby foodstuffs"),
-  [TaxRateType.BIKES]: i18n.t("Bikes"),
-  [TaxRateType.BOOKS]: i18n.t("Books"),
-  [TaxRateType.CHILDRENS_CLOTHING]: i18n.t("Children's clothing"),
-  [TaxRateType.DOMESTIC_FUEL]: i18n.t("Domestic fuel"),
-  [TaxRateType.DOMESTIC_SERVICES]: i18n.t("Domestic services"),
-  [TaxRateType.E_BOOKS]: i18n.t("E-books"),
-  [TaxRateType.FOODSTUFFS]: i18n.t("Foodstuffs"),
-  [TaxRateType.HOTELS]: i18n.t("Hotels"),
-  [TaxRateType.MEDICAL]: i18n.t("Medical"),
-  [TaxRateType.NEWSPAPERS]: i18n.t("Newspapers"),
-  [TaxRateType.PASSENGER_TRANSPORT]: i18n.t("Passenger transport"),
-  [TaxRateType.PHARMACEUTICALS]: i18n.t("Pharmaceuticals"),
-  [TaxRateType.PROPERTY_RENOVATIONS]: i18n.t("Property renovations"),
-  [TaxRateType.RESTAURANTS]: i18n.t("Restaurants"),
-  [TaxRateType.SOCIAL_HOUSING]: i18n.t("Social housing"),
-  [TaxRateType.STANDARD]: i18n.t("Standard"),
-  [TaxRateType.WATER]: i18n.t("Water")
-});
-
-export const translatedAuthorizationKeyTypes = () => ({
-  [AuthorizationKeyType.FACEBOOK]: i18n.t("Facebook"),
-  [AuthorizationKeyType.GOOGLE_OAUTH2]: i18n.t("Google OAuth2")
-});
+export const authorizationKeyTypes = {
+  [AuthorizationKeyType.FACEBOOK]: "Facebook",
+  [AuthorizationKeyType.GOOGLE_OAUTH2]: "Google OAuth2"
+};
 
 export function maybe<T>(exp: () => T): T | undefined;
 export function maybe<T>(exp: () => T, d: T): T;
@@ -188,9 +244,25 @@ export function getMutationState(
   return "default";
 }
 
+interface SaleorMutationResult {
+  errors?: UserError[];
+}
+export function getMutationStatus<
+  TData extends Record<string, SaleorMutationResult | any>
+>(opts: MutationResult<TData>): ConfirmButtonTransitionState {
+  const errors = opts.data
+    ? Object.values(opts.data).reduce(
+        (acc: UserError[], mut) => [...acc, ...maybe(() => mut.errors, [])],
+        []
+      )
+    : [];
+
+  return getMutationState(opts.called, opts.loading, errors);
+}
+
 export function getMutationProviderData<TData, TVariables>(
   mutateFn: MutationFunction<TData, TVariables>,
-  opts: MutationResult<TData>
+  opts: MutationResult<TData> & MutationResultAdditionalProps
 ): PartialMutationProviderOutput<TData, TVariables> {
   return {
     mutate: variables => mutateFn({ variables }),
@@ -270,4 +342,53 @@ export function generateCode(charNum: number) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
+}
+
+export function findInEnum<TEnum extends object>(
+  needle: string,
+  haystack: TEnum
+) {
+  const match = Object.keys(haystack).find(key => key === needle);
+  if (!!match) {
+    return haystack[needle as keyof TEnum];
+  }
+
+  throw new Error(`Key ${needle} not found in enum`);
+}
+
+export function findValueInEnum<TEnum extends object>(
+  needle: string,
+  haystack: TEnum
+): TEnum[keyof TEnum] {
+  const match = Object.entries(haystack).find(([_, value]) => value === needle);
+
+  if (!match) {
+    throw new Error(`Value ${needle} not found in enum`);
+  }
+
+  return (needle as unknown) as TEnum[keyof TEnum];
+}
+
+export function parseBoolean(a: string, defaultValue: boolean): boolean {
+  if (a === undefined) {
+    return defaultValue;
+  }
+  return a === "true";
+}
+
+export function capitalize(s: string) {
+  return s.charAt(0).toLocaleUpperCase() + s.slice(1);
+}
+
+export function transformFormToAddress<T>(
+  address: T & AddressTypeInput
+): T & AddressInput {
+  return {
+    ...address,
+    country: findInEnum(address.country, CountryCode)
+  };
+}
+
+export function getStringOrPlaceholder(s: string | undefined): string {
+  return s || "...";
 }

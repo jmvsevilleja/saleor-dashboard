@@ -1,15 +1,9 @@
-import {
-  createStyles,
-  Theme,
-  withStyles,
-  WithStyles
-} from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import { fade } from "@material-ui/core/styles/colorManipulator";
 import Typography from "@material-ui/core/Typography";
 import classNames from "classnames";
 import React from "react";
-
-import i18n from "../../i18n";
+import { FormattedMessage } from "react-intl";
 import ImageIcon from "../../icons/Image";
 import Dropzone from "../Dropzone";
 
@@ -20,12 +14,12 @@ interface ImageUploadProps {
   isActiveClassName?: string;
   iconContainerClassName?: string;
   iconContainerActiveClassName?: string;
-  onImageUpload: (file: File) => void;
+  onImageUpload: (file: FileList) => void;
 }
 
-const styles = (theme: Theme) =>
-  createStyles({
-    containerDragActive: {
+const useStyles = makeStyles(
+  theme => ({
+    backdrop: {
       background: fade(theme.palette.primary.main, 0.1),
       color: theme.palette.primary.main
     },
@@ -35,11 +29,11 @@ const styles = (theme: Theme) =>
     imageContainer: {
       background: "#ffffff",
       border: "1px solid #eaeaea",
-      borderRadius: theme.spacing.unit,
+      borderRadius: theme.spacing(),
       height: 148,
       justifySelf: "start",
       overflow: "hidden",
-      padding: theme.spacing.unit * 2,
+      padding: theme.spacing(2),
       position: "relative",
       transition: theme.transitions.duration.standard + "s",
       width: 148
@@ -50,54 +44,59 @@ const styles = (theme: Theme) =>
       width: "64px"
     },
     photosIconContainer: {
-      padding: `${theme.spacing.unit * 5}px 0`,
+      padding: theme.spacing(5, 0),
       textAlign: "center"
     },
     uploadText: {
-      color: theme.typography.body2.color,
+      color: theme.typography.body1.color,
+      fontSize: 12,
+      fontWeight: 600,
       textTransform: "uppercase"
     }
-  });
+  }),
+  { name: "ImageUpload" }
+);
 
-export const ImageUpload = withStyles(styles, { name: "ImageUpload" })(
-  ({
+export const ImageUpload: React.FC<ImageUploadProps> = props => {
+  const {
     children,
-    classes,
     className,
     disableClick,
-    isActiveClassName,
     iconContainerActiveClassName,
     iconContainerClassName,
+    isActiveClassName,
     onImageUpload
-  }: ImageUploadProps & WithStyles<typeof styles>) => (
-    <Dropzone
-      disableClick={disableClick}
-      onDrop={files => onImageUpload(files[0])}
-    >
+  } = props;
+
+  const classes = useStyles(props);
+
+  return (
+    <Dropzone disableClick={disableClick} onDrop={onImageUpload}>
       {({ isDragActive, getInputProps, getRootProps }) => (
         <>
           <div
             {...getRootProps()}
-            className={classNames({
-              [classes.photosIconContainer]: true,
-              [classes.containerDragActive]: isDragActive,
-              [className]: !!className,
-              [isActiveClassName]: !!isActiveClassName && isDragActive
+            className={classNames(className, classes.photosIconContainer, {
+              [classes.backdrop]: isDragActive,
+              [isActiveClassName]: isDragActive
             })}
           >
             <div
-              className={classNames({
-                [iconContainerClassName]: !!iconContainerClassName,
-                [iconContainerActiveClassName]:
-                  !!iconContainerActiveClassName && isDragActive
+              className={classNames(iconContainerClassName, {
+                [iconContainerActiveClassName]: isDragActive
               })}
             >
-              <input {...getInputProps()} className={classes.fileField} />
+              <input
+                {...getInputProps()}
+                className={classes.fileField}
+                accept="image/*"
+              />
               <ImageIcon className={classes.photosIcon} />
-              <Typography className={classes.uploadText} variant="body1">
-                {i18n.t("Drop here to upload", {
-                  context: "image upload"
-                })}
+              <Typography className={classes.uploadText}>
+                <FormattedMessage
+                  defaultMessage="Drop here to upload"
+                  description="image upload"
+                />
               </Typography>
             </div>
           </div>
@@ -105,7 +104,7 @@ export const ImageUpload = withStyles(styles, { name: "ImageUpload" })(
         </>
       )}
     </Dropzone>
-  )
-);
+  );
+};
 ImageUpload.displayName = "ImageUpload";
 export default ImageUpload;
